@@ -1,26 +1,99 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Light theme */
+  --bg-primary: rgb(255, 255, 255);
+  --bg-secondary: rgb(249, 250, 251);
+  --text-primary: rgb(51, 51, 51);
+  --text-secondary: rgb(0, 0, 0);
+  --border: rgb(209, 213, 219);
+  --primary: rgb(115, 103, 240);
+  --secondary: rgb(216, 93, 216);
+  --success: rgb(40, 199, 111);
+  --danger: rgb(234, 84, 85);
+  --warning: rgb(255, 159, 67);
+  --alternate: rgb(65, 69, 97);
+}
+
+.dark {
+  /* Dark theme */
+  --bg-primary: rgb(16, 22, 58);
+  --bg-secondary: rgb(38, 44, 73);
+  --text-primary: rgb(194, 198, 220);
+  --text-secondary: rgb(255, 255, 255);
+  --border: rgb(65, 69, 97);
+  --primary: rgb(115, 103, 240);
+  --secondary: rgb(216, 93, 216);
+  --success: rgb(40, 199, 111);
+  --danger: rgb(234, 84, 85);
+  --warning: rgb(255, 159, 67);
+  --alternate: rgb(65, 69, 97);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+  --color-warning: var(--warning);
+  --color-alternate: var(--alternate);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  min-height: 100vh;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  overflow-x: hidden;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Ensure proper text rendering */
+.text-clip-fix {
+  overflow: visible;
+  white-space: nowrap;
+  text-overflow: visible;
+}
+
+/* Fix button alignment issues */
+.button-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Fix project card text clipping */
+.project-card {
+  overflow: visible;
+  position: relative;
+}
+
+.project-card h3 {
+  overflow: visible;
+  white-space: normal;
+  word-wrap: break-word;
+  line-height: 1.2;
+}
+
+/* Fix sidebar text clipping */
+.sidebar-text {
+  overflow: visible;
+  white-space: normal;
+  line-height: 1.4;
+}
+
+/* Ensure proper spacing for team buttons */
+.team-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
 }

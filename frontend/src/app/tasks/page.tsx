@@ -1,11 +1,14 @@
-import { TopNavbar } from '@/components/TopNavbar';
-import { ProjectsList } from '@/components/ProjectsList';
+'use client';
 
-export default function Home() {
+import React from 'react';
+import { TopNavbar } from '@/components/TopNavbar';
+import { MyTasks } from '@/components/MyTasks';
+
+export default function TasksPage() {
   return (
     <div className="min-h-screen bg-[var(--bg-primary)]">
       <TopNavbar />
-      <ProjectsList />
+      <MyTasks />
     </div>
   );
 }
