@@ -19,7 +19,7 @@ export default function TeamPage() {
         <div className="flex items-center justify-center h-96">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-[var(--text-secondary)] mb-2">Team not found</h1>
-            <p className="text-[var(--text-primary)]">The team you're looking for doesn't exist.</p>
+            <p className="text-[var(--text-primary)]">The team you&apos;re looking for doesn&apos;t exist.</p>
           </div>
         </div>
       </div>

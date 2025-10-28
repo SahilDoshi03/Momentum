@@ -49,7 +49,7 @@ export default function RegisterPage() {
       if (user) {
         router.push('/');
       }
-    } catch (err) {
+    } catch {
       setError('Registration failed. Please try again.');
     } finally {
       setIsLoading(false);

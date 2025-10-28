@@ -2,9 +2,8 @@
 
 import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/Button';
-import { CheckCircle, Sort, Filter } from '@/components/icons';
+import { CheckCircle, Sort } from '@/components/icons';
 import { ProfileIcon } from '@/components/ui/ProfileIcon';
-import { cn } from '@/lib/utils';
 import mockData from '@/data/mock-data.json';
 import dayjs from 'dayjs';
 
@@ -42,7 +41,7 @@ export const MyTasks: React.FC = () => {
       project.taskGroups.forEach(list => {
         list.tasks.forEach(task => {
           if (task.assigned.some(user => user.id === 'user-1')) {
-            allTasks.push({
+            tasks.push({
               ...task,
               project: {
                 id: project.id,
@@ -55,7 +54,7 @@ export const MyTasks: React.FC = () => {
       });
     });
 
-    return allTasks;
+    return tasks;
   }, []);
 
   // Filter and sort tasks
@@ -244,15 +243,10 @@ export const MyTasks: React.FC = () => {
                         <CheckCircle
                           width={16}
                           height={16}
-                          className={cn(
-                            task.complete ? 'text-[var(--success)]' : 'text-[var(--text-primary)]'
-                          )}
+                          className={task.complete ? 'text-[var(--success)]' : 'text-[var(--text-primary)]'}
                         />
                       </button>
-                      <span className={cn(
-                        'text-[var(--text-primary)]',
-                        task.complete && 'line-through opacity-60'
-                      )}>
+                      <span className={`text-[var(--text-primary)] ${task.complete ? 'line-through opacity-60' : ''}`}>
                         {task.name}
                       </span>
                     </div>
@@ -260,12 +254,11 @@ export const MyTasks: React.FC = () => {
                     {/* Due Date */}
                     <div className="col-span-2">
                       {task.dueDate ? (
-                        <span className={cn(
-                          'text-xs px-2 py-1 rounded',
+                        <span className={`text-xs px-2 py-1 rounded ${
                           isOverdue(task.dueDate) ? 'bg-[var(--danger)] text-white' :
                           isDueSoon(task.dueDate) ? 'bg-[var(--warning)] text-white' :
                           'bg-[var(--bg-primary)] text-[var(--text-primary)]'
-                        )}>
+                        }`}>
                           {dayjs(task.dueDate.at).format(task.hasTime ? 'MMM D [at] h:mm A' : 'MMM D')}
                         </span>
                       ) : (

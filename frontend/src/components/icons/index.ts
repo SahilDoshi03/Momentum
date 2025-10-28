@@ -1,5 +1,6 @@
 export { Home } from './Home';
 export { User } from './User';
+export { UserPlus } from './UserPlus';
 export { Plus } from './Plus';
 export { CheckCircle } from './CheckCircle';
 export { Sort } from './Sort';

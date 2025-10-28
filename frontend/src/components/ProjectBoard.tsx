@@ -5,21 +5,15 @@ import { toast } from 'react-toastify';
 import {
   DndContext,
   DragEndEvent,
-  DragOverEvent,
   DragStartEvent,
   PointerSensor,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
 import { Button } from '@/components/ui/Button';
 import { CheckCircle, Sort, Filter, Tags } from '@/components/icons';
 import { TaskList } from './TaskList';
 import { AddList } from './AddList';
-import { cn } from '@/lib/utils';
 
 interface Project {
   id: string;
@@ -222,7 +216,7 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ project }) => {
     toast.success(`List "${name}" created successfully!`);
   };
 
-  const handleUpdateTask = (taskId: string, updates: Partial<any>) => {
+  const handleUpdateTask = (taskId: string, updates: Partial<typeof taskGroups[0]['tasks'][0]>) => {
     setTaskGroups(prev => prev.map(list => ({
       ...list,
       tasks: list.tasks.map(task => 
@@ -278,7 +272,7 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ project }) => {
                 onUpdateTask={handleUpdateTask}
                 onDeleteTask={handleDeleteTask}
                 onCreateTask={handleCreateTask}
-                isDragOverlay={activeId && list.tasks.some(t => t.id === activeId)}
+                isDragOverlay={!!(activeId && list.tasks.some(t => t.id === activeId))}
               />
             </div>
           ))}
