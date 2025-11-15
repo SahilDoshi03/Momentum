@@ -95,7 +95,7 @@ export default function LoginPage() {
           </Button>
 
           <div className="text-center">
-            <span className="text-[var(--text-primary)]">Don't have an account? </span>
+            <span className="text-[var(--text-primary)]">Don&apos;t have an account? </span>
             <Link
               href="/register"
               className="text-[var(--primary)] hover:underline"

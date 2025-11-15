@@ -5,16 +5,11 @@ import { toast } from 'react-toastify';
 import {
   DndContext,
   DragEndEvent,
-  DragOverEvent,
   DragStartEvent,
   PointerSensor,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
 import { Button } from '@/components/ui/Button';
 import { CheckCircle, Sort, Filter, Tags } from '@/components/icons';
 import { TaskList } from './TaskList';
@@ -291,7 +286,7 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
                 onUpdateTask={handleUpdateTask}
                 onDeleteTask={handleDeleteTask}
                 onCreateTask={handleCreateTask}
-                isDragOverlay={activeId && (list.tasks || []).some(t => t._id === activeId)}
+                isDragOverlay={!!(activeId && (list.tasks || []).some(t => t._id === activeId))}
               />
             </div>
           ))}
