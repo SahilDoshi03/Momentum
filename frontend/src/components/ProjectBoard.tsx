@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import {
   DndContext,
@@ -20,66 +20,19 @@ import { CheckCircle, Sort, Filter, Tags } from '@/components/icons';
 import { TaskList } from './TaskList';
 import { AddList } from './AddList';
 import { cn } from '@/lib/utils';
+import { apiClient, Project, Task } from '@/lib/api';
 
-interface Project {
-  id: string;
-  name: string;
-  shortId: string;
-  team?: {
-    id: string;
-    name: string;
-  } | null;
-  members: Array<{
-    id: string;
-    username: string;
-    fullName: string;
-    email: string;
-    initials: string;
-    role: string;
-  }>;
-  taskGroups: Array<{
-    id: string;
-    name: string;
-    position: number;
-    tasks: Array<{
-      id: string;
-      name: string;
-      shortId: string;
-      description?: string;
-      complete: boolean;
-      position: number;
-      dueDate?: {
-        at: string;
-      } | null;
-      hasTime: boolean;
-      assigned: Array<{
-        id: string;
-        username: string;
-        fullName: string;
-        email: string;
-        initials: string;
-      }>;
-      labels: Array<{
-        id: string;
-        name: string;
-        color: string;
-      }>;
-    }>;
-  }>;
-  labels: Array<{
-    id: string;
-    name: string;
-    color: string;
-  }>;
-}
+// Project interface is now imported from api.ts
 
 interface ProjectBoardProps {
-  project: Project;
+  projectId: string;
 }
 
-export const ProjectBoard: React.FC<ProjectBoardProps> = ({ project }) => {
-  const [taskGroups, setTaskGroups] = useState(project.taskGroups);
+export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
+  const [project, setProject] = useState<Project | null>(null);
+  const [taskGroups, setTaskGroups] = useState<any[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -88,6 +41,27 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ project }) => {
       },
     })
   );
+
+  // Load project data
+  useEffect(() => {
+    const loadProject = async () => {
+      try {
+        setIsLoading(true);
+        const response = await apiClient.getProjectById(projectId);
+        if (response.success && response.data) {
+          setProject(response.data);
+          setTaskGroups(response.data.taskGroups || []);
+        }
+      } catch (error) {
+        console.error('Failed to load project:', error);
+        toast.error('Failed to load project');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadProject();
+  }, [projectId]);
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
@@ -187,62 +161,101 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ project }) => {
     }
   };
 
-  const handleCreateTask = (listId: string, name: string) => {
-    const newTask = {
-      id: `task-${Date.now()}`,
-      name,
-      shortId: `${taskGroups.find(l => l.id === listId)?.tasks.length || 0 + 1}`,
-      description: '',
-      complete: false,
-      position: 0,
-      dueDate: null,
-      hasTime: false,
-      assigned: [],
-      labels: [],
-    };
+  const handleCreateTask = async (listId: string, name: string) => {
+    try {
+      const response = await apiClient.createTask({
+        taskGroupId: listId,
+        name,
+        description: '',
+        hasTime: false,
+      });
 
-    setTaskGroups(prev => prev.map(list => 
-      list.id === listId 
-        ? { ...list, tasks: [...list.tasks, newTask] }
-        : list
-    ));
-    
-    toast.success(`Task "${name}" created successfully!`);
+      if (response.success && response.data) {
+        const newTask = response.data;
+        setTaskGroups(prev => prev.map(list => 
+          list._id === listId 
+            ? { ...list, tasks: [...(list.tasks || []), newTask] }
+            : list
+        ));
+        toast.success(`Task "${name}" created successfully!`);
+      }
+    } catch (error) {
+      console.error('Failed to create task:', error);
+      toast.error('Failed to create task');
+    }
   };
 
-  const handleCreateList = (name: string) => {
-    const newList = {
-      id: `list-${Date.now()}`,
-      name,
-      position: taskGroups.length,
-      tasks: [],
-    };
-
-    setTaskGroups(prev => [...prev, newList]);
-    toast.success(`List "${name}" created successfully!`);
+  const handleCreateList = async (name: string) => {
+    try {
+      // Note: Task group creation would need to be implemented in the backend
+      // For now, we'll just show a message
+      toast.info('Task group creation not yet implemented');
+    } catch (error) {
+      console.error('Failed to create task group:', error);
+      toast.error('Failed to create task group');
+    }
   };
 
-  const handleUpdateTask = (taskId: string, updates: Partial<any>) => {
-    setTaskGroups(prev => prev.map(list => ({
-      ...list,
-      tasks: list.tasks.map(task => 
-        task.id === taskId ? { ...task, ...updates } : task
-      )
-    })));
+  const handleUpdateTask = async (taskId: string, updates: Partial<any>) => {
+    try {
+      const response = await apiClient.updateTask(taskId, updates);
+      if (response.success && response.data) {
+        setTaskGroups(prev => prev.map(list => ({
+          ...list,
+          tasks: (list.tasks || []).map(task => 
+            task._id === taskId ? { ...task, ...updates } : task
+          )
+        })));
+      }
+    } catch (error) {
+      console.error('Failed to update task:', error);
+      toast.error('Failed to update task');
+    }
   };
 
-  const handleDeleteTask = (taskId: string) => {
-    setTaskGroups(prev => prev.map(list => ({
-      ...list,
-      tasks: list.tasks.filter(task => task.id !== taskId)
-    })));
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      const response = await apiClient.deleteTask(taskId);
+      if (response.success) {
+        setTaskGroups(prev => prev.map(list => ({
+          ...list,
+          tasks: (list.tasks || []).filter(task => task._id !== taskId)
+        })));
+        toast.success('Task deleted successfully!');
+      }
+    } catch (error) {
+      console.error('Failed to delete task:', error);
+      toast.error('Failed to delete task');
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 p-6 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--primary)] mx-auto"></div>
+          <p className="mt-2 text-[var(--text-primary)]">Loading project...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!project) {
+    return (
+      <div className="flex-1 p-6 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-[var(--text-primary)]">Project not found</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 p-6">
       {/* Board Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-4">
+          <h1 className="text-2xl font-bold text-[var(--text-secondary)]">{project.name}</h1>
           <Button variant="ghost" size="sm">
             <CheckCircle width={16} height={16} className="mr-2" />
             All Tasks
@@ -272,13 +285,13 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ project }) => {
       >
         <div className="flex space-x-4 overflow-x-auto pb-4">
           {taskGroups.map((list) => (
-            <div key={list.id} className="flex-shrink-0 w-80">
+            <div key={list._id} className="flex-shrink-0 w-80">
               <TaskList
                 list={list}
                 onUpdateTask={handleUpdateTask}
                 onDeleteTask={handleDeleteTask}
                 onCreateTask={handleCreateTask}
-                isDragOverlay={activeId && list.tasks.some(t => t.id === activeId)}
+                isDragOverlay={activeId && (list.tasks || []).some(t => t._id === activeId)}
               />
             </div>
           ))}

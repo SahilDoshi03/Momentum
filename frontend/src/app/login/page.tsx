@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { login, getCurrentUser } from '@/lib/auth';
+import { login, getCurrentUser, validateToken } from '@/lib/auth';
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -18,10 +18,19 @@ export default function LoginPage() {
 
   useEffect(() => {
     // Redirect if already logged in
-    const user = getCurrentUser();
-    if (user) {
-      router.push('/');
-    }
+    const checkAuth = async () => {
+      const user = getCurrentUser();
+      if (user) {
+        const isValid = await validateToken();
+        if (isValid) {
+          router.push('/');
+        } else {
+          // Clear invalid user data
+          localStorage.removeItem('currentUser');
+        }
+      }
+    };
+    checkAuth();
   }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -36,8 +45,8 @@ export default function LoginPage() {
       } else {
         setError('Invalid username or password');
       }
-    } catch (err) {
-      setError('Login failed. Please try again.');
+    } catch (err: any) {
+      setError(err.message || 'Login failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -99,7 +108,7 @@ export default function LoginPage() {
         <div className="text-center text-sm text-[var(--text-primary)]">
           <p>Demo credentials:</p>
           <p>Username: john_doe</p>
-          <p>Password: any password</p>
+          <p>Password: password123</p>
         </div>
       </div>
     </div>

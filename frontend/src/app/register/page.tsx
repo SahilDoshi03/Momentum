@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { register, getCurrentUser } from '@/lib/auth';
+import { register, getCurrentUser, validateToken } from '@/lib/auth';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -21,10 +21,19 @@ export default function RegisterPage() {
 
   useEffect(() => {
     // Redirect if already logged in
-    const user = getCurrentUser();
-    if (user) {
-      router.push('/');
-    }
+    const checkAuth = async () => {
+      const user = getCurrentUser();
+      if (user) {
+        const isValid = await validateToken();
+        if (isValid) {
+          router.push('/');
+        } else {
+          // Clear invalid user data
+          localStorage.removeItem('currentUser');
+        }
+      }
+    };
+    checkAuth();
   }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -49,8 +58,8 @@ export default function RegisterPage() {
       if (user) {
         router.push('/');
       }
-    } catch (err) {
-      setError('Registration failed. Please try again.');
+    } catch (err: any) {
+      setError(err.message || 'Registration failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
