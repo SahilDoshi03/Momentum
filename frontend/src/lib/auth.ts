@@ -26,12 +26,13 @@ export const getCurrentUser = (): AuthUser | null => {
   }
 };
 
-export const login = async (username: string, password: string): Promise<AuthUser | null> => {
+export const login = async (email: string, password: string): Promise<AuthUser | null> => {
   try {
-    const response = await apiClient.login(username, password);
+    const response = await apiClient.login(email, password);
     
     if (response.success && response.data) {
       const user = response.data.user;
+      const token = response.data.token;
       const authUser: AuthUser = {
         ...user,
         id: user._id,
@@ -39,6 +40,9 @@ export const login = async (username: string, password: string): Promise<AuthUse
       };
       
       localStorage.setItem('currentUser', JSON.stringify(user));
+      if (token) {
+        localStorage.setItem('authToken', token);
+      }
       return authUser;
     }
     
@@ -57,24 +61,28 @@ export const logout = async (): Promise<void> => {
   } finally {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('currentUser');
+      localStorage.removeItem('authToken');
     }
   }
 };
 
+export const getAuthToken = (): string | null => {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('authToken');
+};
+
 export const register = async (userData: {
-  username: string;
-  fullName: string;
+  firstName: string;
+  lastName: string;
   email: string;
   password: string;
 }): Promise<AuthUser> => {
   try {
-    const response = await apiClient.register({
-      ...userData,
-      initials: userData.fullName.split(' ').map(n => n[0]).join('').toUpperCase(),
-    });
+    const response = await apiClient.register(userData);
     
     if (response.success && response.data) {
       const user = response.data.user;
+      const token = response.data.token;
       const authUser: AuthUser = {
         ...user,
         id: user._id,
@@ -82,6 +90,9 @@ export const register = async (userData: {
       };
       
       localStorage.setItem('currentUser', JSON.stringify(user));
+      if (token) {
+        localStorage.setItem('authToken', token);
+      }
       return authUser;
     }
     

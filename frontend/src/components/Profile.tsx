@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -18,24 +18,32 @@ export const Profile: React.FC = () => {
     initials: '',
   });
 
-  // Mock current user
-  const currentUser = getCurrentUser() || {
-    id: 'user-1',
-    fullName: 'John Doe',
-    email: 'john@example.com',
-    initials: 'JD',
-    bio: 'Product Manager',
-    avatar: null,
-  };
+  // Memoize current user to prevent infinite loops
+  const currentUser = useMemo(() => {
+    return getCurrentUser() || {
+      id: 'user-1',
+      fullName: 'John Doe',
+      email: 'john@example.com',
+      initials: 'JD',
+      bio: 'Product Manager',
+      avatar: null,
+    };
+  }, []);
 
-  React.useEffect(() => {
+  // Extract values for dependency array to prevent infinite loops
+  const userFullName = currentUser.fullName;
+  const userEmail = currentUser.email;
+  const userBio = currentUser.bio || '';
+  const userInitials = currentUser.initials;
+
+  useEffect(() => {
     setFormData({
-      fullName: currentUser.fullName,
-      email: currentUser.email,
-      bio: currentUser.bio || '',
-      initials: currentUser.initials,
+      fullName: userFullName,
+      email: userEmail,
+      bio: userBio,
+      initials: userInitials,
     });
-  }, [currentUser]);
+  }, [userFullName, userEmail, userBio, userInitials]);
 
   const handleSave = () => {
     console.log('Saving profile:', formData);

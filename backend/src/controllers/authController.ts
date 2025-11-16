@@ -25,21 +25,23 @@ const setTokenCookie = (res: Response, token: string): void => {
 
 // Register user
 export const register = asyncHandler(async (req: Request, res: Response) => {
-  const { fullName, username, email, password, initials }: RegisterRequest = req.body;
+  const { firstName, lastName, email, password, initials }: RegisterRequest = req.body;
+
+  // Combine firstName and lastName into fullName
+  const fullName = `${firstName} ${lastName}`.trim();
 
   // Check if user already exists
   const existingUser = await User.findOne({
-    $or: [{ email }, { username }],
+    email,
   });
 
   if (existingUser) {
-    throw new AppError('User with this email or username already exists', 400);
+    throw new AppError('User with this email already exists', 400);
   }
 
   // Create user
   const user = new User({
     fullName,
-    username,
     email,
     password,
     initials: initials || fullName.split(' ').map(n => n[0]).join('').toUpperCase(),
@@ -77,11 +79,11 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
 
 // Login user
 export const login = asyncHandler(async (req: Request, res: Response) => {
-  const { username, password }: LoginRequest = req.body;
+  const { email, password }: LoginRequest = req.body;
 
-  // Find user by username or email
+  // Find user by email
   const user = await User.findOne({
-    $or: [{ username }, { email: username }],
+    email,
   }).select('+password');
 
   if (!user || !user.active) {

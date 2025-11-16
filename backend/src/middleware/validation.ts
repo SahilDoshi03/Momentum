@@ -22,15 +22,14 @@ export const handleValidationErrors = (
 
 // Auth validation
 export const validateRegister = [
-  body('fullName')
+  body('firstName')
     .trim()
-    .isLength({ min: 2, max: 100 })
-    .withMessage('Full name must be between 2 and 100 characters'),
-  body('username')
+    .isLength({ min: 1, max: 50 })
+    .withMessage('First name must be between 1 and 50 characters'),
+  body('lastName')
     .trim()
-    .isLength({ min: 3, max: 30 })
-    .matches(/^[a-zA-Z0-9_]+$/)
-    .withMessage('Username must be 3-30 characters and contain only letters, numbers, and underscores'),
+    .isLength({ min: 1, max: 50 })
+    .withMessage('Last name must be between 1 and 50 characters'),
   body('email')
     .isEmail()
     .normalizeEmail()
@@ -42,10 +41,10 @@ export const validateRegister = [
 ];
 
 export const validateLogin = [
-  body('username')
-    .trim()
-    .notEmpty()
-    .withMessage('Username is required'),
+  body('email')
+    .isEmail()
+    .normalizeEmail()
+    .withMessage('Please provide a valid email'),
   body('password')
     .notEmpty()
     .withMessage('Password is required'),
@@ -238,4 +237,5 @@ export const validateMyTasksQuery = [
     .withMessage('Invalid sort option'),
   handleValidationErrors,
 ];
+
 

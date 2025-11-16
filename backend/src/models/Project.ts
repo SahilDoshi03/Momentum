@@ -30,7 +30,7 @@ const projectSchema = new Schema<IProject>({
 
 // Indexes
 projectSchema.index({ teamId: 1 });
-projectSchema.index({ shortId: 1 });
+// shortId index is automatically created by unique: true
 projectSchema.index({ name: 1 });
 
 // Generate shortId before saving

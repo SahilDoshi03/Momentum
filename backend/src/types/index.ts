@@ -154,13 +154,13 @@ export interface IPersonalProject extends Document {
 
 // API Request/Response interfaces
 export interface LoginRequest {
-  username: string;
+  email: string;
   password: string;
 }
 
 export interface RegisterRequest {
-  fullName: string;
-  username: string;
+  firstName: string;
+  lastName: string;
   email: string;
   password: string;
   initials?: string;

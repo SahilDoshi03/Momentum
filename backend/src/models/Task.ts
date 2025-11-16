@@ -51,7 +51,7 @@ const taskSchema = new Schema<ITask>({
 
 // Indexes
 taskSchema.index({ taskGroupId: 1, position: 1 });
-taskSchema.index({ shortId: 1 });
+// shortId index is automatically created by unique: true
 taskSchema.index({ complete: 1 });
 
 // Generate shortId before saving

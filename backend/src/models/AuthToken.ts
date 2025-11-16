@@ -22,7 +22,7 @@ const authTokenSchema = new Schema<IAuthToken>({
 
 // Indexes
 authTokenSchema.index({ userId: 1 });
-authTokenSchema.index({ token: 1 });
+// token index is automatically created by unique: true
 authTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 }); // TTL index
 
 export const AuthToken = mongoose.model<IAuthToken>('AuthToken', authTokenSchema);

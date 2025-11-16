@@ -12,8 +12,9 @@ const userSchema = new Schema<IUser>({
   },
   username: {
     type: String,
-    required: true,
+    required: false,
     unique: true,
+    sparse: true,
     trim: true,
     minlength: 3,
     maxlength: 30,
@@ -75,9 +76,8 @@ const userSchema = new Schema<IUser>({
 });
 
 // Indexes
-userSchema.index({ email: 1 });
-userSchema.index({ username: 1 });
-userSchema.index({ googleId: 1 });
+// email and username indexes are automatically created by unique: true
+userSchema.index({ googleId: 1 }, { sparse: true });
 
 // Hash password before saving
 userSchema.pre('save', async function(next) {

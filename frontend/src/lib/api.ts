@@ -111,12 +111,22 @@ class ApiClient {
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseUrl}${endpoint}`;
     
+    // Get token from localStorage
+    const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+    
+    const headers: HeadersInit = {
+      ...this.defaultHeaders,
+      ...options.headers,
+    };
+    
+    // Add Authorization header if token exists
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
     const config: RequestInit = {
       ...options,
-      headers: {
-        ...this.defaultHeaders,
-        ...options.headers,
-      },
+      headers,
       credentials: 'include', // Include cookies for authentication
     };
 
@@ -137,8 +147,8 @@ class ApiClient {
 
   // Auth endpoints
   async register(userData: {
-    fullName: string;
-    username: string;
+    firstName: string;
+    lastName: string;
     email: string;
     password: string;
     initials?: string;
@@ -149,10 +159,10 @@ class ApiClient {
     });
   }
 
-  async login(username: string, password: string): Promise<ApiResponse<{ user: User; token: string }>> {
+  async login(email: string, password: string): Promise<ApiResponse<{ user: User; token: string }>> {
     return this.request('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ email, password }),
     });
   }
 

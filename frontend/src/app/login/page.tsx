@@ -9,7 +9,7 @@ import { login, getCurrentUser, validateToken } from '@/lib/auth';
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
-    username: '',
+    email: '',
     password: '',
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -39,11 +39,11 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const user = await login(formData.username, formData.password);
+      const user = await login(formData.email, formData.password);
       if (user) {
         router.push('/');
       } else {
-        setError('Invalid username or password');
+        setError('Invalid email or password');
       }
     } catch (err: any) {
       setError(err.message || 'Login failed. Please try again.');
@@ -65,11 +65,11 @@ export default function LoginPage() {
 
         <form className="space-y-6" onSubmit={handleSubmit}>
           <Input
-            label="Username"
-            type="text"
-            value={formData.username}
-            onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-            placeholder="Enter your username"
+            label="Email"
+            type="email"
+            value={formData.email}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            placeholder="Enter your email"
             required
           />
 
@@ -107,7 +107,7 @@ export default function LoginPage() {
 
         <div className="text-center text-sm text-[var(--text-primary)]">
           <p>Demo credentials:</p>
-          <p>Username: john_doe</p>
+          <p>Email: john@example.com</p>
           <p>Password: password123</p>
         </div>
       </div>

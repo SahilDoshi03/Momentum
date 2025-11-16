@@ -9,8 +9,8 @@ import { register, getCurrentUser, validateToken } from '@/lib/auth';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
-    username: '',
-    fullName: '',
+    firstName: '',
+    lastName: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -49,8 +49,8 @@ export default function RegisterPage() {
 
     try {
       const user = await register({
-        username: formData.username,
-        fullName: formData.fullName,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
         email: formData.email,
         password: formData.password,
       });
@@ -78,20 +78,20 @@ export default function RegisterPage() {
 
         <form className="space-y-6" onSubmit={handleSubmit}>
           <Input
-            label="Full Name"
+            label="First Name"
             type="text"
-            value={formData.fullName}
-            onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-            placeholder="Enter your full name"
+            value={formData.firstName}
+            onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+            placeholder="Enter your first name"
             required
           />
 
           <Input
-            label="Username"
+            label="Last Name"
             type="text"
-            value={formData.username}
-            onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-            placeholder="Choose a username"
+            value={formData.lastName}
+            onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+            placeholder="Enter your last name"
             required
           />
 
