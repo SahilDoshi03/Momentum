@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { logout } from '@/lib/auth';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/Button';
 import { ProfileIcon } from '@/components/ui/ProfileIcon';
@@ -20,6 +22,7 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
   onSaveProjectName,
 }) => {
   const { theme, setTheme } = useTheme();
+  const router = useRouter();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -50,7 +53,7 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
           </div>
           <span className="font-semibold text-[var(--text-secondary)]">Taskcafe</span>
         </Link>
-        
+
         {projectName && (
           <div className="flex items-center space-x-2">
             <span className="text-[var(--text-primary)]">/</span>
@@ -125,9 +128,13 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
                 <div className="border-t border-[var(--border)] my-1" />
                 <button
                   className="flex items-center w-full px-4 py-2 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]"
-                  onClick={() => {
-                    // Mock logout
-                    console.log('Logout');
+                  onClick={async () => {
+                    try {
+                      await logout();
+                      router.push('/login');
+                    } catch (error) {
+                      console.error('Logout failed', error);
+                    }
                     setIsUserMenuOpen(false);
                   }}
                 >

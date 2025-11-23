@@ -40,11 +40,18 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
   }
 
   // Create user
+  // Create user
+  const initials = fullName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 5);
+
   const user = new User({
     fullName,
     email,
     password,
-    initials: fullName.split(' ').map(n => n[0]).join('').toUpperCase(),
+    initials,
+    profileIcon: {
+      initials,
+      bgColor: '#6366f1'
+    },
     role: 'member',
     active: true,
   });
