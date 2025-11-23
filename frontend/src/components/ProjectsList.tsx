@@ -8,7 +8,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Plus } from '@/components/icons';
 import { cn } from '@/lib/utils';
-import mockData from '@/data/mock-data.json';
+import { apiClient } from '@/lib/api';
 
 export const ProjectsList: React.FC = () => {
   const [showNewProject, setShowNewProject] = useState(false);
@@ -16,31 +16,73 @@ export const ProjectsList: React.FC = () => {
   const [newProjectName, setNewProjectName] = useState('');
   const [newTeamName, setNewTeamName] = useState('');
 
-  const { projects, teams } = mockData;
+  const [projects, setProjects] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch projects on mount
+  React.useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const response = await apiClient.getProjects();
+        if (response.success && response.data) {
+          setProjects(response.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch projects:', error);
+        toast.error('Failed to load projects');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProjects();
+  }, []);
 
   // Separate personal and team projects
-  const personalProjects = projects.filter(p => p.team === null);
-  const teamProjects = teams.map(team => ({
-    ...team,
-    projects: projects.filter(p => p.team?.id === team.id)
-  }));
+  const personalProjects = projects.filter(p => !p.teamId);
 
-  const handleCreateProject = () => {
+  // Group team projects
+  const teamProjectsMap = new Map();
+  projects.forEach(p => {
+    if (p.teamId && typeof p.teamId === 'object') {
+      const team = p.teamId;
+      if (!teamProjectsMap.has(team._id)) {
+        teamProjectsMap.set(team._id, {
+          id: team._id,
+          name: team.name,
+          projects: []
+        });
+      }
+      teamProjectsMap.get(team._id).projects.push(p);
+    }
+  });
+
+  const teamProjects = Array.from(teamProjectsMap.values());
+
+  const handleCreateProject = async () => {
     if (newProjectName.trim()) {
-      console.log('Creating project:', newProjectName);
-      toast.success(`Project "${newProjectName}" created successfully!`);
-      setNewProjectName('');
-      setShowNewProject(false);
+      try {
+        const response = await apiClient.createProject({
+          name: newProjectName,
+          shortId: newProjectName.substring(0, 3).toUpperCase()
+        });
+
+        if (response.success && response.data) {
+          setProjects([...projects, response.data]);
+          toast.success(`Project "${newProjectName}" created successfully!`);
+          setNewProjectName('');
+          setShowNewProject(false);
+        }
+      } catch (error) {
+        console.error('Failed to create project:', error);
+        toast.error('Failed to create project');
+      }
     }
   };
 
   const handleCreateTeam = () => {
-    if (newTeamName.trim()) {
-      console.log('Creating team:', newTeamName);
-      toast.success(`Team "${newTeamName}" created successfully!`);
-      setNewTeamName('');
-      setShowNewTeam(false);
-    }
+    toast.info('Team creation is coming soon!');
+    setShowNewTeam(false);
   };
 
   const projectColors = ['#e362e3', '#7a6ff0', '#37c5ab', '#aa62e3', '#e8384f'];
@@ -63,46 +105,44 @@ export const ProjectsList: React.FC = () => {
       </div>
 
       {/* Personal Projects */}
-      {personalProjects.length > 0 && (
-        <div className="mb-12">
-          <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
-            Personal Projects
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {personalProjects.map((project, index) => (
-              <Link
-                key={project.id}
-                href={`/project/${project.id}`}
-                className="group"
-              >
-                <div
-                  className="h-24 rounded-lg p-4 text-white relative overflow-visible hover:scale-105 transition-transform project-card"
-                  style={{ backgroundColor: projectColors[index % projectColors.length] }}
-                >
-                  <div className="absolute inset-0 bg-black/15 rounded-lg" />
-                  <div className="relative z-10 h-full flex flex-col justify-center">
-                    <h3 className="font-semibold text-lg leading-tight text-clip-fix">{project.name}</h3>
-                    <p className="text-sm opacity-90 mt-1">{project.shortId}</p>
-                  </div>
-                </div>
-              </Link>
-            ))}
-            
-            {/* Create new project tile */}
-            <button
-              onClick={() => setShowNewProject(true)}
-              className="h-24 rounded-lg border-2 border-dashed border-[var(--border)] bg-[var(--bg-secondary)] hover:border-[var(--primary)] hover:bg-[var(--bg-primary)] transition-colors flex items-center justify-center group"
+      <div className="mb-12">
+        <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
+          Personal Projects
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {personalProjects.map((project, index) => (
+            <Link
+              key={project._id}
+              href={`/project/${project._id}`}
+              className="group"
             >
-              <div className="text-center">
-                <Plus width={24} height={24} className="mx-auto mb-2 text-[var(--text-primary)] group-hover:text-[var(--primary)]" />
-                <span className="text-sm text-[var(--text-primary)] group-hover:text-[var(--primary)]">
-                  Create new project
-                </span>
+              <div
+                className="h-24 rounded-lg p-4 text-white relative overflow-visible hover:scale-105 transition-transform project-card"
+                style={{ backgroundColor: projectColors[index % projectColors.length] }}
+              >
+                <div className="absolute inset-0 bg-black/15 rounded-lg" />
+                <div className="relative z-10 h-full flex flex-col justify-center">
+                  <h3 className="font-semibold text-lg leading-tight text-clip-fix">{project.name}</h3>
+                  <p className="text-sm opacity-90 mt-1">{project.shortId}</p>
+                </div>
               </div>
-            </button>
-          </div>
+            </Link>
+          ))}
+
+          {/* Create new project tile */}
+          <button
+            onClick={() => setShowNewProject(true)}
+            className="h-24 rounded-lg border-2 border-dashed border-[var(--border)] bg-[var(--bg-secondary)] hover:border-[var(--primary)] hover:bg-[var(--bg-primary)] transition-colors flex items-center justify-center group"
+          >
+            <div className="text-center">
+              <Plus width={24} height={24} className="mx-auto mb-2 text-[var(--text-primary)] group-hover:text-[var(--primary)]" />
+              <span className="text-sm text-[var(--text-primary)] group-hover:text-[var(--primary)]">
+                Create new project
+              </span>
+            </div>
+          </button>
         </div>
-      )}
+      </div>
 
       {/* Team Projects */}
       {teamProjects.map((team) => (
@@ -125,12 +165,12 @@ export const ProjectsList: React.FC = () => {
               </Link>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {team.projects.map((project, index) => (
+            {team.projects.map((project: any, index: number) => (
               <Link
-                key={project.id}
-                href={`/project/${project.id}`}
+                key={project._id}
+                href={`/project/${project._id}`}
                 className="group"
               >
                 <div
@@ -145,7 +185,7 @@ export const ProjectsList: React.FC = () => {
                 </div>
               </Link>
             ))}
-            
+
             {/* Create new project tile for team */}
             <button
               onClick={() => setShowNewProject(true)}

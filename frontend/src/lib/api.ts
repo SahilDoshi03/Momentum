@@ -29,7 +29,7 @@ export interface Project {
   _id: string;
   name: string;
   shortId: string;
-  teamId?: string;
+  teamId?: string | { _id: string; name: string; organizationId: string };
   createdAt: string;
   publicOn?: string;
   members?: Array<{
@@ -110,20 +110,20 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseUrl}${endpoint}`;
-    
+
     // Get token from localStorage
     const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
-    
-    const headers: HeadersInit = {
-      ...this.defaultHeaders,
-      ...options.headers,
+
+    const headers: Record<string, string> = {
+      ...(this.defaultHeaders as Record<string, string>),
+      ...(options.headers as Record<string, string>),
     };
-    
+
     // Add Authorization header if token exists
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
-    
+
     const config: RequestInit = {
       ...options,
       headers,
@@ -302,6 +302,17 @@ class ApiClient {
     });
   }
 
+  async createTaskGroup(groupData: {
+    projectId: string;
+    name: string;
+    position?: number;
+  }): Promise<ApiResponse<{ _id: string; name: string; position: number; tasks: Task[] }>> {
+    return this.request('/tasks/groups', {
+      method: 'POST',
+      body: JSON.stringify(groupData),
+    });
+  }
+
   async getTaskById(id: string): Promise<ApiResponse<Task>> {
     return this.request(`/tasks/${id}`);
   }
@@ -355,4 +366,4 @@ class ApiClient {
 export const apiClient = new ApiClient();
 
 // Export types for use in components
-export type { User, Project, Task, LabelColor, ApiResponse };
+

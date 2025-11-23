@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/Button';
 import { CheckCircle, Sort } from '@/components/icons';
 import { ProfileIcon } from '@/components/ui/ProfileIcon';
-import mockData from '@/data/mock-data.json';
+import { apiClient } from '@/lib/api';
 import dayjs from 'dayjs';
 
 type TaskStatus = 'all' | 'complete' | 'incomplete';
@@ -15,46 +15,25 @@ export const MyTasks: React.FC = () => {
   const [sortBy, setSortBy] = useState<TaskSort>('none');
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['recently-assigned']));
 
-  // Get all tasks assigned to current user (mock: user-1)
-  const allTasks = useMemo(() => {
-    const tasks: Array<{
-      id: string;
-      name: string;
-      complete: boolean;
-      dueDate?: { at: string } | null;
-      hasTime: boolean;
-      project: {
-        id: string;
-        name: string;
-        shortId: string;
-      };
-      assigned: Array<{
-        id: string;
-        username: string;
-        fullName: string;
-        email: string;
-        initials: string;
-      }>;
-    }> = [];
+  const [allTasks, setAllTasks] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-    mockData.projects.forEach(project => {
-      project.taskGroups.forEach(list => {
-        list.tasks.forEach(task => {
-          if (task.assigned.some(user => user.id === 'user-1')) {
-            tasks.push({
-              ...task,
-              project: {
-                id: project.id,
-                name: project.name,
-                shortId: project.shortId,
-              },
-            });
-          }
-        });
-      });
-    });
+  // Fetch tasks on mount
+  React.useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        const response = await apiClient.getMyTasks();
+        if (response.success && response.data) {
+          setAllTasks(response.data.tasks);
+        }
+      } catch (error) {
+        console.error('Failed to fetch tasks:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    return tasks;
+    fetchTasks();
   }, []);
 
   // Filter and sort tasks
@@ -254,11 +233,10 @@ export const MyTasks: React.FC = () => {
                     {/* Due Date */}
                     <div className="col-span-2">
                       {task.dueDate ? (
-                        <span className={`text-xs px-2 py-1 rounded ${
-                          isOverdue(task.dueDate) ? 'bg-[var(--danger)] text-white' :
+                        <span className={`text-xs px-2 py-1 rounded ${isOverdue(task.dueDate) ? 'bg-[var(--danger)] text-white' :
                           isDueSoon(task.dueDate) ? 'bg-[var(--warning)] text-white' :
-                          'bg-[var(--bg-primary)] text-[var(--text-primary)]'
-                        }`}>
+                            'bg-[var(--bg-primary)] text-[var(--text-primary)]'
+                          }`}>
                           {dayjs(task.dueDate.at).format(task.hasTime ? 'MMM D [at] h:mm A' : 'MMM D')}
                         </span>
                       ) : (
@@ -269,24 +247,24 @@ export const MyTasks: React.FC = () => {
                     {/* Project */}
                     <div className="col-span-2">
                       <span className="text-sm text-[var(--text-primary)] bg-[var(--bg-primary)] px-2 py-1 rounded">
-                        {task.project.name}
+                        {task.project?.name || 'Unknown Project'}
                       </span>
                     </div>
 
                     {/* Members */}
                     <div className="col-span-2">
                       <div className="flex -space-x-1">
-                        {task.assigned.slice(0, 3).map((user) => (
+                        {task.assigned?.slice(0, 3).map((assignment: any) => (
                           <ProfileIcon
-                            key={user.id}
-                            user={user}
+                            key={assignment._id}
+                            user={assignment.userId}
                             size="sm"
                             className="border-2 border-[var(--bg-secondary)]"
                           />
                         ))}
-                        {task.assigned.length > 3 && (
+                        {(task.assigned?.length || 0) > 3 && (
                           <div className="h-6 w-6 rounded-full bg-[var(--bg-primary)] border-2 border-[var(--bg-secondary)] flex items-center justify-center text-xs text-[var(--text-primary)]">
-                            +{task.assigned.length - 3}
+                            +{(task.assigned?.length || 0) - 3}
                           </div>
                         )}
                       </div>

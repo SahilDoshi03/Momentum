@@ -23,9 +23,17 @@ interface ProjectBoardProps {
   projectId: string;
 }
 
+interface TaskGroup {
+  _id: string;
+  id?: string; // For compatibility if needed, but backend uses _id
+  name: string;
+  position: number;
+  tasks: Task[];
+}
+
 export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
   const [project, setProject] = useState<Project | null>(null);
-  const [taskGroups, setTaskGroups] = useState<any[]>([]);
+  const [taskGroups, setTaskGroups] = useState<TaskGroup[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -45,7 +53,10 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
         const response = await apiClient.getProjectById(projectId);
         if (response.success && response.data) {
           setProject(response.data);
-          setTaskGroups(response.data.taskGroups || []);
+          setTaskGroups((response.data.taskGroups || []).map((group: any) => ({
+            ...group,
+            tasks: group.tasks || []
+          })));
         }
       } catch (error) {
         console.error('Failed to load project:', error);
@@ -74,12 +85,12 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
     // Find the task and its current list
     let activeTask = null;
     let activeListId = null;
-    
+
     for (const list of taskGroups) {
-      const task = list.tasks.find(t => t.id === activeId);
+      const task = list.tasks.find((t: Task) => t._id === activeId);
       if (task) {
         activeTask = task;
-        activeListId = list.id;
+        activeListId = list._id;
         break;
       }
     }
@@ -87,21 +98,21 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
     if (!activeTask) return;
 
     // Check if dropping on a list
-    const targetList = taskGroups.find(list => list.id === overId);
+    const targetList = taskGroups.find(list => list._id === overId);
     if (targetList) {
       // Moving task to a different list
       if (activeListId !== overId) {
         setTaskGroups(prev => prev.map(list => {
-          if (list.id === activeListId) {
+          if (list._id === activeListId) {
             return {
               ...list,
-              tasks: list.tasks.filter(t => t.id !== activeId)
+              tasks: list.tasks.filter((t: Task) => t._id !== activeId)
             };
           }
-          if (list.id === overId) {
+          if (list._id === overId) {
             return {
               ...list,
-              tasks: [...list.tasks, { ...activeTask, position: list.tasks.length }]
+              tasks: [...list.tasks, { ...activeTask!, position: list.tasks.length }]
             };
           }
           return list;
@@ -113,12 +124,12 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
     // Check if dropping on another task
     let targetListId = null;
     let targetTask = null;
-    
+
     for (const list of taskGroups) {
-      const task = list.tasks.find(t => t.id === overId);
+      const task = list.tasks.find((t: Task) => t._id === overId);
       if (task) {
         targetTask = task;
-        targetListId = list.id;
+        targetListId = list._id;
         break;
       }
     }
@@ -126,29 +137,29 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
     if (targetTask && targetListId) {
       // Reordering within the same list or moving to a different list
       setTaskGroups(prev => prev.map(list => {
-        if (list.id === activeListId && list.id === targetListId) {
+        if (list._id === activeListId && list._id === targetListId) {
           // Reordering within same list
           const tasks = [...list.tasks];
-          const activeIndex = tasks.findIndex(t => t.id === activeId);
-          const targetIndex = tasks.findIndex(t => t.id === overId);
-          
+          const activeIndex = tasks.findIndex((t: Task) => t._id === activeId);
+          const targetIndex = tasks.findIndex((t: Task) => t._id === overId);
+
           if (activeIndex !== -1 && targetIndex !== -1) {
             const [removed] = tasks.splice(activeIndex, 1);
             tasks.splice(targetIndex, 0, removed);
           }
-          
+
           return { ...list, tasks };
-        } else if (list.id === activeListId) {
+        } else if (list._id === activeListId) {
           // Remove from source list
           return {
             ...list,
-            tasks: list.tasks.filter(t => t.id !== activeId)
+            tasks: list.tasks.filter((t: Task) => t._id !== activeId)
           };
-        } else if (list.id === targetListId) {
+        } else if (list._id === targetListId) {
           // Add to target list
-          const targetIndex = list.tasks.findIndex(t => t.id === overId);
+          const targetIndex = list.tasks.findIndex((t: Task) => t._id === overId);
           const tasks = [...list.tasks];
-          tasks.splice(targetIndex, 0, { ...activeTask, position: targetIndex });
+          tasks.splice(targetIndex, 0, { ...activeTask!, position: targetIndex });
           return { ...list, tasks };
         }
         return list;
@@ -167,8 +178,8 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
 
       if (response.success && response.data) {
         const newTask = response.data;
-        setTaskGroups(prev => prev.map(list => 
-          list._id === listId 
+        setTaskGroups(prev => prev.map(list =>
+          list._id === listId
             ? { ...list, tasks: [...(list.tasks || []), newTask] }
             : list
         ));
@@ -182,9 +193,19 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
 
   const handleCreateList = async (name: string) => {
     try {
-      // Note: Task group creation would need to be implemented in the backend
-      // For now, we'll just show a message
-      toast.info('Task group creation not yet implemented');
+      if (!project) return;
+
+      const response = await apiClient.createTaskGroup({
+        projectId: project._id,
+        name,
+        position: taskGroups.length,
+      });
+
+      if (response.success && response.data) {
+        const newGroup = response.data;
+        setTaskGroups(prev => [...prev, newGroup]);
+        toast.success(`List "${name}" created successfully!`);
+      }
     } catch (error) {
       console.error('Failed to create task group:', error);
       toast.error('Failed to create task group');
@@ -197,7 +218,7 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
       if (response.success && response.data) {
         setTaskGroups(prev => prev.map(list => ({
           ...list,
-          tasks: (list.tasks || []).map(task => 
+          tasks: (list.tasks || []).map((task: Task) =>
             task._id === taskId ? { ...task, ...updates } : task
           )
         })));
@@ -214,7 +235,7 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
       if (response.success) {
         setTaskGroups(prev => prev.map(list => ({
           ...list,
-          tasks: (list.tasks || []).filter(task => task._id !== taskId)
+          tasks: (list.tasks || []).filter((task: Task) => task._id !== taskId)
         })));
         toast.success('Task deleted successfully!');
       }
@@ -286,7 +307,7 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
                 onUpdateTask={handleUpdateTask}
                 onDeleteTask={handleDeleteTask}
                 onCreateTask={handleCreateTask}
-                isDragOverlay={!!(activeId && (list.tasks || []).some(t => t._id === activeId))}
+                isDragOverlay={!!(activeId && (list.tasks || []).some((t: Task) => t._id === activeId))}
               />
             </div>
           ))}

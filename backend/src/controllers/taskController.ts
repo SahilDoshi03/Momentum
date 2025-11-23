@@ -37,38 +37,38 @@ export const getMyTasks = asyncHandler(async (req: Request, res: Response) => {
         tasks = tasks.filter(task => task.complete);
         break;
       case 'COMPLETE_TODAY':
-        tasks = tasks.filter(task => 
-          task.complete && 
-          task.completedAt && 
+        tasks = tasks.filter(task =>
+          task.complete &&
+          task.completedAt &&
           task.completedAt >= today
         );
         break;
       case 'COMPLETE_YESTERDAY':
-        tasks = tasks.filter(task => 
-          task.complete && 
-          task.completedAt && 
-          task.completedAt >= yesterday && 
+        tasks = tasks.filter(task =>
+          task.complete &&
+          task.completedAt &&
+          task.completedAt >= yesterday &&
           task.completedAt < today
         );
         break;
       case 'COMPLETE_ONE_WEEK':
-        tasks = tasks.filter(task => 
-          task.complete && 
-          task.completedAt && 
+        tasks = tasks.filter(task =>
+          task.complete &&
+          task.completedAt &&
           task.completedAt >= oneWeekAgo
         );
         break;
       case 'COMPLETE_TWO_WEEK':
-        tasks = tasks.filter(task => 
-          task.complete && 
-          task.completedAt && 
+        tasks = tasks.filter(task =>
+          task.complete &&
+          task.completedAt &&
           task.completedAt >= twoWeeksAgo
         );
         break;
       case 'COMPLETE_THREE_WEEK':
-        tasks = tasks.filter(task => 
-          task.complete && 
-          task.completedAt && 
+        tasks = tasks.filter(task =>
+          task.complete &&
+          task.completedAt &&
           task.completedAt >= threeWeeksAgo
         );
         break;
@@ -119,9 +119,9 @@ export const createTask = asyncHandler(async (req: Request, res: Response) => {
     throw new AppError('Task group not found', 404);
   }
 
-  const projectMember = await ProjectMember.findOne({ 
-    projectId: taskGroup.projectId._id, 
-    userId: user._id 
+  const projectMember = await ProjectMember.findOne({
+    projectId: taskGroup.projectId._id,
+    userId: user._id
   });
 
   if (!projectMember) {
@@ -186,9 +186,9 @@ export const getTaskById = asyncHandler(async (req: Request, res: Response) => {
   }
 
   // Check if user has access to this task's project
-  const projectMember = await ProjectMember.findOne({ 
-    projectId: task.taskGroupId.projectId, 
-    userId: user._id 
+  const projectMember = await ProjectMember.findOne({
+    projectId: task.taskGroupId.projectId,
+    userId: user._id
   });
 
   if (!projectMember) {
@@ -213,9 +213,9 @@ export const updateTask = asyncHandler(async (req: Request, res: Response) => {
   }
 
   // Check if user has access to this task's project
-  const projectMember = await ProjectMember.findOne({ 
-    projectId: task.taskGroupId.projectId, 
-    userId: user._id 
+  const projectMember = await ProjectMember.findOne({
+    projectId: task.taskGroupId.projectId,
+    userId: user._id
   });
 
   if (!projectMember) {
@@ -261,9 +261,9 @@ export const deleteTask = asyncHandler(async (req: Request, res: Response) => {
   }
 
   // Check if user has access to this task's project
-  const projectMember = await ProjectMember.findOne({ 
-    projectId: task.taskGroupId.projectId, 
-    userId: user._id 
+  const projectMember = await ProjectMember.findOne({
+    projectId: task.taskGroupId.projectId,
+    userId: user._id
   });
 
   if (!projectMember || !['owner', 'admin', 'member'].includes(projectMember.role)) {
@@ -293,9 +293,9 @@ export const assignUserToTask = asyncHandler(async (req: Request, res: Response)
   }
 
   // Check if current user has access to this task's project
-  const projectMember = await ProjectMember.findOne({ 
-    projectId: task.taskGroupId.projectId, 
-    userId: currentUser._id 
+  const projectMember = await ProjectMember.findOne({
+    projectId: task.taskGroupId.projectId,
+    userId: currentUser._id
   });
 
   if (!projectMember || !['owner', 'admin', 'member'].includes(projectMember.role)) {
@@ -333,9 +333,9 @@ export const unassignUserFromTask = asyncHandler(async (req: Request, res: Respo
   }
 
   // Check if current user has access to this task's project
-  const projectMember = await ProjectMember.findOne({ 
-    projectId: task.taskGroupId.projectId, 
-    userId: currentUser._id 
+  const projectMember = await ProjectMember.findOne({
+    projectId: task.taskGroupId.projectId,
+    userId: currentUser._id
   });
 
   if (!projectMember || !['owner', 'admin', 'member'].includes(projectMember.role)) {
@@ -362,9 +362,9 @@ export const addLabelToTask = asyncHandler(async (req: Request, res: Response) =
   }
 
   // Check if user has access to this task's project
-  const projectMember = await ProjectMember.findOne({ 
-    projectId: task.taskGroupId.projectId, 
-    userId: user._id 
+  const projectMember = await ProjectMember.findOne({
+    projectId: task.taskGroupId.projectId,
+    userId: user._id
   });
 
   if (!projectMember) {
@@ -408,9 +408,9 @@ export const removeLabelFromTask = asyncHandler(async (req: Request, res: Respon
   }
 
   // Check if user has access to this task's project
-  const projectMember = await ProjectMember.findOne({ 
-    projectId: task.taskGroupId.projectId, 
-    userId: user._id 
+  const projectMember = await ProjectMember.findOne({
+    projectId: task.taskGroupId.projectId,
+    userId: user._id
   });
 
   if (!projectMember) {
@@ -422,5 +422,45 @@ export const removeLabelFromTask = asyncHandler(async (req: Request, res: Respon
   res.json({
     success: true,
     message: 'Label removed from task successfully',
+  });
+});
+
+// Create task group
+export const createTaskGroup = asyncHandler(async (req: Request, res: Response) => {
+  const user = (req as any).user;
+  const { projectId, name, position } = req.body;
+
+  // Check if user has access to the project
+  const projectMember = await ProjectMember.findOne({
+    projectId,
+    userId: user._id
+  });
+
+  if (!projectMember) {
+    throw new AppError('Not authorized to create task groups in this project', 403);
+  }
+
+  // If position is not provided, put it at the end
+  let groupPosition = position;
+  if (groupPosition === undefined) {
+    const lastGroup = await TaskGroup.findOne({ projectId }).sort({ position: -1 });
+    groupPosition = lastGroup ? lastGroup.position + 1 : 0;
+  }
+
+  const taskGroup = new TaskGroup({
+    projectId,
+    name,
+    position: groupPosition,
+  });
+
+  await taskGroup.save();
+
+  res.status(201).json({
+    success: true,
+    message: 'Task group created successfully',
+    data: {
+      ...taskGroup.toObject(),
+      tasks: []
+    },
   });
 });

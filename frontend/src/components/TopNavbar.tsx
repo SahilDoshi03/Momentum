@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { logout } from '@/lib/auth';
+import { logout, getCurrentUser } from '@/lib/auth';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/Button';
 import { ProfileIcon } from '@/components/ui/ProfileIcon';
@@ -31,13 +31,20 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
     setMounted(true);
   }, []);
 
-  // Mock user data - in real app this would come from context/state
-  const currentUser = {
-    id: 'user-1',
-    fullName: 'John Doe',
-    initials: 'JD',
-    avatar: null,
-  };
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const loadUser = () => {
+      const currentUser = getCurrentUser();
+      setUser(currentUser);
+    };
+    loadUser();
+    // Listen for storage events to update user info if it changes in another tab/window
+    window.addEventListener('storage', loadUser);
+    return () => window.removeEventListener('storage', loadUser);
+  }, []);
+
+  if (!mounted) return null;
 
   const toggleTheme = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
@@ -101,8 +108,12 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
             className="flex items-center space-x-2"
           >
-            <ProfileIcon user={currentUser} size="sm" />
-            <span className="text-sm text-[var(--text-primary)]">{currentUser.fullName}</span>
+            {user && (
+              <>
+                <ProfileIcon user={user} size="sm" />
+                <span className="text-sm text-[var(--text-primary)]">{user.fullName}</span>
+              </>
+            )}
           </Button>
 
           {/* Dropdown Menu */}

@@ -14,34 +14,11 @@ import { CardComposer } from './CardComposer';
 import { Plus } from '@/components/icons';
 import { cn } from '@/lib/utils';
 
-interface Task {
-  id: string;
-  name: string;
-  shortId: string;
-  description?: string;
-  complete: boolean;
-  position: number;
-  dueDate?: {
-    at: string;
-  } | null;
-  hasTime: boolean;
-  assigned: Array<{
-    id: string;
-    username: string;
-    fullName: string;
-    email: string;
-    initials: string;
-  }>;
-  labels: Array<{
-    id: string;
-    name: string;
-    color: string;
-  }>;
-}
+import { Task } from '@/lib/api';
 
 interface TaskListProps {
   list: {
-    id: string;
+    _id: string;
     name: string;
     position: number;
     tasks: Task[];
@@ -61,12 +38,12 @@ export const TaskList: React.FC<TaskListProps> = ({
 }) => {
   const [isAddingCard, setIsAddingCard] = useState(false);
   const { setNodeRef, isOver } = useDroppable({
-    id: list.id,
+    id: list._id,
   });
 
   const handleCreateTask = (name: string) => {
     if (name.trim()) {
-      onCreateTask(list.id, name.trim());
+      onCreateTask(list._id, name.trim());
       setIsAddingCard(false);
     }
   };
@@ -89,11 +66,11 @@ export const TaskList: React.FC<TaskListProps> = ({
       </div>
 
       {/* Tasks */}
-      <SortableContext items={list.tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
+      <SortableContext items={list.tasks.map(t => t._id)} strategy={verticalListSortingStrategy}>
         <div className="space-y-2">
           {list.tasks.map((task) => (
             <TaskCard
-              key={task.id}
+              key={task._id}
               task={task}
               onUpdate={onUpdateTask}
               onDelete={onDeleteTask}

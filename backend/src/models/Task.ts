@@ -45,6 +45,28 @@ const taskSchema = new Schema<ITask>({
     type: Boolean,
     default: false,
   },
+  assigned: [{
+    userId: {
+      type: String,
+      ref: 'User',
+      required: true
+    },
+    assignedDate: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  labels: [{
+    projectLabelId: {
+      type: String,
+      ref: 'ProjectLabel',
+      required: true
+    },
+    assignedDate: {
+      type: Date,
+      default: Date.now
+    }
+  }],
 }, {
   timestamps: true,
 });
@@ -54,10 +76,10 @@ taskSchema.index({ taskGroupId: 1, position: 1 });
 // shortId index is automatically created by unique: true
 taskSchema.index({ complete: 1 });
 
-// Generate shortId before saving
-taskSchema.pre('save', async function(next) {
+// Generate shortId before validation
+taskSchema.pre('validate', async function (next) {
   if (!this.isNew || this.shortId) return next();
-  
+
   try {
     const count = await mongoose.model('Task').countDocuments();
     this.shortId = String(count + 1);
@@ -68,7 +90,7 @@ taskSchema.pre('save', async function(next) {
 });
 
 // Update completedAt when complete changes
-taskSchema.pre('save', function(next) {
+taskSchema.pre('save', function (next) {
   if (this.isModified('complete')) {
     this.completedAt = this.complete ? new Date() : undefined;
   }

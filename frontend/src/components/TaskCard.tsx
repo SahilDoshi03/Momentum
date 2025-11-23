@@ -13,30 +13,7 @@ import { CheckCircle } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import dayjs from 'dayjs';
 
-interface Task {
-  id: string;
-  name: string;
-  shortId: string;
-  description?: string;
-  complete: boolean;
-  position: number;
-  dueDate?: {
-    at: string;
-  } | null;
-  hasTime: boolean;
-  assigned: Array<{
-    id: string;
-    username: string;
-    fullName: string;
-    email: string;
-    initials: string;
-  }>;
-  labels: Array<{
-    id: string;
-    name: string;
-    color: string;
-  }>;
-}
+import { Task } from '@/lib/api';
 
 interface TaskCardProps {
   task: Task;
@@ -59,7 +36,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: task.id });
+  } = useSortable({ id: task._id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -67,12 +44,12 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   };
 
   const handleToggleComplete = () => {
-    onUpdate(task.id, { complete: !task.complete });
+    onUpdate(task._id, { complete: !task.complete });
   };
 
   const handleSaveEdit = () => {
     if (editName.trim() && editName !== task.name) {
-      onUpdate(task.id, { name: editName.trim() });
+      onUpdate(task._id, { name: editName.trim() });
     }
     setIsEditing(false);
   };
@@ -86,8 +63,8 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     }
   };
 
-  const isOverdue = task.dueDate && dayjs(task.dueDate.at).isBefore(dayjs(), 'day');
-  const isDueSoon = task.dueDate && dayjs(task.dueDate.at).isBefore(dayjs().add(1, 'day'), 'day');
+  const isOverdue = task.dueDate && dayjs(task.dueDate).isBefore(dayjs(), 'day');
+  const isDueSoon = task.dueDate && dayjs(task.dueDate).isBefore(dayjs().add(1, 'day'), 'day');
 
   return (
     <div
@@ -107,15 +84,15 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         )}
       >
         {/* Labels */}
-        {task.labels.length > 0 && (
+        {task.labels && task.labels.length > 0 && (
           <div className="flex flex-wrap gap-1 mb-2">
-            {task.labels.map((label) => (
+            {task.labels.map((label: any) => (
               <span
-                key={label.id}
+                key={label._id}
                 className="px-2 py-1 text-xs rounded text-white"
-                style={{ backgroundColor: label.color }}
+                style={{ backgroundColor: label.projectLabelId?.labelColorId?.colorHex || '#ccc' }}
               >
-                {label.name}
+                {label.projectLabelId?.name || 'Label'}
               </span>
             ))}
           </div>
@@ -146,10 +123,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           <div className={cn(
             'text-xs mt-2 px-2 py-1 rounded inline-block',
             isOverdue ? 'bg-[var(--danger)] text-white' :
-            isDueSoon ? 'bg-[var(--warning)] text-white' :
-            'bg-[var(--bg-primary)] text-[var(--text-primary)]'
+              isDueSoon ? 'bg-[var(--warning)] text-white' :
+                'bg-[var(--bg-primary)] text-[var(--text-primary)]'
           )}>
-            {dayjs(task.dueDate.at).format(task.hasTime ? 'MMM D [at] h:mm A' : 'MMM D')}
+            {dayjs(task.dueDate).format(task.hasTime ? 'MMM D [at] h:mm A' : 'MMM D')}
           </div>
         )}
 
@@ -157,15 +134,15 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         <div className="flex items-center justify-between mt-3">
           {/* Assigned Users */}
           <div className="flex -space-x-1">
-            {task.assigned.slice(0, 3).map((user) => (
+            {task.assigned && task.assigned.slice(0, 3).map((assignment: any) => (
               <ProfileIcon
-                key={user.id}
-                user={user}
+                key={assignment._id}
+                user={assignment.userId}
                 size="sm"
                 className="border-2 border-[var(--bg-primary)]"
               />
             ))}
-            {task.assigned.length > 3 && (
+            {task.assigned && task.assigned.length > 3 && (
               <div className="h-6 w-6 rounded-full bg-[var(--bg-primary)] border-2 border-[var(--bg-primary)] flex items-center justify-center text-xs text-[var(--text-primary)]">
                 +{task.assigned.length - 3}
               </div>

@@ -18,8 +18,7 @@ export const getProjects = asyncHandler(async (req: Request, res: Response) => {
       path: 'projectId',
       match: query,
       populate: [
-        { path: 'teamId', select: 'name organizationId' },
-        { path: 'labels', populate: { path: 'labelColorId', select: 'name colorHex' } }
+        { path: 'teamId', select: 'name organizationId' }
       ]
     });
 
@@ -39,9 +38,9 @@ export const getProjectById = asyncHandler(async (req: Request, res: Response) =
   const user = (req as any).user;
 
   // Check if user is a member of this project
-  const projectMember = await ProjectMember.findOne({ 
-    projectId: id, 
-    userId: user._id 
+  const projectMember = await ProjectMember.findOne({
+    projectId: id,
+    userId: user._id
   });
 
   if (!projectMember) {
@@ -49,33 +48,45 @@ export const getProjectById = asyncHandler(async (req: Request, res: Response) =
   }
 
   const project = await Project.findById(id)
-    .populate('teamId', 'name organizationId')
-    .populate({
-      path: 'members',
-      populate: { path: 'userId', select: 'username fullName initials email profileIcon' }
-    })
-    .populate({
-      path: 'taskGroups',
-      populate: {
-        path: 'tasks',
-        populate: [
-          { path: 'assigned', populate: { path: 'userId', select: 'username fullName initials profileIcon' } },
-          { path: 'labels', populate: { path: 'projectLabelId', populate: { path: 'labelColorId' } } }
-        ]
-      }
-    })
-    .populate({
-      path: 'labels',
-      populate: { path: 'labelColorId', select: 'name colorHex' }
-    });
+    .populate('teamId', 'name organizationId');
 
   if (!project) {
     throw new AppError('Project not found', 404);
   }
 
+  // Manually fetch task groups with tasks
+  const taskGroups = await TaskGroup.find({ projectId: id })
+    .sort({ position: 1 })
+    .populate({
+      path: 'tasks',
+      populate: [
+        { path: 'assigned.userId', select: 'username fullName initials profileIcon' },
+        { path: 'labels.projectLabelId', populate: { path: 'labelColorId' } }
+      ]
+    });
+
+  // Transform task groups to match expected structure
+  const taskGroupsWithTasks = taskGroups.map(group => {
+    const groupObj = group.toObject();
+    groupObj.tasks = group.tasks.map((task: any) => {
+      // Transform assigned users
+      if (task.assigned && Array.isArray(task.assigned)) {
+        task.assigned = task.assigned.map((assignment: any) => ({
+          ...assignment,
+          userId: assignment.userId || null
+        })).filter((a: any) => a.userId);
+      }
+      return task;
+    });
+    return groupObj;
+  });
+
   res.json({
     success: true,
-    data: project,
+    data: {
+      ...project.toObject(),
+      taskGroups: taskGroupsWithTasks
+    },
   });
 });
 
@@ -118,18 +129,19 @@ export const createProject = asyncHandler(async (req: Request, res: Response) =>
   }
 
   // Populate the response
+  // Populate the response
   const populatedProject = await Project.findById(project._id)
-    .populate('teamId', 'name organizationId')
-    .populate({
-      path: 'members',
-      populate: { path: 'userId', select: 'username fullName initials email profileIcon' }
-    })
-    .populate('taskGroups');
+    .populate('teamId', 'name organizationId');
+
+  const taskGroups = await TaskGroup.find({ projectId: project._id }).sort({ position: 1 });
 
   res.status(201).json({
     success: true,
     message: 'Project created successfully',
-    data: populatedProject,
+    data: {
+      ...populatedProject!.toObject(),
+      taskGroups
+    },
   });
 });
 
@@ -140,9 +152,9 @@ export const updateProject = asyncHandler(async (req: Request, res: Response) =>
   const updates = req.body;
 
   // Check if user is a member of this project
-  const projectMember = await ProjectMember.findOne({ 
-    projectId: id, 
-    userId: user._id 
+  const projectMember = await ProjectMember.findOne({
+    projectId: id,
+    userId: user._id
   });
 
   if (!projectMember || !['owner', 'admin'].includes(projectMember.role)) {
@@ -177,8 +189,8 @@ export const deleteProject = asyncHandler(async (req: Request, res: Response) =>
   const user = (req as any).user;
 
   // Check if user is owner of this project
-  const projectMember = await ProjectMember.findOne({ 
-    projectId: id, 
+  const projectMember = await ProjectMember.findOne({
+    projectId: id,
     userId: user._id,
     role: 'owner'
   });
@@ -206,9 +218,9 @@ export const addProjectMember = asyncHandler(async (req: Request, res: Response)
   const currentUser = (req as any).user;
 
   // Check if current user can add members
-  const currentUserMember = await ProjectMember.findOne({ 
-    projectId: id, 
-    userId: currentUser._id 
+  const currentUserMember = await ProjectMember.findOne({
+    projectId: id,
+    userId: currentUser._id
   });
 
   if (!currentUserMember || !['owner', 'admin'].includes(currentUserMember.role)) {
@@ -216,9 +228,9 @@ export const addProjectMember = asyncHandler(async (req: Request, res: Response)
   }
 
   // Check if user is already a member
-  const existingMember = await ProjectMember.findOne({ 
-    projectId: id, 
-    userId 
+  const existingMember = await ProjectMember.findOne({
+    projectId: id,
+    userId
   });
 
   if (existingMember) {
@@ -246,9 +258,9 @@ export const removeProjectMember = asyncHandler(async (req: Request, res: Respon
   const currentUser = (req as any).user;
 
   // Check if current user can remove members
-  const currentUserMember = await ProjectMember.findOne({ 
-    projectId: id, 
-    userId: currentUser._id 
+  const currentUserMember = await ProjectMember.findOne({
+    projectId: id,
+    userId: currentUser._id
   });
 
   if (!currentUserMember || !['owner', 'admin'].includes(currentUserMember.role)) {
@@ -256,8 +268,8 @@ export const removeProjectMember = asyncHandler(async (req: Request, res: Respon
   }
 
   // Cannot remove the owner
-  const memberToRemove = await ProjectMember.findOne({ 
-    projectId: id, 
+  const memberToRemove = await ProjectMember.findOne({
+    projectId: id,
     userId,
     role: 'owner'
   });
@@ -280,9 +292,9 @@ export const getProjectLabels = asyncHandler(async (req: Request, res: Response)
   const user = (req as any).user;
 
   // Check if user is a member of this project
-  const projectMember = await ProjectMember.findOne({ 
-    projectId: id, 
-    userId: user._id 
+  const projectMember = await ProjectMember.findOne({
+    projectId: id,
+    userId: user._id
   });
 
   if (!projectMember) {
@@ -305,9 +317,9 @@ export const createProjectLabel = asyncHandler(async (req: Request, res: Respons
   const user = (req as any).user;
 
   // Check if user is a member of this project
-  const projectMember = await ProjectMember.findOne({ 
-    projectId: id, 
-    userId: user._id 
+  const projectMember = await ProjectMember.findOne({
+    projectId: id,
+    userId: user._id
   });
 
   if (!projectMember || !['owner', 'admin', 'member'].includes(projectMember.role)) {
@@ -339,9 +351,9 @@ export const updateProjectLabel = asyncHandler(async (req: Request, res: Respons
   const user = (req as any).user;
 
   // Check if user is a member of this project
-  const projectMember = await ProjectMember.findOne({ 
-    projectId: id, 
-    userId: user._id 
+  const projectMember = await ProjectMember.findOne({
+    projectId: id,
+    userId: user._id
   });
 
   if (!projectMember || !['owner', 'admin', 'member'].includes(projectMember.role)) {
@@ -371,9 +383,9 @@ export const deleteProjectLabel = asyncHandler(async (req: Request, res: Respons
   const user = (req as any).user;
 
   // Check if user is a member of this project
-  const projectMember = await ProjectMember.findOne({ 
-    projectId: id, 
-    userId: user._id 
+  const projectMember = await ProjectMember.findOne({
+    projectId: id,
+    userId: user._id
   });
 
   if (!projectMember || !['owner', 'admin', 'member'].includes(projectMember.role)) {

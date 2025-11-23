@@ -65,6 +65,7 @@ export interface ITaskGroup extends Document {
   name: string;
   position: number;
   createdAt: Date;
+  tasks?: ITask[];
 }
 
 export interface ITask extends Document {
@@ -77,7 +78,18 @@ export interface ITask extends Document {
   complete: boolean;
   completedAt?: Date;
   dueDate?: Date;
-  hasTime: boolean;
+  hasTime: {
+    type: Boolean,
+    default: false,
+  },
+  assigned: Array<{
+    userId: string;
+    assignedDate: Date;
+  }>;
+  labels: Array<{
+    projectLabelId: string;
+    assignedDate: Date;
+  }>;
   createdAt: Date;
 }
 
@@ -241,7 +253,7 @@ export interface IUserWithRoles extends IUser {
 export interface IProjectWithDetails extends IProject {
   team?: ITeam;
   members: Array<IProjectMember & { user: IUser }>;
-  taskGroups: Array<ITaskGroup & { tasks: Array<ITask & { assigned: Array<ITaskAssigned & { user: IUser }>; labels: Array<ITaskLabel & { projectLabel: IProjectLabel }> }>}>;
+  taskGroups: Array<ITaskGroup & { tasks: Array<ITask & { assigned: Array<ITaskAssigned & { user: IUser }>; labels: Array<ITaskLabel & { projectLabel: IProjectLabel }> }> }>;
   labels: Array<IProjectLabel & { labelColor: ILabelColor }>;
 }
 

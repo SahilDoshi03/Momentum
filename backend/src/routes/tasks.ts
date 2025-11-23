@@ -1,14 +1,16 @@
 import express from 'express';
-import { 
-  getMyTasks, 
-  createTask, 
-  getTaskById, 
-  updateTask, 
+import {
+  getMyTasks,
+  createTask,
+  getTaskById,
+  updateTask,
   deleteTask,
   assignUserToTask,
   unassignUserFromTask,
   addLabelToTask,
-  removeLabelFromTask
+  addLabelToTask,
+  removeLabelFromTask,
+  createTaskGroup
 } from '../controllers/taskController';
 import { authenticateToken, validateCreateTask, validateTaskId, validateUpdateTask, validateMyTasksQuery } from '../middleware';
 
@@ -19,6 +21,9 @@ router.use(authenticateToken);
 
 // Get my tasks
 router.get('/my-tasks', validateMyTasksQuery, getMyTasks);
+
+// Create task group
+router.post('/groups', createTaskGroup);
 
 // Create task
 router.post('/', validateCreateTask, createTask);

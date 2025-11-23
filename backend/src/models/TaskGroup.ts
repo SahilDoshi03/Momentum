@@ -22,6 +22,17 @@ const taskGroupSchema = new Schema<ITaskGroup>({
   timestamps: true,
 });
 
+// Virtual populate
+taskGroupSchema.virtual('tasks', {
+  ref: 'Task',
+  localField: '_id',
+  foreignField: 'taskGroupId',
+});
+
+// Ensure virtuals are included in JSON/Object output
+taskGroupSchema.set('toObject', { virtuals: true });
+taskGroupSchema.set('toJSON', { virtuals: true });
+
 // Indexes
 taskGroupSchema.index({ projectId: 1, position: 1 });
 taskGroupSchema.index({ projectId: 1 });
