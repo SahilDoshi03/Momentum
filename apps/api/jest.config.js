@@ -25,7 +25,9 @@ module.exports = {
         '^@/utils/(.*)$': '<rootDir>/src/utils/$1',
     },
     setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
-    testTimeout: 10000,
+    globalSetup: '<rootDir>/src/__tests__/globalSetup.ts',
+    globalTeardown: '<rootDir>/src/__tests__/globalTeardown.ts',
+    testTimeout: 30000, // Increased timeout for database operations
     verbose: true,
     clearMocks: true,
     resetMocks: true,

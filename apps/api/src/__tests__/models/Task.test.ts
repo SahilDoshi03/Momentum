@@ -1,15 +1,15 @@
 import { Task } from '../../models/Task';
-import { createTestTaskGroup } from '../utils/testHelpers';
-import mongoose from 'mongoose';
+import { createTestTaskGroup, createTestUser, createTestProject } from '../utils/testHelpers';
 
 describe('Task Model', () => {
     let testTaskGroupId: string;
 
     beforeEach(async () => {
-        // Create a test project and task group
-        const projectId = new mongoose.Types.ObjectId().toString();
-        const taskGroup = await createTestTaskGroup(projectId);
-        testTaskGroupId = taskGroup._id;
+        // Create a test user, project, and task group with real database
+        const testUser = await createTestUser();
+        const testProject = await createTestProject(testUser._id.toString());
+        const taskGroup = await createTestTaskGroup(testProject._id.toString());
+        testTaskGroupId = taskGroup._id.toString();
     });
 
     describe('Schema Validation', () => {

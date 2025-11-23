@@ -3,106 +3,109 @@ import { User, Project, Task, TaskGroup, ProjectMember, TaskAssigned } from '../
 import bcrypt from 'bcryptjs';
 
 /**
- * Test helper utilities for creating mock data and common test operations
- * Note: Using mocked models - no real database connection needed
+ * Test helper utilities for creating test data with real database operations
+ * Uses MongoDB Memory Server for fast, isolated testing
  */
 
-// Mock mongoose connection
-jest.mock('mongoose', () => ({
-    connect: jest.fn().mockResolvedValue(undefined),
-    disconnect: jest.fn().mockResolvedValue(undefined),
-    connection: {
-        collections: {},
-    },
-}));
-
-// User factory
+// User factory - creates a real user in the database
 export const createTestUser = async (overrides: Partial<any> = {}) => {
-    const defaultUser = {
-        _id: `user_${Date.now()}`,
-        email: `test${Date.now()}@example.com`,
-        username: `testuser${Date.now()}`,
+    const timestamp = Date.now();
+    const userData = {
+        email: overrides.email || `test${timestamp}@example.com`,
+        username: overrides.username || `testuser${timestamp}`,
         password: await bcrypt.hash('password123', 10),
-        fullName: 'Test User',
-        initials: 'TU',
-        bio: 'Test bio',
-        role: 'user',
-        active: true,
-        profileIcon: {
+        fullName: overrides.fullName || 'Test User',
+        initials: overrides.initials || 'TU',
+        bio: overrides.bio || 'Test bio',
+        role: overrides.role || 'member',
+        active: overrides.active !== undefined ? overrides.active : true,
+        profileIcon: overrides.profileIcon || {
             initials: 'TU',
             bgColor: '#3b82f6',
         },
-        save: jest.fn().mockResolvedValue(this),
+        ...overrides,
     };
 
-    return { ...defaultUser, ...overrides };
+    const user = await User.create(userData);
+    return user;
 };
 
-// Project factory
+// Project factory - creates a real project with owner membership
 export const createTestProject = async (userId: string, overrides: Partial<any> = {}) => {
-    const defaultProject = {
-        _id: `project_${Date.now()}`,
-        name: `Test Project ${Date.now()}`,
-        shortId: `TP${Date.now()}`,
-        save: jest.fn().mockResolvedValue(this),
+    const timestamp = Date.now();
+    // Generate a short ID that's max 10 characters
+    const shortId = overrides.shortId || `TP${timestamp.toString().slice(-7)}`;
+
+    const projectData = {
+        name: overrides.name || `Test Project ${timestamp}`,
+        shortId,
+        description: overrides.description || 'Test project description',
+        ...overrides,
     };
 
-    const project = { ...defaultProject, ...overrides };
+    const project = await Project.create(projectData);
 
-    const projectMember = {
-        _id: `member_${Date.now()}`,
+    // Create project membership for the owner
+    await ProjectMember.create({
         projectId: project._id,
         userId,
-        role: 'owner',
-        save: jest.fn().mockResolvedValue(this),
-    };
+        role: overrides.memberRole || 'owner',
+    });
 
     return project;
 };
 
-// Task Group factory
+// Task Group factory - creates a real task group in the database
 export const createTestTaskGroup = async (projectId: string, overrides: Partial<any> = {}) => {
-    const defaultTaskGroup = {
-        _id: `taskgroup_${Date.now()}`,
+    const timestamp = Date.now();
+    const taskGroupData = {
         projectId,
-        name: `Test Task Group ${Date.now()}`,
-        position: 0,
-        save: jest.fn().mockResolvedValue(this),
+        name: overrides.name || `Test Task Group ${timestamp}`,
+        position: overrides.position !== undefined ? overrides.position : 0,
+        ...overrides,
     };
 
-    return { ...defaultTaskGroup, ...overrides };
+    const taskGroup = await TaskGroup.create(taskGroupData);
+    return taskGroup;
 };
 
-// Task factory
+// Task factory - creates a real task in the database
 export const createTestTask = async (taskGroupId: string, overrides: Partial<any> = {}) => {
-    const defaultTask = {
-        _id: `task_${Date.now()}`,
+    const timestamp = Date.now();
+    const taskData = {
         taskGroupId,
-        name: `Test Task ${Date.now()}`,
-        shortId: `${Date.now()}`,
-        description: 'Test task description',
-        position: 0,
-        complete: false,
-        hasTime: false,
-        assigned: [],
-        labels: [],
-        save: jest.fn().mockResolvedValue(this),
+        name: overrides.name || `Test Task ${timestamp}`,
+        description: overrides.description || 'Test task description',
+        position: overrides.position !== undefined ? overrides.position : 0,
+        complete: overrides.complete !== undefined ? overrides.complete : false,
+        hasTime: overrides.hasTime !== undefined ? overrides.hasTime : false,
+        dueDate: overrides.dueDate,
+        assigned: overrides.assigned || [],
+        labels: overrides.labels || [],
+        ...overrides,
     };
 
-    return { ...defaultTask, ...overrides };
+    const task = await Task.create(taskData);
+    return task;
 };
 
-// Assign user to task
+// Assign user to task - creates a real task assignment
 export const assignUserToTask = async (taskId: string, userId: string) => {
-    const taskAssigned = {
-        _id: `assigned_${Date.now()}`,
+    const taskAssigned = await TaskAssigned.create({
         taskId,
         userId,
         assignedDate: new Date(),
-        save: jest.fn().mockResolvedValue(this),
-    };
+    });
 
     return taskAssigned;
+};
+
+// Helper to clear all collections (useful for cleanup)
+export const clearDatabase = async () => {
+    const collections = mongoose.connection.collections;
+    for (const key in collections) {
+        await collections[key].deleteMany({});
+    }
 };
 
 // Mock Express Request
@@ -112,6 +115,7 @@ export const mockRequest = (overrides: Partial<any> = {}) => {
         params: {},
         query: {},
         headers: {},
+        cookies: {},
         user: null,
         ...overrides,
     } as any;

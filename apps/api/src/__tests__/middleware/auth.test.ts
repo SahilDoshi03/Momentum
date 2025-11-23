@@ -179,7 +179,7 @@ describe('Auth Middleware', () => {
             memberUser = await createTestUser({
                 email: 'member@example.com',
                 username: 'member',
-                role: 'user',
+                role: 'member',
             });
 
             observerUser = await createTestUser({
