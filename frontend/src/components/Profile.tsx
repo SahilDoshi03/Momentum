@@ -30,20 +30,22 @@ export const Profile: React.FC = () => {
       // First try to get user from localStorage
       let user = getCurrentUser();
 
-      // If not in localStorage, try to fetch from API using auth token
+      // If not in localStorage, try to fetch from API
+      // The API will use the httpOnly cookie for authentication
       if (!user) {
-        const token = localStorage.getItem('authToken');
-        if (token) {
-          try {
-            const response = await apiClient.validateToken();
-            if (response.success && response.data?.user) {
-              user = response.data.user;
-              // Save to localStorage for future use
-              localStorage.setItem('currentUser', JSON.stringify(user));
-            }
-          } catch (error) {
-            console.error('Failed to fetch user:', error);
+        try {
+          const response = await apiClient.validateToken();
+          if (response.success && response.data?.user) {
+            user = response.data.user;
+            // Save to localStorage for future use
+            localStorage.setItem('currentUser', JSON.stringify(user));
           }
+        } catch (error) {
+          console.error('Failed to fetch user:', error);
+          // If API call fails, redirect to login
+          router.push('/login');
+          setIsLoading(false);
+          return;
         }
       }
 
@@ -56,7 +58,7 @@ export const Profile: React.FC = () => {
           initials: user.initials || '',
         });
       } else {
-        // No user found and no valid token, redirect to login
+        // No user found, redirect to login
         router.push('/login');
       }
       setIsLoading(false);
