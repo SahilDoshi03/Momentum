@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import { Task, TaskGroup, TaskAssigned, TaskLabel, ProjectMember, ProjectLabel } from '../models';
 import { ITask } from '../types';
 import { AppError, asyncHandler } from '../middleware';
@@ -121,7 +122,16 @@ export const createTask = asyncHandler(async (req: Request, res: Response) => {
   const { taskGroupId, name, description, dueDate, hasTime } = req.body;
 
   // Check if user has access to this task group's project
-  const taskGroup = await TaskGroup.findById(taskGroupId);
+  // Handle both ObjectId and string formats - use ObjectId directly if it's already one
+  let taskGroupIdQuery: any = taskGroupId;
+  if (taskGroupId && typeof taskGroupId === 'object' && taskGroupId.constructor.name === 'ObjectId') {
+    // Already an ObjectId, use it directly
+    taskGroupIdQuery = taskGroupId;
+  } else if (typeof taskGroupId === 'string' && mongoose.Types.ObjectId.isValid(taskGroupId)) {
+    // Convert string to ObjectId
+    taskGroupIdQuery = new mongoose.Types.ObjectId(taskGroupId);
+  }
+  const taskGroup = await TaskGroup.findById(taskGroupIdQuery);
   if (!taskGroup) {
     throw new AppError('Task group not found', 404);
   }
@@ -177,7 +187,12 @@ export const getTaskById = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const user = (req as any).user;
 
-  const task = await Task.findById(id)
+  // Handle both ObjectId and string formats
+  let taskIdQuery: any = id;
+  if (typeof id === 'string' && mongoose.Types.ObjectId.isValid(id)) {
+    taskIdQuery = new mongoose.Types.ObjectId(id);
+  }
+  const task = await Task.findById(taskIdQuery)
     .populate('taskGroupId', 'name projectId')
     .populate({
       path: 'assigned',
@@ -193,6 +208,7 @@ export const getTaskById = asyncHandler(async (req: Request, res: Response) => {
   }
 
   // Get the task group to access projectId
+  // Mongoose findById handles both ObjectId and string IDs
   const taskGroup = await TaskGroup.findById(task.taskGroupId);
   if (!taskGroup) {
     throw new AppError('Task group not found', 404);
@@ -220,12 +236,18 @@ export const updateTask = asyncHandler(async (req: Request, res: Response) => {
   const user = (req as any).user;
   const updates = req.body;
 
-  const task = await Task.findById(id);
+  // Handle both ObjectId and string formats
+  let taskIdQuery: any = id;
+  if (typeof id === 'string' && mongoose.Types.ObjectId.isValid(id)) {
+    taskIdQuery = new mongoose.Types.ObjectId(id);
+  }
+  const task = await Task.findById(taskIdQuery);
   if (!task) {
     throw new AppError('Task not found', 404);
   }
 
   // Get the task group to access projectId
+  // Mongoose findById handles both ObjectId and string IDs
   const taskGroup = await TaskGroup.findById(task.taskGroupId);
   if (!taskGroup) {
     throw new AppError('Task group not found', 404);
@@ -278,12 +300,18 @@ export const deleteTask = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const user = (req as any).user;
 
-  const task = await Task.findById(id);
+  // Handle both ObjectId and string formats
+  let taskIdQuery: any = id;
+  if (typeof id === 'string' && mongoose.Types.ObjectId.isValid(id)) {
+    taskIdQuery = new mongoose.Types.ObjectId(id);
+  }
+  const task = await Task.findById(taskIdQuery);
   if (!task) {
     throw new AppError('Task not found', 404);
   }
 
   // Get the task group to access projectId
+  // Mongoose findById handles both ObjectId and string IDs
   const taskGroup = await TaskGroup.findById(task.taskGroupId);
   if (!taskGroup) {
     throw new AppError('Task group not found', 404);
@@ -316,12 +344,18 @@ export const assignUserToTask = asyncHandler(async (req: Request, res: Response)
   const { userId } = req.body;
   const currentUser = (req as any).user;
 
-  const task = await Task.findById(id);
+  // Handle both ObjectId and string formats
+  let taskIdQuery: any = id;
+  if (typeof id === 'string' && mongoose.Types.ObjectId.isValid(id)) {
+    taskIdQuery = new mongoose.Types.ObjectId(id);
+  }
+  const task = await Task.findById(taskIdQuery);
   if (!task) {
     throw new AppError('Task not found', 404);
   }
 
   // Get the task group to access projectId
+  // Mongoose findById handles both ObjectId and string IDs
   const taskGroup = await TaskGroup.findById(task.taskGroupId);
   if (!taskGroup) {
     throw new AppError('Task group not found', 404);
@@ -362,12 +396,18 @@ export const unassignUserFromTask = asyncHandler(async (req: Request, res: Respo
   const { id, userId } = req.params;
   const currentUser = (req as any).user;
 
-  const task = await Task.findById(id);
+  // Handle both ObjectId and string formats
+  let taskIdQuery: any = id;
+  if (typeof id === 'string' && mongoose.Types.ObjectId.isValid(id)) {
+    taskIdQuery = new mongoose.Types.ObjectId(id);
+  }
+  const task = await Task.findById(taskIdQuery);
   if (!task) {
     throw new AppError('Task not found', 404);
   }
 
   // Get the task group to access projectId
+  // Mongoose findById handles both ObjectId and string IDs
   const taskGroup = await TaskGroup.findById(task.taskGroupId);
   if (!taskGroup) {
     throw new AppError('Task group not found', 404);
@@ -397,12 +437,18 @@ export const addLabelToTask = asyncHandler(async (req: Request, res: Response) =
   const { projectLabelId } = req.body;
   const user = (req as any).user;
 
-  const task = await Task.findById(id);
+  // Handle both ObjectId and string formats
+  let taskIdQuery: any = id;
+  if (typeof id === 'string' && mongoose.Types.ObjectId.isValid(id)) {
+    taskIdQuery = new mongoose.Types.ObjectId(id);
+  }
+  const task = await Task.findById(taskIdQuery);
   if (!task) {
     throw new AppError('Task not found', 404);
   }
 
   // Get the task group to access projectId
+  // Mongoose findById handles both ObjectId and string IDs
   const taskGroup = await TaskGroup.findById(task.taskGroupId);
   if (!taskGroup) {
     throw new AppError('Task group not found', 404);
@@ -449,12 +495,18 @@ export const removeLabelFromTask = asyncHandler(async (req: Request, res: Respon
   const { id, labelId } = req.params;
   const user = (req as any).user;
 
-  const task = await Task.findById(id);
+  // Handle both ObjectId and string formats
+  let taskIdQuery: any = id;
+  if (typeof id === 'string' && mongoose.Types.ObjectId.isValid(id)) {
+    taskIdQuery = new mongoose.Types.ObjectId(id);
+  }
+  const task = await Task.findById(taskIdQuery);
   if (!task) {
     throw new AppError('Task not found', 404);
   }
 
   // Get the task group to access projectId
+  // Mongoose findById handles both ObjectId and string IDs
   const taskGroup = await TaskGroup.findById(task.taskGroupId);
   if (!taskGroup) {
     throw new AppError('Task group not found', 404);

@@ -125,13 +125,10 @@ describe('Task Controller', () => {
                 username: 'unauthorized',
             });
 
-            // Ensure taskGroupId is a string for consistent lookup
-            const taskGroupIdStr = testTaskGroup._id.toString();
-
             const req = mockRequest({
                 user: unauthorizedUser,
                 body: {
-                    taskGroupId: taskGroupIdStr,
+                    taskGroupId: testTaskGroup._id,
                     name: 'Unauthorized Task',
                 },
             });
