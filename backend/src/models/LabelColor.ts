@@ -26,3 +26,4 @@ labelColorSchema.index({ position: 1 });
 export const LabelColor = mongoose.model<ILabelColor>('LabelColor', labelColorSchema);
 
 
+

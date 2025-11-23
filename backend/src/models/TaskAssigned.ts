@@ -26,3 +26,4 @@ taskAssignedSchema.index({ taskId: 1 });
 export const TaskAssigned = mongoose.model<ITaskAssigned>('TaskAssigned', taskAssignedSchema);
 
 
+

@@ -25,7 +25,7 @@ const setTokenCookie = (res: Response, token: string): void => {
 
 // Register user
 export const register = asyncHandler(async (req: Request, res: Response) => {
-  const { firstName, lastName, email, password, initials }: RegisterRequest = req.body;
+  const { firstName, lastName, email, password }: RegisterRequest = req.body;
 
   // Combine firstName and lastName into fullName
   const fullName = `${firstName} ${lastName}`.trim();
@@ -44,7 +44,7 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
     fullName,
     email,
     password,
-    initials: initials || fullName.split(' ').map(n => n[0]).join('').toUpperCase(),
+    initials: fullName.split(' ').map(n => n[0]).join('').toUpperCase(),
     role: 'member',
     active: true,
   });

@@ -18,3 +18,4 @@ organizationSchema.index({ name: 1 });
 export const Organization = mongoose.model<IOrganization>('Organization', organizationSchema);
 
 
+

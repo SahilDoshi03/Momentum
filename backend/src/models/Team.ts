@@ -24,3 +24,4 @@ teamSchema.index({ name: 1 });
 export const Team = mongoose.model<ITeam>('Team', teamSchema);
 
 
+
