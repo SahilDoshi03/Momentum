@@ -313,6 +313,16 @@ class ApiClient {
     });
   }
 
+  async updateTaskGroup(id: string, updates: {
+    name?: string;
+    position?: number;
+  }): Promise<ApiResponse<{ _id: string; name: string; position: number }>> {
+    return this.request(`/tasks/groups/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  }
+
   async getTaskById(id: string): Promise<ApiResponse<Task>> {
     return this.request(`/tasks/${id}`);
   }

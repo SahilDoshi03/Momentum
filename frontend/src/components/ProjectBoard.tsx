@@ -9,10 +9,16 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  DragOverlay,
 } from '@dnd-kit/core';
+import {
+  SortableContext,
+  horizontalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import { Button } from '@/components/ui/Button';
 import { CheckCircle, Sort, Filter, Tags } from '@/components/icons';
 import { TaskList } from './TaskList';
+import { SortableTaskList } from './SortableTaskList';
 import { AddList } from './AddList';
 import { cn } from '@/lib/utils';
 import { apiClient, Project, Task } from '@/lib/api';
@@ -73,7 +79,7 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
     setActiveId(event.active.id as string);
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveId(null);
 
@@ -81,6 +87,49 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
 
     const activeId = active.id as string;
     const overId = over.id as string;
+
+    if (activeId === overId) return;
+
+    // Check if we're dragging a task group (list)
+    const activeGroup = taskGroups.find(group => group._id === activeId);
+    const overGroup = taskGroups.find(group => group._id === overId);
+
+    if (activeGroup && overGroup) {
+      // Reordering task groups
+      const previousTaskGroups = taskGroups;
+      const oldIndex = taskGroups.findIndex(group => group._id === activeId);
+      const newIndex = taskGroups.findIndex(group => group._id === overId);
+
+      if (oldIndex !== newIndex) {
+        // Optimistically update UI
+        const newTaskGroups = [...taskGroups];
+        const [removed] = newTaskGroups.splice(oldIndex, 1);
+        newTaskGroups.splice(newIndex, 0, removed);
+
+        // Update positions
+        const updatedGroups = newTaskGroups.map((group, index) => ({
+          ...group,
+          position: index
+        }));
+
+        setTaskGroups(updatedGroups);
+
+        // Persist to backend
+        try {
+          await Promise.all(
+            updatedGroups.map((group) =>
+              apiClient.updateTaskGroup(group._id, { position: group.position })
+            )
+          );
+        } catch (error) {
+          console.error('Failed to update task group positions:', error);
+          toast.error('Failed to update list positions');
+          // Rollback on error
+          setTaskGroups(previousTaskGroups);
+        }
+      }
+      return;
+    }
 
     // Find the task and its current list
     let activeTask = null;
@@ -97,12 +146,16 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
 
     if (!activeTask) return;
 
+    // Store previous state for rollback on error
+    const previousTaskGroups = taskGroups;
+
     // Check if dropping on a list
     const targetList = taskGroups.find(list => list._id === overId);
     if (targetList) {
       // Moving task to a different list
       if (activeListId !== overId) {
-        setTaskGroups(prev => prev.map(list => {
+        // Optimistically update UI
+        const newTaskGroups = taskGroups.map(list => {
           if (list._id === activeListId) {
             return {
               ...list,
@@ -116,7 +169,21 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
             };
           }
           return list;
-        }));
+        });
+        setTaskGroups(newTaskGroups);
+
+        // Persist to backend
+        try {
+          await apiClient.updateTask(activeId, {
+            taskGroupId: overId,
+            position: targetList.tasks.length
+          });
+        } catch (error) {
+          console.error('Failed to move task:', error);
+          toast.error('Failed to move task');
+          // Rollback on error
+          setTaskGroups(previousTaskGroups);
+        }
       }
       return;
     }
@@ -136,7 +203,7 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
 
     if (targetTask && targetListId) {
       // Reordering within the same list or moving to a different list
-      setTaskGroups(prev => prev.map(list => {
+      const newTaskGroups = taskGroups.map(list => {
         if (list._id === activeListId && list._id === targetListId) {
           // Reordering within same list
           const tasks = [...list.tasks];
@@ -146,24 +213,87 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
           if (activeIndex !== -1 && targetIndex !== -1) {
             const [removed] = tasks.splice(activeIndex, 1);
             tasks.splice(targetIndex, 0, removed);
+
+            // Update positions for all tasks in the list
+            return {
+              ...list,
+              tasks: tasks.map((t, index) => ({ ...t, position: index }))
+            };
           }
 
           return { ...list, tasks };
         } else if (list._id === activeListId) {
-          // Remove from source list
+          // Remove from source list and update positions
+          const tasks = list.tasks.filter((t: Task) => t._id !== activeId);
           return {
             ...list,
-            tasks: list.tasks.filter((t: Task) => t._id !== activeId)
+            tasks: tasks.map((t, index) => ({ ...t, position: index }))
           };
         } else if (list._id === targetListId) {
-          // Add to target list
+          // Add to target list at the target position
           const targetIndex = list.tasks.findIndex((t: Task) => t._id === overId);
           const tasks = [...list.tasks];
           tasks.splice(targetIndex, 0, { ...activeTask!, position: targetIndex });
-          return { ...list, tasks };
+          return {
+            ...list,
+            tasks: tasks.map((t, index) => ({ ...t, position: index }))
+          };
         }
         return list;
-      }));
+      });
+
+      setTaskGroups(newTaskGroups);
+
+      // Persist to backend
+      try {
+        if (activeListId === targetListId) {
+          // Reordering within same list - update all task positions
+          const updatedList = newTaskGroups.find(list => list._id === activeListId);
+          if (updatedList) {
+            await Promise.all(
+              updatedList.tasks.map((task, index) =>
+                apiClient.updateTask(task._id, { position: index })
+              )
+            );
+          }
+        } else {
+          // Moving between lists - update taskGroupId and positions
+          const sourceList = newTaskGroups.find(list => list._id === activeListId);
+          const targetList = newTaskGroups.find(list => list._id === targetListId);
+
+          const updates = [];
+
+          // Update moved task
+          const targetIndex = targetList?.tasks.findIndex((t: Task) => t._id === activeId) ?? 0;
+          updates.push(
+            apiClient.updateTask(activeId, {
+              taskGroupId: targetListId,
+              position: targetIndex
+            })
+          );
+
+          // Update positions in source list
+          if (sourceList) {
+            sourceList.tasks.forEach((task, index) => {
+              updates.push(apiClient.updateTask(task._id, { position: index }));
+            });
+          }
+
+          // Update positions in target list
+          if (targetList) {
+            targetList.tasks.forEach((task, index) => {
+              updates.push(apiClient.updateTask(task._id, { position: index }));
+            });
+          }
+
+          await Promise.all(updates);
+        }
+      } catch (error) {
+        console.error('Failed to update task positions:', error);
+        toast.error('Failed to update task positions');
+        // Rollback on error
+        setTaskGroups(previousTaskGroups);
+      }
     }
   };
 
@@ -299,22 +429,26 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex space-x-4 overflow-x-auto pb-4">
-          {taskGroups.map((list) => (
-            <div key={list._id} className="flex-shrink-0 w-80">
-              <TaskList
+        <SortableContext
+          items={taskGroups.map(group => group._id)}
+          strategy={horizontalListSortingStrategy}
+        >
+          <div className="flex space-x-4 overflow-x-auto pb-4">
+            {taskGroups.map((list) => (
+              <SortableTaskList
+                key={list._id}
                 list={list}
                 onUpdateTask={handleUpdateTask}
                 onDeleteTask={handleDeleteTask}
                 onCreateTask={handleCreateTask}
                 isDragOverlay={!!(activeId && (list.tasks || []).some((t: Task) => t._id === activeId))}
               />
+            ))}
+            <div className="flex-shrink-0">
+              <AddList onCreateList={handleCreateList} />
             </div>
-          ))}
-          <div className="flex-shrink-0">
-            <AddList onCreateList={handleCreateList} />
           </div>
-        </div>
+        </SortableContext>
       </DndContext>
     </div>
   );

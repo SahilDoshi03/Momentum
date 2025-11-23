@@ -8,9 +8,9 @@ import {
   assignUserToTask,
   unassignUserFromTask,
   addLabelToTask,
-  addLabelToTask,
   removeLabelFromTask,
-  createTaskGroup
+  createTaskGroup,
+  updateTaskGroup
 } from '../controllers/taskController';
 import { authenticateToken, validateCreateTask, validateTaskId, validateUpdateTask, validateMyTasksQuery } from '../middleware';
 
@@ -24,6 +24,9 @@ router.get('/my-tasks', validateMyTasksQuery, getMyTasks);
 
 // Create task group
 router.post('/groups', createTaskGroup);
+
+// Update task group
+router.put('/groups/:id', updateTaskGroup);
 
 // Create task
 router.post('/', validateCreateTask, createTask);

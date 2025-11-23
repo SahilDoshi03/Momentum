@@ -464,3 +464,41 @@ export const createTaskGroup = asyncHandler(async (req: Request, res: Response) 
     },
   });
 });
+
+// Update task group
+export const updateTaskGroup = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const user = (req as any).user;
+  const updates = req.body;
+
+  const taskGroup = await TaskGroup.findById(id);
+  if (!taskGroup) {
+    throw new AppError('Task group not found', 404);
+  }
+
+  // Check if user has access to this task group's project
+  const projectMember = await ProjectMember.findOne({
+    projectId: taskGroup.projectId,
+    userId: user._id
+  });
+
+  if (!projectMember) {
+    throw new AppError('Not authorized to update this task group', 403);
+  }
+
+  // Update allowed fields
+  const allowedFields = ['name', 'position'];
+  allowedFields.forEach(field => {
+    if (updates[field] !== undefined) {
+      taskGroup[field] = updates[field];
+    }
+  });
+
+  await taskGroup.save();
+
+  res.json({
+    success: true,
+    message: 'Task group updated successfully',
+    data: taskGroup,
+  });
+});

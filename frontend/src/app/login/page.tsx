@@ -104,12 +104,6 @@ export default function LoginPage() {
             </Link>
           </div>
         </form>
-
-        <div className="text-center text-sm text-[var(--text-primary)]">
-          <p>Demo credentials:</p>
-          <p>Email: john@example.com</p>
-          <p>Password: password123</p>
-        </div>
       </div>
     </div>
   );
