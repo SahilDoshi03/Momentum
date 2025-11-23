@@ -7,9 +7,13 @@ import { Input } from '@/components/ui/Input';
 import { ProfileIcon } from '@/components/ui/ProfileIcon';
 import { getCurrentUser } from '@/lib/auth';
 import { Sun, Moon } from '@/components/icons';
+import { apiClient } from '@/lib/api';
+import { toast } from 'react-toastify';
+import { useRouter } from 'next/navigation';
 
 export const Profile: React.FC = () => {
   const { theme, setTheme } = useTheme();
+  const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
@@ -18,37 +22,80 @@ export const Profile: React.FC = () => {
     initials: '',
   });
 
-  // Memoize current user to prevent infinite loops
-  const currentUser = useMemo(() => {
-    return getCurrentUser() || {
-      id: 'user-1',
-      fullName: 'John Doe',
-      email: 'john@example.com',
-      initials: 'JD',
-      bio: 'Product Manager',
-      avatar: null,
-    };
-  }, []);
-
-  // Extract values for dependency array to prevent infinite loops
-  const userFullName = currentUser.fullName;
-  const userEmail = currentUser.email;
-  const userBio = currentUser.bio || '';
-  const userInitials = currentUser.initials;
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setFormData({
-      fullName: userFullName,
-      email: userEmail,
-      bio: userBio,
-      initials: userInitials,
-    });
-  }, [userFullName, userEmail, userBio, userInitials]);
+    const loadUser = async () => {
+      // First try to get user from localStorage
+      let user = getCurrentUser();
 
-  const handleSave = () => {
-    console.log('Saving profile:', formData);
-    setIsEditing(false);
-    // In a real app, this would update the user data
+      // If not in localStorage, try to fetch from API using auth token
+      if (!user) {
+        const token = localStorage.getItem('authToken');
+        if (token) {
+          try {
+            const response = await apiClient.validateToken();
+            if (response.success && response.data?.user) {
+              user = response.data.user;
+              // Save to localStorage for future use
+              localStorage.setItem('currentUser', JSON.stringify(user));
+            }
+          } catch (error) {
+            console.error('Failed to fetch user:', error);
+          }
+        }
+      }
+
+      if (user) {
+        setCurrentUser(user);
+        setFormData({
+          fullName: user.fullName || '',
+          email: user.email || '',
+          bio: user.bio || '',
+          initials: user.initials || '',
+        });
+      } else {
+        // No user found and no valid token, redirect to login
+        router.push('/login');
+      }
+      setIsLoading(false);
+    };
+    loadUser();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--primary)]"></div>
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return null; // Or redirect to login
+  }
+
+  const handleSave = async () => {
+    if (!currentUser) return;
+
+    try {
+      const response = await apiClient.updateUser(currentUser._id, {
+        fullName: formData.fullName,
+        bio: formData.bio,
+      });
+
+      if (response.success && response.data) {
+        setCurrentUser(response.data);
+        // Update localStorage so the changes persist on refresh
+        localStorage.setItem('currentUser', JSON.stringify(response.data));
+        toast.success('Profile updated successfully');
+        setIsEditing(false);
+      }
+    } catch (error) {
+      console.error('Failed to update profile:', error);
+      toast.error('Failed to update profile');
+    }
   };
 
   const handleCancel = () => {
@@ -85,7 +132,7 @@ export const Profile: React.FC = () => {
             <h2 className="text-xl font-semibold text-[var(--text-secondary)] mb-4">
               Personal Information
             </h2>
-            
+
             <div className="space-y-4">
               <div className="flex items-center space-x-4 mb-6">
                 <ProfileIcon user={currentUser} size="lg" />
@@ -175,7 +222,7 @@ export const Profile: React.FC = () => {
             <h2 className="text-xl font-semibold text-[var(--text-secondary)] mb-4">
               Preferences
             </h2>
-            
+
             <div className="space-y-4">
               <div>
                 <h3 className="font-medium text-[var(--text-primary)] mb-2">Theme</h3>

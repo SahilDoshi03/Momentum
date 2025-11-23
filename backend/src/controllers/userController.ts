@@ -71,7 +71,7 @@ export const updateUser = asyncHandler(async (req: Request, res: Response) => {
   const updates = req.body;
 
   // Users can only update their own profile unless they're admin
-  if (id !== currentUser._id && !['admin', 'owner'].includes(currentUser.role)) {
+  if (id !== currentUser._id.toString() && !['admin', 'owner'].includes(currentUser.role)) {
     throw new AppError('Not authorized to update this user', 403);
   }
 
