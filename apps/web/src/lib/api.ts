@@ -1,0 +1,388 @@
+// API client for backend communication
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export interface ApiResponse<T = any> {
+  success: boolean;
+  message?: string;
+  data?: T;
+  errors?: Array<{ field: string; message: string }>;
+}
+
+export interface User {
+  _id: string;
+  email: string;
+  username: string;
+  fullName: string;
+  initials: string;
+  bio: string;
+  profileIcon: {
+    url?: string;
+    initials: string;
+    bgColor: string;
+  };
+  role: string;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Project {
+  _id: string;
+  name: string;
+  shortId: string;
+  teamId?: string | { _id: string; name: string; organizationId: string };
+  createdAt: string;
+  publicOn?: string;
+  members?: Array<{
+    _id: string;
+    userId: User;
+    role: string;
+    addedAt: string;
+  }>;
+  taskGroups?: Array<{
+    _id: string;
+    name: string;
+    position: number;
+    tasks?: Array<Task>;
+  }>;
+  labels?: Array<{
+    _id: string;
+    name: string;
+    labelColorId: {
+      _id: string;
+      name: string;
+      colorHex: string;
+    };
+  }>;
+}
+
+export interface Task {
+  _id: string;
+  taskGroupId: string | {
+    _id: string;
+    name: string;
+    projectId: string | {
+      _id: string;
+      name: string;
+      shortId: string;
+    };
+  };
+  name: string;
+  shortId: string;
+  description?: string;
+  position: number;
+  complete: boolean;
+  completedAt?: string;
+  dueDate?: string;
+  hasTime: boolean;
+  createdAt: string;
+  assigned?: Array<{
+    _id: string;
+    userId: User;
+    assignedDate: string;
+  }>;
+  labels?: Array<{
+    _id: string;
+    projectLabelId: {
+      _id: string;
+      name: string;
+      labelColorId: {
+        _id: string;
+        name: string;
+        colorHex: string;
+      };
+    };
+    assignedDate: string;
+  }>;
+}
+
+export interface LabelColor {
+  _id: string;
+  name: string;
+  colorHex: string;
+  position: number;
+}
+
+class ApiClient {
+  private baseUrl: string;
+  private defaultHeaders: HeadersInit;
+
+  constructor() {
+    this.baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+    this.defaultHeaders = {
+      'Content-Type': 'application/json',
+    };
+  }
+
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<ApiResponse<T>> {
+    const url = `${this.baseUrl}${endpoint}`;
+
+    // Get token from localStorage
+    const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+
+    const headers: Record<string, string> = {
+      ...(this.defaultHeaders as Record<string, string>),
+      ...(options.headers as Record<string, string>),
+    };
+
+    // Add Authorization header if token exists
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const config: RequestInit = {
+      ...options,
+      headers,
+      credentials: 'include', // Include cookies for authentication
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || `HTTP error! status: ${response.status}`);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API request failed:', error);
+      throw error;
+    }
+  }
+
+  // Auth endpoints
+  async register(userData: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    password: string;
+    initials?: string;
+  }): Promise<ApiResponse<{ user: User; token: string }>> {
+    return this.request('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+  }
+
+  async login(email: string, password: string): Promise<ApiResponse<{ user: User; token: string }>> {
+    return this.request('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+  }
+
+  async logout(): Promise<ApiResponse> {
+    return this.request('/auth/logout', {
+      method: 'POST',
+    });
+  }
+
+  async validateToken(): Promise<ApiResponse<{ valid: boolean; user: User | null }>> {
+    return this.request('/auth/validate', {
+      method: 'POST',
+    });
+  }
+
+  async getCurrentUser(): Promise<ApiResponse<User>> {
+    return this.request('/auth/me');
+  }
+
+  // User endpoints
+  async getUsers(): Promise<ApiResponse<User[]>> {
+    return this.request('/users');
+  }
+
+  async getUserById(id: string): Promise<ApiResponse<User>> {
+    return this.request(`/users/${id}`);
+  }
+
+  async updateUser(id: string, updates: Partial<User>): Promise<ApiResponse<User>> {
+    return this.request(`/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  async deleteUser(id: string): Promise<ApiResponse> {
+    return this.request(`/users/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Project endpoints
+  async getProjects(teamId?: string): Promise<ApiResponse<Project[]>> {
+    const params = teamId ? `?teamId=${teamId}` : '';
+    return this.request(`/projects${params}`);
+  }
+
+  async getProjectById(id: string): Promise<ApiResponse<Project>> {
+    return this.request(`/projects/${id}`);
+  }
+
+  async createProject(projectData: {
+    name: string;
+    teamId?: string;
+    shortId?: string;
+  }): Promise<ApiResponse<Project>> {
+    return this.request('/projects', {
+      method: 'POST',
+      body: JSON.stringify(projectData),
+    });
+  }
+
+  async updateProject(id: string, updates: Partial<Project>): Promise<ApiResponse<Project>> {
+    return this.request(`/projects/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  async deleteProject(id: string): Promise<ApiResponse> {
+    return this.request(`/projects/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async addProjectMember(projectId: string, userId: string, role: string = 'member'): Promise<ApiResponse> {
+    return this.request(`/projects/${projectId}/members`, {
+      method: 'POST',
+      body: JSON.stringify({ userId, role }),
+    });
+  }
+
+  async removeProjectMember(projectId: string, userId: string): Promise<ApiResponse> {
+    return this.request(`/projects/${projectId}/members/${userId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getProjectLabels(projectId: string): Promise<ApiResponse> {
+    return this.request(`/projects/${projectId}/labels`);
+  }
+
+  async createProjectLabel(projectId: string, labelData: {
+    name: string;
+    labelColorId: string;
+  }): Promise<ApiResponse> {
+    return this.request(`/projects/${projectId}/labels`, {
+      method: 'POST',
+      body: JSON.stringify(labelData),
+    });
+  }
+
+  async updateProjectLabel(projectId: string, labelId: string, updates: {
+    name?: string;
+    labelColorId?: string;
+  }): Promise<ApiResponse> {
+    return this.request(`/projects/${projectId}/labels/${labelId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  async deleteProjectLabel(projectId: string, labelId: string): Promise<ApiResponse> {
+    return this.request(`/projects/${projectId}/labels/${labelId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Task endpoints
+  async getMyTasks(status: string = 'ALL', sort: string = 'NONE'): Promise<ApiResponse<{
+    tasks: Task[];
+    projects: Array<{ projectID: string; taskID: string }>;
+  }>> {
+    return this.request(`/tasks/my-tasks?status=${status}&sort=${sort}`);
+  }
+
+  async createTask(taskData: {
+    taskGroupId: string;
+    name: string;
+    description?: string;
+    dueDate?: string;
+    hasTime?: boolean;
+  }): Promise<ApiResponse<Task>> {
+    return this.request('/tasks', {
+      method: 'POST',
+      body: JSON.stringify(taskData),
+    });
+  }
+
+  async createTaskGroup(groupData: {
+    projectId: string;
+    name: string;
+    position?: number;
+  }): Promise<ApiResponse<{ _id: string; name: string; position: number; tasks: Task[] }>> {
+    return this.request('/tasks/groups', {
+      method: 'POST',
+      body: JSON.stringify(groupData),
+    });
+  }
+
+  async updateTaskGroup(id: string, updates: {
+    name?: string;
+    position?: number;
+  }): Promise<ApiResponse<{ _id: string; name: string; position: number }>> {
+    return this.request(`/tasks/groups/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  async getTaskById(id: string): Promise<ApiResponse<Task>> {
+    return this.request(`/tasks/${id}`);
+  }
+
+  async updateTask(id: string, updates: Partial<Task>): Promise<ApiResponse<Task>> {
+    return this.request(`/tasks/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  async deleteTask(id: string): Promise<ApiResponse> {
+    return this.request(`/tasks/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async assignUserToTask(taskId: string, userId: string): Promise<ApiResponse> {
+    return this.request(`/tasks/${taskId}/assign`, {
+      method: 'POST',
+      body: JSON.stringify({ userId }),
+    });
+  }
+
+  async unassignUserFromTask(taskId: string, userId: string): Promise<ApiResponse> {
+    return this.request(`/tasks/${taskId}/assign/${userId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async addLabelToTask(taskId: string, projectLabelId: string): Promise<ApiResponse> {
+    return this.request(`/tasks/${taskId}/labels`, {
+      method: 'POST',
+      body: JSON.stringify({ projectLabelId }),
+    });
+  }
+
+  async removeLabelFromTask(taskId: string, labelId: string): Promise<ApiResponse> {
+    return this.request(`/tasks/${taskId}/labels/${labelId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Label color endpoints
+  async getLabelColors(): Promise<ApiResponse<LabelColor[]>> {
+    return this.request('/label-colors');
+  }
+}
+
+// Create and export a singleton instance
+export const apiClient = new ApiClient();
+
+// Export types for use in components
+
