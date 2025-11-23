@@ -13,7 +13,7 @@ export const getMyTasks = asyncHandler(async (req: Request, res: Response) => {
     .populate({
       path: 'taskId',
       populate: [
-        { path: 'taskGroupId', populate: { path: 'projectId', select: 'name shortId' } },
+        { path: 'taskGroupId', select: 'name projectId' },
         { path: 'assigned', populate: { path: 'userId', select: 'username fullName initials profileIcon' } },
         { path: 'labels', populate: { path: 'projectLabelId', populate: { path: 'labelColorId' } } }
       ]
@@ -79,7 +79,13 @@ export const getMyTasks = asyncHandler(async (req: Request, res: Response) => {
   // Apply sorting
   switch (sort) {
     case 'PROJECT':
-      tasks.sort((a, b) => (a.taskGroupId as any).projectId.name.localeCompare((b.taskGroupId as any).projectId.name));
+      // Note: projectId is a string, so we can't sort by project name without fetching projects
+      // For now, sort by projectId string value
+      tasks.sort((a, b) => {
+        const projectIdA = (a.taskGroupId as any)?.projectId || '';
+        const projectIdB = (b.taskGroupId as any)?.projectId || '';
+        return projectIdA.localeCompare(projectIdB);
+      });
       break;
     case 'DUE_DATE':
       tasks.sort((a, b) => {
@@ -96,7 +102,7 @@ export const getMyTasks = asyncHandler(async (req: Request, res: Response) => {
 
   // Create project mapping
   const projectMapping = tasks.map(task => ({
-    projectID: (task.taskGroupId as any).projectId._id,
+    projectID: (task.taskGroupId as any)?.projectId || task.taskGroupId,
     taskID: task._id,
   }));
 
@@ -115,13 +121,13 @@ export const createTask = asyncHandler(async (req: Request, res: Response) => {
   const { taskGroupId, name, description, dueDate, hasTime } = req.body;
 
   // Check if user has access to this task group's project
-  const taskGroup = await TaskGroup.findById(taskGroupId).populate('projectId');
+  const taskGroup = await TaskGroup.findById(taskGroupId);
   if (!taskGroup) {
     throw new AppError('Task group not found', 404);
   }
 
   const projectMember = await ProjectMember.findOne({
-    projectId: (taskGroup.projectId as any)._id,
+    projectId: taskGroup.projectId,
     userId: user._id
   });
 
@@ -186,9 +192,15 @@ export const getTaskById = asyncHandler(async (req: Request, res: Response) => {
     throw new AppError('Task not found', 404);
   }
 
+  // Get the task group to access projectId
+  const taskGroup = await TaskGroup.findById(task.taskGroupId);
+  if (!taskGroup) {
+    throw new AppError('Task group not found', 404);
+  }
+
   // Check if user has access to this task's project
   const projectMember = await ProjectMember.findOne({
-    projectId: (task.taskGroupId as any).projectId,
+    projectId: taskGroup.projectId,
     userId: user._id
   });
 
@@ -208,14 +220,20 @@ export const updateTask = asyncHandler(async (req: Request, res: Response) => {
   const user = (req as any).user;
   const updates = req.body;
 
-  const task = await Task.findById(id).populate('taskGroupId', 'projectId');
+  const task = await Task.findById(id);
   if (!task) {
     throw new AppError('Task not found', 404);
   }
 
+  // Get the task group to access projectId
+  const taskGroup = await TaskGroup.findById(task.taskGroupId);
+  if (!taskGroup) {
+    throw new AppError('Task group not found', 404);
+  }
+
   // Check if user has access to this task's project
   const projectMember = await ProjectMember.findOne({
-    projectId: (task.taskGroupId as any).projectId,
+    projectId: taskGroup.projectId,
     userId: user._id
   });
 
@@ -227,7 +245,11 @@ export const updateTask = asyncHandler(async (req: Request, res: Response) => {
   const allowedFields = ['name', 'description', 'dueDate', 'hasTime', 'complete', 'position', 'taskGroupId'];
   allowedFields.forEach(field => {
     if (updates[field] !== undefined) {
-      (task as any)[field] = updates[field];
+      if (field === 'dueDate' && updates[field] !== null) {
+        (task as any)[field] = new Date(updates[field]);
+      } else {
+        (task as any)[field] = updates[field];
+      }
     }
   });
 
@@ -256,14 +278,20 @@ export const deleteTask = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const user = (req as any).user;
 
-  const task = await Task.findById(id).populate('taskGroupId', 'projectId');
+  const task = await Task.findById(id);
   if (!task) {
     throw new AppError('Task not found', 404);
   }
 
+  // Get the task group to access projectId
+  const taskGroup = await TaskGroup.findById(task.taskGroupId);
+  if (!taskGroup) {
+    throw new AppError('Task group not found', 404);
+  }
+
   // Check if user has access to this task's project
   const projectMember = await ProjectMember.findOne({
-    projectId: (task.taskGroupId as any).projectId,
+    projectId: taskGroup.projectId,
     userId: user._id
   });
 
@@ -288,14 +316,20 @@ export const assignUserToTask = asyncHandler(async (req: Request, res: Response)
   const { userId } = req.body;
   const currentUser = (req as any).user;
 
-  const task = await Task.findById(id).populate('taskGroupId', 'projectId');
+  const task = await Task.findById(id);
   if (!task) {
     throw new AppError('Task not found', 404);
   }
 
+  // Get the task group to access projectId
+  const taskGroup = await TaskGroup.findById(task.taskGroupId);
+  if (!taskGroup) {
+    throw new AppError('Task group not found', 404);
+  }
+
   // Check if current user has access to this task's project
   const projectMember = await ProjectMember.findOne({
-    projectId: (task.taskGroupId as any).projectId,
+    projectId: taskGroup.projectId,
     userId: currentUser._id
   });
 
@@ -328,14 +362,20 @@ export const unassignUserFromTask = asyncHandler(async (req: Request, res: Respo
   const { id, userId } = req.params;
   const currentUser = (req as any).user;
 
-  const task = await Task.findById(id).populate('taskGroupId', 'projectId');
+  const task = await Task.findById(id);
   if (!task) {
     throw new AppError('Task not found', 404);
   }
 
+  // Get the task group to access projectId
+  const taskGroup = await TaskGroup.findById(task.taskGroupId);
+  if (!taskGroup) {
+    throw new AppError('Task group not found', 404);
+  }
+
   // Check if current user has access to this task's project
   const projectMember = await ProjectMember.findOne({
-    projectId: (task.taskGroupId as any).projectId,
+    projectId: taskGroup.projectId,
     userId: currentUser._id
   });
 
@@ -357,14 +397,20 @@ export const addLabelToTask = asyncHandler(async (req: Request, res: Response) =
   const { projectLabelId } = req.body;
   const user = (req as any).user;
 
-  const task = await Task.findById(id).populate('taskGroupId', 'projectId');
+  const task = await Task.findById(id);
   if (!task) {
     throw new AppError('Task not found', 404);
   }
 
+  // Get the task group to access projectId
+  const taskGroup = await TaskGroup.findById(task.taskGroupId);
+  if (!taskGroup) {
+    throw new AppError('Task group not found', 404);
+  }
+
   // Check if user has access to this task's project
   const projectMember = await ProjectMember.findOne({
-    projectId: (task.taskGroupId as any).projectId,
+    projectId: taskGroup.projectId,
     userId: user._id
   });
 
@@ -374,7 +420,7 @@ export const addLabelToTask = asyncHandler(async (req: Request, res: Response) =
 
   // Check if label belongs to the same project
   const projectLabel = await ProjectLabel.findById(projectLabelId);
-  if (!projectLabel || projectLabel.projectId !== (task.taskGroupId as any).projectId) {
+  if (!projectLabel || projectLabel.projectId !== taskGroup.projectId) {
     throw new AppError('Label does not belong to this project', 400);
   }
 
@@ -403,14 +449,20 @@ export const removeLabelFromTask = asyncHandler(async (req: Request, res: Respon
   const { id, labelId } = req.params;
   const user = (req as any).user;
 
-  const task = await Task.findById(id).populate('taskGroupId', 'projectId');
+  const task = await Task.findById(id);
   if (!task) {
     throw new AppError('Task not found', 404);
   }
 
+  // Get the task group to access projectId
+  const taskGroup = await TaskGroup.findById(task.taskGroupId);
+  if (!taskGroup) {
+    throw new AppError('Task group not found', 404);
+  }
+
   // Check if user has access to this task's project
   const projectMember = await ProjectMember.findOne({
-    projectId: (task.taskGroupId as any).projectId,
+    projectId: taskGroup.projectId,
     userId: user._id
   });
 

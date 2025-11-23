@@ -45,7 +45,7 @@ describe('Task Controller', () => {
             const req = mockRequest({
                 user: testUser,
                 body: {
-                    taskGroupId: testTaskGroup._id,
+                    taskGroupId: testTaskGroup._id.toString(),
                     name: 'New Test Task',
                     description: 'Task description',
                     dueDate: new Date().toISOString(),
@@ -72,14 +72,14 @@ describe('Task Controller', () => {
             // Verify task was created in database
             const task = await Task.findOne({ name: 'New Test Task' });
             expect(task).toBeTruthy();
-            expect(task?.taskGroupId).toBe(testTaskGroup._id);
+            expect(task?.taskGroupId.toString()).toBe(testTaskGroup._id.toString());
         });
 
         it('should assign creator to task if they have member role', async () => {
             const req = mockRequest({
                 user: testUser,
                 body: {
-                    taskGroupId: testTaskGroup._id,
+                    taskGroupId: testTaskGroup._id.toString(),
                     name: 'Task with Assignment',
                     description: 'Test',
                 },
@@ -125,10 +125,13 @@ describe('Task Controller', () => {
                 username: 'unauthorized',
             });
 
+            // Ensure taskGroupId is a string for consistent lookup
+            const taskGroupIdStr = testTaskGroup._id.toString();
+
             const req = mockRequest({
                 user: unauthorizedUser,
                 body: {
-                    taskGroupId: testTaskGroup._id,
+                    taskGroupId: taskGroupIdStr,
                     name: 'Unauthorized Task',
                 },
             });
@@ -197,7 +200,7 @@ describe('Task Controller', () => {
 
             const req = mockRequest({
                 user: unauthorizedUser,
-                params: { id: task._id },
+                params: { id: task._id.toString() },
             });
             const res = mockResponse();
             const next = mockNext();
@@ -318,7 +321,7 @@ describe('Task Controller', () => {
 
             const req = mockRequest({
                 user: observerUser,
-                params: { id: task._id },
+                params: { id: task._id.toString() },
             });
             const res = mockResponse();
             const next = mockNext();
@@ -442,8 +445,8 @@ describe('Task Controller', () => {
 
             const req = mockRequest({
                 user: testUser,
-                params: { id: task._id },
-                body: { userId: userToAssign._id },
+                params: { id: task._id.toString() },
+                body: { userId: userToAssign._id.toString() },
             });
             const res = mockResponse();
             const next = mockNext();

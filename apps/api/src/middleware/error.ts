@@ -73,7 +73,7 @@ export const notFound = (req: Request, res: Response, next: NextFunction): void 
 };
 
 export const asyncHandler = (fn: Function) => (req: Request, res: Response, next: NextFunction) => {
-  Promise.resolve(fn(req, res, next)).catch(next);
+  return Promise.resolve(fn(req, res, next)).catch(next);
 };
 
 
