@@ -103,6 +103,17 @@ export interface LabelColor {
   position: number;
 }
 
+export interface Team {
+  _id: string;
+  name: string;
+  organizationId: string | {
+    _id: string;
+    name: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
 class ApiClient {
   private baseUrl: string;
   private defaultHeaders: HeadersInit;
@@ -286,6 +297,38 @@ class ApiClient {
 
   async deleteProjectLabel(projectId: string, labelId: string): Promise<ApiResponse> {
     return this.request(`/projects/${projectId}/labels/${labelId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Team endpoints
+  async getTeams(): Promise<ApiResponse<Team[]>> {
+    return this.request('/teams');
+  }
+
+  async getTeamById(id: string): Promise<ApiResponse<Team>> {
+    return this.request(`/teams/${id}`);
+  }
+
+  async createTeam(teamData: {
+    name: string;
+    organizationId?: string;
+  }): Promise<ApiResponse<Team>> {
+    return this.request('/teams', {
+      method: 'POST',
+      body: JSON.stringify(teamData),
+    });
+  }
+
+  async updateTeam(id: string, updates: Partial<Team>): Promise<ApiResponse<Team>> {
+    return this.request(`/teams/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  async deleteTeam(id: string): Promise<ApiResponse> {
+    return this.request(`/teams/${id}`, {
       method: 'DELETE',
     });
   }

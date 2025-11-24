@@ -17,6 +17,7 @@ import userRoutes from './routes/users';
 import projectRoutes from './routes/projects';
 import taskRoutes from './routes/tasks';
 import labelColorRoutes from './routes/labelColors';
+import teamRoutes from './routes/teams';
 
 // Import passport config
 import './config/passport';
@@ -94,6 +95,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/label-colors', labelColorRoutes);
+app.use('/api/teams', teamRoutes);
 
 // 404 handler
 app.use(notFound);

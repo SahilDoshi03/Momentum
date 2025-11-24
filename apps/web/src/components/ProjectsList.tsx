@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Plus } from '@/components/icons';
-import { apiClient, Project } from '@/lib/api';
+import { apiClient, Project, Team } from '@/lib/api';
 
 export const ProjectsList: React.FC = () => {
   const [showNewProject, setShowNewProject] = useState(false);
@@ -16,43 +16,59 @@ export const ProjectsList: React.FC = () => {
   const [newTeamName, setNewTeamName] = useState('');
 
   const [projects, setProjects] = useState<Project[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
 
-  // Fetch projects on mount
+  // Fetch projects and teams on mount
   React.useEffect(() => {
-    const fetchProjects = async () => {
+    const fetchData = async () => {
       try {
-        const response = await apiClient.getProjects();
-        if (response.success && response.data) {
-          setProjects(response.data);
+        const [projectsResponse, teamsResponse] = await Promise.all([
+          apiClient.getProjects(),
+          apiClient.getTeams()
+        ]);
+        
+        if (projectsResponse.success && projectsResponse.data) {
+          setProjects(projectsResponse.data);
+        }
+        
+        if (teamsResponse.success && teamsResponse.data) {
+          setTeams(teamsResponse.data);
         }
       } catch (error) {
-        console.error('Failed to fetch projects:', error);
-        toast.error('Failed to load projects');
+        console.error('Failed to fetch data:', error);
+        toast.error('Failed to load data');
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchProjects();
+    fetchData();
   }, []);
 
   // Separate personal and team projects
   const personalProjects = projects.filter(p => !p.teamId);
 
-  // Group team projects
-  const teamProjectsMap = new Map();
+  // Group team projects by team
+  const teamProjectsMap = new Map<string, { id: string; name: string; projects: Project[] }>();
+  
+  // Initialize all teams in the map (even if they have no projects)
+  teams.forEach(team => {
+    teamProjectsMap.set(team._id, {
+      id: team._id,
+      name: team.name,
+      projects: []
+    });
+  });
+  
+  // Add projects to their respective teams
   projects.forEach(p => {
     if (p.teamId && typeof p.teamId === 'object') {
       const team = p.teamId;
-      if (!teamProjectsMap.has(team._id)) {
-        teamProjectsMap.set(team._id, {
-          id: team._id,
-          name: team.name,
-          projects: []
-        });
+      if (teamProjectsMap.has(team._id)) {
+        teamProjectsMap.get(team._id)!.projects.push(p);
       }
-      teamProjectsMap.get(team._id).projects.push(p);
     }
   });
 
@@ -63,13 +79,15 @@ export const ProjectsList: React.FC = () => {
       try {
         const response = await apiClient.createProject({
           name: newProjectName,
-          shortId: newProjectName.substring(0, 3).toUpperCase()
+          shortId: newProjectName.substring(0, 3).toUpperCase(),
+          teamId: selectedTeamId || undefined
         });
 
         if (response.success && response.data) {
           setProjects([...projects, response.data as Project]);
           toast.success(`Project "${newProjectName}" created successfully!`);
           setNewProjectName('');
+          setSelectedTeamId(null);
           setShowNewProject(false);
         }
       } catch (error) {
@@ -79,9 +97,28 @@ export const ProjectsList: React.FC = () => {
     }
   };
 
-  const handleCreateTeam = () => {
-    toast.info('Team creation is coming soon!');
-    setShowNewTeam(false);
+  const handleCreateTeam = async () => {
+    if (newTeamName.trim()) {
+      try {
+        const response = await apiClient.createTeam({
+          name: newTeamName,
+        });
+
+        if (response.success && response.data) {
+          toast.success(`Team "${newTeamName}" created successfully!`);
+          setNewTeamName('');
+          setShowNewTeam(false);
+          // Refresh teams to show the new team
+          const teamsResponse = await apiClient.getTeams();
+          if (teamsResponse.success && teamsResponse.data) {
+            setTeams(teamsResponse.data);
+          }
+        }
+      } catch (error: any) {
+        console.error('Failed to create team:', error);
+        toast.error(error.message || 'Failed to create team');
+      }
+    }
   };
 
   const projectColors = ['#e362e3', '#7a6ff0', '#37c5ab', '#aa62e3', '#e8384f'];
@@ -130,7 +167,10 @@ export const ProjectsList: React.FC = () => {
 
           {/* Create new project tile */}
           <button
-            onClick={() => setShowNewProject(true)}
+            onClick={() => {
+              setSelectedTeamId(null);
+              setShowNewProject(true);
+            }}
             className="h-24 rounded-lg border-2 border-dashed border-[var(--border)] bg-[var(--bg-secondary)] hover:border-[var(--primary)] hover:bg-[var(--bg-primary)] transition-colors flex items-center justify-center group"
           >
             <div className="text-center">
@@ -187,7 +227,10 @@ export const ProjectsList: React.FC = () => {
 
             {/* Create new project tile for team */}
             <button
-              onClick={() => setShowNewProject(true)}
+              onClick={() => {
+                setSelectedTeamId(team.id);
+                setShowNewProject(true);
+              }}
               className="h-24 rounded-lg border-2 border-dashed border-[var(--border)] bg-[var(--bg-secondary)] hover:border-[var(--primary)] hover:bg-[var(--bg-primary)] transition-colors flex items-center justify-center group"
             >
               <div className="text-center">
