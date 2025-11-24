@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { Project, ProjectMember, TaskGroup, Task, ProjectLabel, LabelColor } from '../models';
+import { Project, ProjectMember, TaskGroup, ProjectLabel } from '../models';
 import { AppError, asyncHandler } from '../middleware';
 
 // Get all projects for user
@@ -7,7 +7,7 @@ export const getProjects = asyncHandler(async (req: Request, res: Response) => {
   const user = (req as any).user;
   const { teamId } = req.query;
 
-  let query: any = {};
+  const query: any = {};
   if (teamId) {
     query.teamId = teamId;
   }

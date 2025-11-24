@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import { User, TeamMember, ProjectMember } from '../models';
-import { validateUserUpdate, authenticateToken, requireAdmin } from '../middleware';
 import { AppError, asyncHandler } from '../middleware';
 
 // Get all users (admin only)

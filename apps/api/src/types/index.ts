@@ -82,7 +82,7 @@ export interface ITask extends Document {
   completedAt?: Date;
   dueDate?: Date;
   hasTime: {
-    type: Boolean,
+    type: boolean,
     default: false,
   },
   assigned: Array<{

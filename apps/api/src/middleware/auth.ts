@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { User } from '../models';
 import { config } from '../config';
@@ -11,7 +11,7 @@ export const authenticateToken = async (
 ): Promise<void> => {
   try {
     const token = req.cookies?.authToken || req.headers.authorization?.split(' ')[1];
-    
+
     if (!token) {
       res.status(401).json({ message: 'Access token required' });
       return;
@@ -19,7 +19,7 @@ export const authenticateToken = async (
 
     const decoded = jwt.verify(token, config.jwtSecret) as JWTPayload;
     const user = await User.findById(decoded.userId).select('-password');
-    
+
     if (!user || !user.active) {
       res.status(401).json({ message: 'Invalid or expired token' });
       return;

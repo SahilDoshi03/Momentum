@@ -17,7 +17,7 @@ export const ProjectsList: React.FC = () => {
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // const [isLoading, setIsLoading] = useState(true);
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
 
   // Fetch projects and teams on mount
@@ -28,11 +28,11 @@ export const ProjectsList: React.FC = () => {
           apiClient.getProjects(),
           apiClient.getTeams()
         ]);
-        
+
         if (projectsResponse.success && projectsResponse.data) {
           setProjects(projectsResponse.data);
         }
-        
+
         if (teamsResponse.success && teamsResponse.data) {
           setTeams(teamsResponse.data);
         }
@@ -40,7 +40,7 @@ export const ProjectsList: React.FC = () => {
         console.error('Failed to fetch data:', error);
         toast.error('Failed to load data');
       } finally {
-        setIsLoading(false);
+        // setIsLoading(false);
       }
     };
 
@@ -52,7 +52,7 @@ export const ProjectsList: React.FC = () => {
 
   // Group team projects by team
   const teamProjectsMap = new Map<string, { id: string; name: string; projects: Project[] }>();
-  
+
   // Initialize all teams in the map (even if they have no projects)
   teams.forEach(team => {
     teamProjectsMap.set(team._id, {
@@ -61,7 +61,7 @@ export const ProjectsList: React.FC = () => {
       projects: []
     });
   });
-  
+
   // Add projects to their respective teams
   projects.forEach(p => {
     if (p.teamId && typeof p.teamId === 'object') {
@@ -114,9 +114,10 @@ export const ProjectsList: React.FC = () => {
             setTeams(teamsResponse.data);
           }
         }
-      } catch (error: any) {
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to create team';
         console.error('Failed to create team:', error);
-        toast.error(error.message || 'Failed to create team');
+        toast.error(message);
       }
     }
   };

@@ -18,13 +18,13 @@ import { Task } from '@/lib/api';
 interface TaskCardProps {
   task: Task;
   onUpdate: (taskId: string, updates: Partial<Task>) => void;
-  onDelete: (taskId: string) => void;
+  // onDelete: (taskId: string) => void;
 }
 
 export const TaskCard: React.FC<TaskCardProps> = ({
   task,
   onUpdate,
-  onDelete,
+  // onDelete,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(task.name);

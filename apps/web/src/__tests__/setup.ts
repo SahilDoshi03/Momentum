@@ -2,7 +2,7 @@ import '@testing-library/jest-dom';
 import React from 'react';
 
 // Mock next/router
-jest.mock('next/router', () => require('next-router-mock'));
+jest.mock('next/router', () => import('next-router-mock'));
 
 // Mock next/navigation
 jest.mock('next/navigation', () => ({
@@ -16,7 +16,7 @@ jest.mock('next/navigation', () => ({
 
 // Mock @dnd-kit modules
 jest.mock('@dnd-kit/core', () => ({
-    DndContext: ({ children }: any) => React.createElement('div', null, children),
+    DndContext: ({ children }: { children: React.ReactNode }) => React.createElement('div', null, children),
     useSensor: jest.fn(),
     useSensors: jest.fn(() => []),
     PointerSensor: jest.fn(),
@@ -24,7 +24,7 @@ jest.mock('@dnd-kit/core', () => ({
 }));
 
 jest.mock('@dnd-kit/sortable', () => ({
-    SortableContext: ({ children }: any) => React.createElement('div', null, children),
+    SortableContext: ({ children }: { children: React.ReactNode }) => React.createElement('div', null, children),
     useSortable: () => ({
         attributes: {},
         listeners: {},

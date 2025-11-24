@@ -21,6 +21,7 @@ import './commands';
 
 // Prevent TypeScript errors
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Cypress {
     interface Chainable {
       /**
@@ -28,7 +29,7 @@ declare global {
        * @example cy.login('user@example.com', 'password123')
        */
       login(email: string, password: string): Chainable<void>;
-      
+
       /**
        * Custom command to logout a user
        * @example cy.logout()

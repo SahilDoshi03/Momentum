@@ -13,13 +13,13 @@ import { Sun, Moon, User, Settings } from '@/components/icons';
 interface TopNavbarProps {
   projectName?: string | null;
   projectID?: string | null;
-  onSaveProjectName?: (name: string) => void;
+  // onSaveProjectName?: (name: string) => void;
 }
 
 export const TopNavbar: React.FC<TopNavbarProps> = ({
   projectName,
   projectID,
-  onSaveProjectName,
+  // onSaveProjectName,
 }) => {
   const { theme, setTheme } = useTheme();
   const router = useRouter();
