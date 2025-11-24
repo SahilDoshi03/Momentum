@@ -1,28 +1,32 @@
 {
-    "name": "momentum-monorepo",
-    "private": true,
-    "workspaces": [
-        "apps/*",
-        "packages/*"
-    ],
-    "scripts": {
-        "dev": "turbo run dev",
-        "build": "turbo run build",
-        "test": "turbo run test",
-        "test:e2e": "turbo run test:e2e",
-        "lint": "turbo run lint",
-        "web:dev": "turbo run dev --filter=@momentum/web",
-        "web:build": "turbo run build --filter=@momentum/web",
-        "web:test": "turbo run test --filter=@momentum/web",
-        "web:test:e2e": "turbo run test:e2e --filter=@momentum/web",
-        "web:lint": "turbo run lint --filter=@momentum/web",
-        "api:dev": "turbo run dev --filter=@momentum/api",
-        "api:build": "turbo run build --filter=@momentum/api",
-        "api:test": "turbo run test --filter=@momentum/api",
-        "api:lint": "turbo run lint --filter=@momentum/api"
-    },
-    "packageManager": "npm@11.4.1",
-    "devDependencies": {
-        "turbo": "^2.0.0"
-    }
+  "name": "momentum-monorepo",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "test:e2e": "turbo run test:e2e",
+    "lint": "turbo run lint",
+    "web:dev": "turbo run dev --filter=@momentum/web",
+    "web:build": "turbo run build --filter=@momentum/web",
+    "web:test": "turbo run test --filter=@momentum/web",
+    "web:test:e2e": "turbo run test:e2e --filter=@momentum/web",
+    "web:lint": "turbo run lint --filter=@momentum/web",
+    "api:dev": "turbo run dev --filter=@momentum/api",
+    "api:build": "turbo run build --filter=@momentum/api",
+    "api:test": "turbo run test --filter=@momentum/api",
+    "api:lint": "turbo run lint --filter=@momentum/api",
+    "prepare": "husky"
+  },
+  "packageManager": "npm@11.4.1",
+  "devDependencies": {
+    "@commitlint/cli": "^20.1.0",
+    "@commitlint/config-conventional": "^20.0.0",
+    "husky": "^9.1.7",
+    "turbo": "^2.0.0"
+  }
 }
