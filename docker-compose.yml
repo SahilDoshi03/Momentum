@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: dev
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: npm run dev --workspace=@momentum/api
+    environment:
+      - NODE_ENV=development
+    networks:
+      - momentum-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      target: dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: npm run dev --workspace=@momentum/web
+    environment:
+      - NODE_ENV=development
+    depends_on:
+      - backend
+    networks:
+      - momentum-network
+
+networks:
+  momentum-network:
+    driver: bridge
