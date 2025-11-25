@@ -19,12 +19,14 @@ interface TaskCardProps {
   task: Task;
   onUpdate: (taskId: string, updates: Partial<Task>) => void;
   onDelete: (taskId: string) => void;
+  onClick: () => void;
 }
 
 export const TaskCard: React.FC<TaskCardProps> = ({
   task,
   onUpdate,
   onDelete,
+  onClick,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(task.name);
@@ -82,6 +84,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           'p-3 hover:shadow-md transition-all group',
           task.complete && 'opacity-60'
         )}
+        onClick={onClick}
       >
         {/* Labels */}
         {task.labels && task.labels.length > 0 && (

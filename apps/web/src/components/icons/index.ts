@@ -9,3 +9,4 @@ export { Tags } from './Tags';
 export { Settings } from './Settings';
 export { Moon } from './Moon';
 export { Sun } from './Sun';
+export { Trash } from './Trash';

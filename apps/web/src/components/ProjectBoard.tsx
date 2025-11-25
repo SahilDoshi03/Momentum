@@ -20,6 +20,7 @@ import { SortableTaskList } from './SortableTaskList';
 import { AddList } from './AddList';
 import { apiClient, Project, Task, User } from '@/lib/api';
 import { Dropdown, DropdownItem, DropdownHeader } from '@/components/ui/Dropdown';
+import { TaskDetailModal } from './TaskDetailModal';
 
 // Project interface is now imported from api.ts
 
@@ -41,6 +42,7 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   // Filter and Sort State
   const [filterBy, setFilterBy] = useState<'all' | 'mine' | 'completed' | 'incomplete'>('all');
@@ -469,6 +471,14 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
     );
   };
 
+  const handleTaskClick = (task: Task) => {
+    setSelectedTask(task);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedTask(null);
+  };
+
   if (isLoading) {
     return (
       <div className="flex-1 p-6 flex items-center justify-center">
@@ -627,6 +637,7 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
                 onUpdateTask={handleUpdateTask}
                 onDeleteTask={handleDeleteTask}
                 onCreateTask={handleCreateTask}
+                onTaskClick={handleTaskClick} // Pass this down
                 isDragOverlay={!!(activeId && (list.tasks || []).some((t: Task) => t._id === activeId))}
               />
             ))}
@@ -636,6 +647,23 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
           </div>
         </SortableContext>
       </DndContext>
+
+      {/* Task Detail Modal */}
+      {selectedTask && project && (
+        <TaskDetailModal
+          isOpen={!!selectedTask}
+          onClose={handleCloseModal}
+          task={selectedTask}
+          project={project}
+          currentUser={currentUser}
+          onUpdateTask={(taskId, updates) => {
+            handleUpdateTask(taskId, updates);
+            // Update local selected task state to reflect changes immediately in modal
+            setSelectedTask(prev => prev ? { ...prev, ...updates } : null);
+          }}
+          onDeleteTask={handleDeleteTask}
+        />
+      )}
     </div>
   );
 };

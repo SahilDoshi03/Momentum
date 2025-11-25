@@ -2,7 +2,7 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'success';
   size?: 'sm' | 'md' | 'lg';
   children: React.ReactNode;
 }
@@ -15,13 +15,14 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const baseClasses = 'inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none';
-  
+
   const variantClasses = {
     primary: 'bg-[var(--primary)] text-white hover:bg-[var(--primary)]/90',
     secondary: 'bg-[var(--bg-secondary)] text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]/80',
     outline: 'border border-[var(--border)] bg-transparent hover:bg-[var(--bg-secondary)]',
     ghost: 'hover:bg-[var(--bg-secondary)] hover:text-[var(--text-secondary)]',
     danger: 'bg-[var(--danger)] text-white hover:bg-[var(--danger)]/90',
+    success: 'bg-[var(--success)] text-white hover:bg-[var(--success)]/90',
   };
 
   const sizeClasses = {

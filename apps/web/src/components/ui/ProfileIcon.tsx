@@ -1,4 +1,4 @@
-import React from 'react';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
 interface ProfileIconProps {
@@ -7,7 +7,7 @@ interface ProfileIconProps {
     initials: string;
     avatar?: string | null;
   };
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'xs' | 'sm' | 'md' | 'lg';
   className?: string;
 }
 
@@ -17,6 +17,7 @@ export const ProfileIcon: React.FC<ProfileIconProps> = ({
   className,
 }) => {
   const sizeClasses = {
+    xs: 'h-5 w-5 text-[10px]',
     sm: 'h-6 w-6 text-xs',
     md: 'h-8 w-8 text-sm',
     lg: 'h-12 w-12 text-lg',
@@ -24,15 +25,14 @@ export const ProfileIcon: React.FC<ProfileIconProps> = ({
 
   if (user.avatar) {
     return (
-      <img
-        src={user.avatar}
-        alt={user.fullName}
-        className={cn(
-          'rounded-full object-cover',
-          sizeClasses[size],
-          className
-        )}
-      />
+      <div className={cn('relative rounded-full overflow-hidden', sizeClasses[size], className)}>
+        <Image
+          src={user.avatar}
+          alt={user.fullName}
+          fill
+          className="object-cover"
+        />
+      </div>
     );
   }
 

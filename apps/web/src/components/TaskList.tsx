@@ -26,6 +26,7 @@ interface TaskListProps {
   onUpdateTask: (taskId: string, updates: Partial<Task>) => void;
   onDeleteTask: (taskId: string) => void;
   onCreateTask: (listId: string, name: string) => void;
+  onTaskClick: (task: Task) => void;
   isDragOverlay?: boolean;
 }
 
@@ -34,6 +35,7 @@ export const TaskList: React.FC<TaskListProps> = ({
   onUpdateTask,
   onDeleteTask,
   onCreateTask,
+  onTaskClick,
   isDragOverlay = false,
 }) => {
   const [isAddingCard, setIsAddingCard] = useState(false);
@@ -74,6 +76,7 @@ export const TaskList: React.FC<TaskListProps> = ({
               task={task}
               onUpdate={onUpdateTask}
               onDelete={onDeleteTask}
+              onClick={() => onTaskClick(task)}
             />
           ))}
         </div>
