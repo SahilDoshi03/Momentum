@@ -17,10 +17,20 @@ const configPath = join(__dirname, 'mongo-config.json');
 const mongoConfig = JSON.parse(readFileSync(configPath, 'utf-8'));
 process.env.MONGODB_URI = mongoConfig.uri;
 
+import { v4 as uuidv4 } from 'uuid';
+
 // Connect to MongoDB before each test file
 beforeAll(async () => {
     if (mongoose.connection.readyState === 0) {
-        await mongoose.connect(mongoConfig.uri);
+        // Use a unique database for each test file to prevent interference
+        const dbName = `test-${uuidv4()}`;
+        // Ensure URI ends with / before appending db name, or replace existing db name
+        // MongoMemoryServer URI usually ends with /
+        const uri = mongoConfig.uri.endsWith('/')
+            ? `${mongoConfig.uri}${dbName}`
+            : `${mongoConfig.uri}/${dbName}`;
+
+        await mongoose.connect(uri);
     }
 });
 
