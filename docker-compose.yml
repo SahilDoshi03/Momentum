@@ -1,4 +1,20 @@
 services:
+  mongodb:
+    image: mongo:7.0
+    container_name: momentum-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+      MONGO_INITDB_DATABASE: momentum
+    volumes:
+      - mongodb_data:/data/db
+      - ./apps/api/mongo-init:/docker-entrypoint-initdb.d
+    networks:
+      - momentum-network
+
   backend:
     build:
       context: .
@@ -12,6 +28,13 @@ services:
     command: npm run dev --workspace=@momentum/api
     environment:
       - NODE_ENV=development
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/momentum?authSource=admin
+      - PORT=5000
+      - JWT_SECRET=your-super-secret-jwt-key-here
+      - JWT_EXPIRES_IN=7d
+      - FRONTEND_URL=http://localhost:3000
+    depends_on:
+      - mongodb
     networks:
       - momentum-network
 
@@ -32,6 +55,10 @@ services:
       - backend
     networks:
       - momentum-network
+
+volumes:
+  mongodb_data:
+
 
 networks:
   momentum-network:
