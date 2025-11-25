@@ -18,7 +18,8 @@ import { Button } from '@/components/ui/Button';
 import { CheckCircle, Sort, Filter, Tags } from '@/components/icons';
 import { SortableTaskList } from './SortableTaskList';
 import { AddList } from './AddList';
-import { apiClient, Project, Task } from '@/lib/api';
+import { apiClient, Project, Task, User } from '@/lib/api';
+import { Dropdown, DropdownItem, DropdownHeader } from '@/components/ui/Dropdown';
 
 // Project interface is now imported from api.ts
 
@@ -39,6 +40,13 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
   const [taskGroups, setTaskGroups] = useState<TaskGroup[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  // Filter and Sort State
+  const [filterBy, setFilterBy] = useState<'all' | 'mine' | 'completed' | 'incomplete'>('all');
+  const [sortBy, setSortBy] = useState<'none' | 'name-asc' | 'name-desc' | 'date-asc' | 'date-desc'>('none');
+  const [labelFilter, setLabelFilter] = useState<string[]>([]);
+  const [otherFilters, setOtherFilters] = useState<string[]>([]); // 'overdue', 'no-date'
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -48,29 +56,102 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
     })
   );
 
-  // Load project data
+  // Load project data and current user
   useEffect(() => {
-    const loadProject = async () => {
+    const loadData = async () => {
       try {
         setIsLoading(true);
-        const response = await apiClient.getProjectById(projectId);
-        if (response.success && response.data) {
-          setProject(response.data);
-          setTaskGroups((response.data.taskGroups || []).map((group) => ({
+        const [projectRes, userRes] = await Promise.all([
+          apiClient.getProjectById(projectId),
+          apiClient.getCurrentUser()
+        ]);
+
+        if (projectRes.success && projectRes.data) {
+          setProject(projectRes.data);
+          setTaskGroups((projectRes.data.taskGroups || []).map((group) => ({
             ...group,
             tasks: group.tasks || []
           })));
         }
+
+        if (userRes.success && userRes.data) {
+          setCurrentUser(userRes.data);
+        }
       } catch (error) {
-        console.error('Failed to load project:', error);
-        toast.error('Failed to load project');
+        console.error('Failed to load data:', error);
+        toast.error('Failed to load project data');
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadProject();
+    loadData();
   }, [projectId]);
+
+  // Derived state for filtered and sorted tasks
+  const getFilteredTaskGroups = () => {
+    return taskGroups.map(group => {
+      let filteredTasks = [...group.tasks];
+
+      // 1. Filter by Status/Ownership
+      if (filterBy === 'mine' && currentUser) {
+        filteredTasks = filteredTasks.filter(task =>
+          task.assigned?.some(a => a.userId._id === currentUser._id)
+        );
+      } else if (filterBy === 'completed') {
+        filteredTasks = filteredTasks.filter(task => task.complete);
+      } else if (filterBy === 'incomplete') {
+        filteredTasks = filteredTasks.filter(task => !task.complete);
+      }
+
+      // 2. Filter by Labels
+      if (labelFilter.length > 0) {
+        filteredTasks = filteredTasks.filter(task =>
+          task.labels?.some(l => labelFilter.includes(l.projectLabelId._id))
+        );
+      }
+
+      // 3. Other Filters
+      if (otherFilters.includes('overdue')) {
+        const now = new Date();
+        filteredTasks = filteredTasks.filter(task =>
+          task.dueDate && new Date(task.dueDate) < now && !task.complete
+        );
+      }
+      if (otherFilters.includes('no-date')) {
+        filteredTasks = filteredTasks.filter(task => !task.dueDate);
+      }
+
+      // 4. Sort
+      if (sortBy === 'name-asc') {
+        filteredTasks.sort((a, b) => a.name.localeCompare(b.name));
+      } else if (sortBy === 'name-desc') {
+        filteredTasks.sort((a, b) => b.name.localeCompare(a.name));
+      } else if (sortBy === 'date-asc') {
+        filteredTasks.sort((a, b) => {
+          if (!a.dueDate) return 1;
+          if (!b.dueDate) return -1;
+          return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+        });
+      } else if (sortBy === 'date-desc') {
+        filteredTasks.sort((a, b) => {
+          if (!a.dueDate) return 1;
+          if (!b.dueDate) return -1;
+          return new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime();
+        });
+      } else {
+        // Default sort by position
+        filteredTasks.sort((a, b) => a.position - b.position);
+      }
+
+      return {
+        ...group,
+        tasks: filteredTasks
+      };
+    });
+  };
+
+  const filteredTaskGroups = getFilteredTaskGroups();
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
@@ -372,6 +453,22 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
     }
   };
 
+  const toggleLabelFilter = (labelId: string) => {
+    setLabelFilter(prev =>
+      prev.includes(labelId)
+        ? prev.filter(id => id !== labelId)
+        : [...prev, labelId]
+    );
+  };
+
+  const toggleOtherFilter = (filter: string) => {
+    setOtherFilters(prev =>
+      prev.includes(filter)
+        ? prev.filter(f => f !== filter)
+        : [...prev, filter]
+    );
+  };
+
   if (isLoading) {
     return (
       <div className="flex-1 p-6 flex items-center justify-center">
@@ -399,24 +496,116 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-4">
           <h1 className="text-2xl font-bold text-[var(--text-secondary)]">{project.name}</h1>
-          <Button variant="ghost" size="sm">
-            <CheckCircle width={16} height={16} className="mr-2" />
-            All Tasks
-          </Button>
-          <Button variant="ghost" size="sm">
-            <Sort width={16} height={16} className="mr-2" />
-            Sort
-          </Button>
-          <Button variant="ghost" size="sm">
-            <Filter width={16} height={16} className="mr-2" />
-            Filter
-          </Button>
+
+          {/* All Tasks / Filter View */}
+          <Dropdown
+            trigger={
+              <Button variant="ghost" size="sm">
+                <CheckCircle width={16} height={16} className="mr-2" />
+                {filterBy === 'all' ? 'All Tasks' :
+                  filterBy === 'mine' ? 'My Tasks' :
+                    filterBy === 'completed' ? 'Completed' : 'Incomplete'}
+              </Button>
+            }
+          >
+            <DropdownItem active={filterBy === 'all'} onClick={() => setFilterBy('all')}>
+              All Tasks
+            </DropdownItem>
+            <DropdownItem active={filterBy === 'mine'} onClick={() => setFilterBy('mine')}>
+              My Tasks
+            </DropdownItem>
+            <DropdownItem active={filterBy === 'completed'} onClick={() => setFilterBy('completed')}>
+              Completed Tasks
+            </DropdownItem>
+            <DropdownItem active={filterBy === 'incomplete'} onClick={() => setFilterBy('incomplete')}>
+              Incomplete Tasks
+            </DropdownItem>
+          </Dropdown>
+
+          {/* Sort */}
+          <Dropdown
+            trigger={
+              <Button variant="ghost" size="sm">
+                <Sort width={16} height={16} className="mr-2" />
+                Sort
+              </Button>
+            }
+          >
+            <DropdownHeader>Sort By</DropdownHeader>
+            <DropdownItem active={sortBy === 'none'} onClick={() => setSortBy('none')}>
+              None
+            </DropdownItem>
+            <DropdownItem active={sortBy === 'name-asc'} onClick={() => setSortBy('name-asc')}>
+              Name (A-Z)
+            </DropdownItem>
+            <DropdownItem active={sortBy === 'name-desc'} onClick={() => setSortBy('name-desc')}>
+              Name (Z-A)
+            </DropdownItem>
+            <DropdownItem active={sortBy === 'date-asc'} onClick={() => setSortBy('date-asc')}>
+              Due Date (Earliest)
+            </DropdownItem>
+            <DropdownItem active={sortBy === 'date-desc'} onClick={() => setSortBy('date-desc')}>
+              Due Date (Latest)
+            </DropdownItem>
+          </Dropdown>
+
+          {/* Filter */}
+          <Dropdown
+            trigger={
+              <Button variant="ghost" size="sm">
+                <Filter width={16} height={16} className="mr-2" />
+                Filter
+              </Button>
+            }
+          >
+            <DropdownHeader>Filter By</DropdownHeader>
+            <DropdownItem
+              active={otherFilters.includes('overdue')}
+              onClick={() => toggleOtherFilter('overdue')}
+            >
+              Overdue
+            </DropdownItem>
+            <DropdownItem
+              active={otherFilters.includes('no-date')}
+              onClick={() => toggleOtherFilter('no-date')}
+            >
+              No Due Date
+            </DropdownItem>
+          </Dropdown>
         </div>
+
         <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="sm">
-            <Tags width={16} height={16} className="mr-2" />
-            Labels
-          </Button>
+          {/* Labels */}
+          <Dropdown
+            align="right"
+            trigger={
+              <Button variant="ghost" size="sm">
+                <Tags width={16} height={16} className="mr-2" />
+                Labels
+              </Button>
+            }
+          >
+            <DropdownHeader>Filter by Label</DropdownHeader>
+            {project.labels && project.labels.length > 0 ? (
+              project.labels.map(label => (
+                <DropdownItem
+                  key={label._id}
+                  active={labelFilter.includes(label._id)}
+                  onClick={() => toggleLabelFilter(label._id)}
+                >
+                  <div className="flex items-center">
+                    <div
+                      className="w-3 h-3 rounded-full mr-2"
+                      style={{ backgroundColor: label.labelColorId.colorHex }}
+                    />
+                    {label.name}
+                  </div>
+                </DropdownItem>
+              ))
+            ) : (
+              <div className="px-4 py-2 text-sm text-[var(--text-tertiary)]">No labels found</div>
+            )}
+          </Dropdown>
         </div>
       </div>
 
@@ -427,11 +616,11 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
         onDragEnd={handleDragEnd}
       >
         <SortableContext
-          items={taskGroups.map(group => group._id)}
+          items={filteredTaskGroups.map(group => group._id)}
           strategy={horizontalListSortingStrategy}
         >
           <div className="flex space-x-4 overflow-x-auto pb-4">
-            {taskGroups.map((list) => (
+            {filteredTaskGroups.map((list) => (
               <SortableTaskList
                 key={list._id}
                 list={list}

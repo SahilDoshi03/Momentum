@@ -18,13 +18,13 @@ import { Task } from '@/lib/api';
 interface TaskCardProps {
   task: Task;
   onUpdate: (taskId: string, updates: Partial<Task>) => void;
-  // onDelete: (taskId: string) => void;
+  onDelete: (taskId: string) => void;
 }
 
 export const TaskCard: React.FC<TaskCardProps> = ({
   task,
   onUpdate,
-  // onDelete,
+  onDelete,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(task.name);
@@ -79,7 +79,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     >
       <Card
         className={cn(
-          'p-3 hover:shadow-md transition-all',
+          'p-3 hover:shadow-md transition-all group',
           task.complete && 'opacity-60'
         )}
       >
@@ -149,16 +149,37 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             )}
           </div>
 
-          {/* Complete Button */}
-          <button
-            onClick={handleToggleComplete}
-            className={cn(
-              'p-1 rounded hover:bg-[var(--bg-primary)] transition-colors',
-              task.complete ? 'text-[var(--success)]' : 'text-[var(--text-primary)]'
-            )}
-          >
-            <CheckCircle width={16} height={16} />
-          </button>
+          <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            {/* Delete Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (confirm('Are you sure you want to delete this task?')) {
+                  onDelete(task._id);
+                }
+              }}
+              className="p-1 rounded hover:bg-[var(--bg-primary)] text-[var(--text-tertiary)] hover:text-[var(--danger)] transition-colors"
+              title="Delete task"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 6h18"></path>
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                <path d="M8 6V4c0-1 1-2 2-2h4c0 1 1 2 2 2v2"></path>
+              </svg>
+            </button>
+
+            {/* Complete Button */}
+            <button
+              onClick={handleToggleComplete}
+              className={cn(
+                'p-1 rounded hover:bg-[var(--bg-primary)] transition-colors',
+                task.complete ? 'text-[var(--success)]' : 'text-[var(--text-primary)]'
+              )}
+              title={task.complete ? 'Mark as incomplete' : 'Mark as complete'}
+            >
+              <CheckCircle width={16} height={16} />
+            </button>
+          </div>
         </div>
       </Card>
     </div>
