@@ -6,7 +6,7 @@ import { toast } from 'react-toastify';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
-import { Plus } from '@/components/icons';
+import { Plus, Trash } from '@/components/icons';
 import { apiClient, Project, Team } from '@/lib/api';
 
 export const ProjectsList: React.FC = () => {
@@ -19,6 +19,8 @@ export const ProjectsList: React.FC = () => {
   const [teams, setTeams] = useState<Team[]>([]);
   // const [isLoading, setIsLoading] = useState(true);
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
 
   // Fetch projects and teams on mount
   React.useEffect(() => {
@@ -73,6 +75,23 @@ export const ProjectsList: React.FC = () => {
   });
 
   const teamProjects = Array.from(teamProjectsMap.values());
+
+  const handleDeleteProject = async () => {
+    if (projectToDelete) {
+      try {
+        const response = await apiClient.deleteProject(projectToDelete._id);
+        if (response.success) {
+          setProjects(projects.filter(p => p._id !== projectToDelete._id));
+          toast.success(`Project "${projectToDelete.name}" deleted successfully`);
+          setShowDeleteConfirm(false);
+          setProjectToDelete(null);
+        }
+      } catch (error) {
+        console.error('Failed to delete project:', error);
+        toast.error('Failed to delete project');
+      }
+    }
+  };
 
   const handleCreateProject = async () => {
     if (newProjectName.trim()) {
@@ -148,22 +167,35 @@ export const ProjectsList: React.FC = () => {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {personalProjects.map((project, index) => (
-            <Link
-              key={project._id}
-              href={`/project/${project._id}`}
-              className="group"
-            >
-              <div
-                className="h-24 rounded-lg p-4 text-white relative overflow-visible hover:scale-105 transition-transform project-card"
-                style={{ backgroundColor: projectColors[index % projectColors.length] }}
+            <div key={project._id} className="relative group">
+              <Link
+                href={`/project/${project._id}`}
+                className="block"
               >
-                <div className="absolute inset-0 bg-black/15 rounded-lg" />
-                <div className="relative z-10 h-full flex flex-col justify-center">
-                  <h3 className="font-semibold text-lg leading-tight text-clip-fix">{project.name}</h3>
-                  <p className="text-sm opacity-90 mt-1">{project.shortId}</p>
+                <div
+                  className="h-24 rounded-lg p-4 text-white relative overflow-visible hover:scale-105 transition-transform project-card"
+                  style={{ backgroundColor: projectColors[index % projectColors.length] }}
+                >
+                  <div className="absolute inset-0 bg-black/15 rounded-lg" />
+                  <div className="relative z-10 h-full flex flex-col justify-center">
+                    <h3 className="font-semibold text-lg leading-tight text-clip-fix">{project.name}</h3>
+                    <p className="text-sm opacity-90 mt-1">{project.shortId}</p>
+                  </div>
                 </div>
-              </div>
-            </Link>
+              </Link>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setProjectToDelete(project);
+                  setShowDeleteConfirm(true);
+                }}
+                className="absolute top-2 right-2 p-1.5 rounded-full bg-black/20 text-white opacity-0 group-hover:opacity-100 hover:bg-black/40 transition-all z-20"
+                title="Delete project"
+              >
+                <Trash width={14} height={14} />
+              </button>
+            </div>
           ))}
 
           {/* Create new project tile */}
@@ -208,22 +240,35 @@ export const ProjectsList: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {team.projects.map((project: Project, index: number) => (
-              <Link
-                key={project._id}
-                href={`/project/${project._id}`}
-                className="group"
-              >
-                <div
-                  className="h-24 rounded-lg p-4 text-white relative overflow-visible hover:scale-105 transition-transform project-card"
-                  style={{ backgroundColor: projectColors[index % projectColors.length] }}
+              <div key={project._id} className="relative group">
+                <Link
+                  href={`/project/${project._id}`}
+                  className="block"
                 >
-                  <div className="absolute inset-0 bg-black/15 rounded-lg" />
-                  <div className="relative z-10 h-full flex flex-col justify-center">
-                    <h3 className="font-semibold text-lg leading-tight text-clip-fix">{project.name}</h3>
-                    <p className="text-sm opacity-90 mt-1">{project.shortId}</p>
+                  <div
+                    className="h-24 rounded-lg p-4 text-white relative overflow-visible hover:scale-105 transition-transform project-card"
+                    style={{ backgroundColor: projectColors[index % projectColors.length] }}
+                  >
+                    <div className="absolute inset-0 bg-black/15 rounded-lg" />
+                    <div className="relative z-10 h-full flex flex-col justify-center">
+                      <h3 className="font-semibold text-lg leading-tight text-clip-fix">{project.name}</h3>
+                      <p className="text-sm opacity-90 mt-1">{project.shortId}</p>
+                    </div>
                   </div>
-                </div>
-              </Link>
+                </Link>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setProjectToDelete(project);
+                    setShowDeleteConfirm(true);
+                  }}
+                  className="absolute top-2 right-2 p-1.5 rounded-full bg-black/20 text-white opacity-0 group-hover:opacity-100 hover:bg-black/40 transition-all z-20"
+                  title="Delete project"
+                >
+                  <Trash width={14} height={14} />
+                </button>
+              </div>
             ))}
 
             {/* Create new project tile for team */}
@@ -294,6 +339,39 @@ export const ProjectsList: React.FC = () => {
             </Button>
             <Button onClick={handleCreateTeam}>
               Create Team
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete Project Confirmation Modal */}
+      <Modal
+        isOpen={showDeleteConfirm}
+        onClose={() => {
+          setShowDeleteConfirm(false);
+          setProjectToDelete(null);
+        }}
+        title="Delete Project"
+      >
+        <div className="space-y-4">
+          <p className="text-[var(--text-primary)]">
+            Are you sure you want to delete the project <strong>{projectToDelete?.name}</strong>? This action cannot be undone and will delete all tasks and data associated with this project.
+          </p>
+          <div className="flex justify-end space-x-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowDeleteConfirm(false);
+                setProjectToDelete(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleDeleteProject}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Delete Project
             </Button>
           </div>
         </div>
