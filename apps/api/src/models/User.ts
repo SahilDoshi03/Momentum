@@ -21,7 +21,7 @@ const userSchema = new Schema<IUser>({
   },
   password: {
     type: String,
-    required: function(this: any): boolean {
+    required: function (this: any): boolean {
       return !this.googleId;
     },
     minlength: 6,
@@ -77,12 +77,11 @@ const userSchema = new Schema<IUser>({
 
 // Indexes
 // email and username indexes are automatically created by unique: true
-userSchema.index({ googleId: 1 }, { sparse: true });
 
 // Hash password before saving
-userSchema.pre('save', async function(next) {
+userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
-  
+
   try {
     const salt = await bcrypt.genSalt(12);
     this.password = await bcrypt.hash(this.password, salt);
@@ -93,13 +92,13 @@ userSchema.pre('save', async function(next) {
 });
 
 // Compare password method
-userSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
+userSchema.methods.comparePassword = async function (candidatePassword: string): Promise<boolean> {
   if (!this.password) return false;
   return bcrypt.compare(candidatePassword, this.password);
 };
 
 // Generate initials from full name
-userSchema.methods.generateInitials = function(): string {
+userSchema.methods.generateInitials = function (): string {
   return this.fullName
     .split(' ')
     .map((name: string) => name[0])
@@ -109,7 +108,7 @@ userSchema.methods.generateInitials = function(): string {
 };
 
 // Update initials when fullName changes
-userSchema.pre('save', function(next) {
+userSchema.pre('save', function (next) {
   if (this.isModified('fullName')) {
     const initials = this.fullName
       .split(' ')
@@ -126,7 +125,7 @@ userSchema.pre('save', function(next) {
 });
 
 // Remove password from JSON output
-userSchema.methods.toJSON = function() {
+userSchema.methods.toJSON = function () {
   const userObject = this.toObject();
   delete userObject.password;
   return userObject;
