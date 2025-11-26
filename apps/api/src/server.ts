@@ -27,6 +27,13 @@ const app = express();
 // Connect to database
 connectDB();
 
+// Logging
+if (config.nodeEnv === 'development') {
+  app.use(morgan('dev'));
+} else {
+  app.use(morgan('combined'));
+}
+
 // Security middleware
 app.use(helmet({
   crossOriginEmbedderPolicy: false,
@@ -73,12 +80,7 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Logging
-if (config.nodeEnv === 'development') {
-  app.use(morgan('dev'));
-} else {
-  app.use(morgan('combined'));
-}
+
 
 // Health check
 app.get('/health', (req, res) => {

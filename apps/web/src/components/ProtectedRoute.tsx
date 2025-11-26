@@ -17,7 +17,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     useEffect(() => {
         const checkAuth = async () => {
             // Public routes that don't require authentication
-            const publicRoutes = ['/login', '/register'];
+            const publicRoutes = ['/login', '/register', '/auth/callback'];
 
             if (publicRoutes.includes(pathname)) {
                 setIsAuthenticated(true);

@@ -216,5 +216,31 @@ export const googleCallback = asyncHandler(async (req: Request, res: Response) =
   setTokenCookie(res, token);
 
   // Redirect to frontend
-  res.redirect(`${config.frontendUrl}/?token=${token}`);
+  res.redirect(`${config.frontendUrl}/auth/callback?token=${token}`);
+});
+
+// GitHub OAuth callback
+export const githubCallback = asyncHandler(async (req: Request, res: Response) => {
+  const user = (req as any).user;
+
+  if (!user) {
+    throw new AppError('GitHub authentication failed', 401);
+  }
+
+  // Generate token
+  const token = generateToken(user._id);
+
+  // Store token in database
+  const authToken = new AuthToken({
+    userId: user._id,
+    token,
+    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+  });
+  await authToken.save();
+
+  // Set cookie
+  setTokenCookie(res, token);
+
+  // Redirect to frontend
+  res.redirect(`${config.frontendUrl}/auth/callback?token=${token}`);
 });

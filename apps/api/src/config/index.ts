@@ -20,6 +20,11 @@ export const config = {
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
   googleCallbackUrl: process.env.GOOGLE_CALLBACK_URL || 'http://localhost:5000/api/auth/google/callback',
 
+  // GitHub OAuth
+  githubClientId: process.env.GITHUB_CLIENT_ID || '',
+  githubClientSecret: process.env.GITHUB_CLIENT_SECRET || '',
+  githubCallbackUrl: process.env.GITHUB_CALLBACK_URL || 'http://localhost:5000/api/auth/github/callback',
+
   // Frontend
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
 
@@ -37,7 +42,7 @@ export const config = {
   // Rate limiting
   rateLimitWindowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes
   rateLimitMax: parseInt(process.env.RATE_LIMIT_MAX || '100'), // limit each IP to 100 requests per windowMs
-  authRateLimitMax: parseInt(process.env.AUTH_RATE_LIMIT_MAX || '5'), // limit auth endpoints to 5 requests per windowMs
+  authRateLimitMax: parseInt(process.env.AUTH_RATE_LIMIT_MAX || '20'), // limit auth endpoints to 20 requests per windowMs
 };
 
 export default config;

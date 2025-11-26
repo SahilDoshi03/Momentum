@@ -1,5 +1,6 @@
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+import { Strategy as GitHubStrategy } from 'passport-github2';
 import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt';
 import { User } from '../models/User';
 import { config } from './index';
@@ -64,6 +65,72 @@ if (config.googleClientId && config.googleClientSecret) {
         fullName: name,
         initials,
         googleId: profile.id,
+        profileIcon: {
+          url: profile.photos?.[0]?.value,
+          initials,
+          bgColor: '#6366f1'
+        },
+        role: 'member',
+        active: true,
+      });
+
+      await user.save();
+      return done(null, user);
+    } catch (error) {
+      return done(error, false);
+    }
+  }));
+}
+
+// GitHub OAuth Strategy
+if (config.githubClientId && config.githubClientSecret) {
+  passport.use(new GitHubStrategy({
+    clientID: config.githubClientId,
+    clientSecret: config.githubClientSecret,
+    callbackURL: config.githubCallbackUrl,
+    scope: ['user:email'],
+    userAgent: 'MomentumApp',
+  }, async (accessToken, refreshToken, profile, done) => {
+    try {
+      // Check if user already exists with this GitHub ID
+      let user = await User.findOne({ githubId: profile.id });
+
+      if (user) {
+        return done(null, user);
+      }
+
+      // Check if user exists with same email
+      const email = profile.emails?.[0]?.value;
+      if (email) {
+        user = await User.findOne({ email });
+        if (user) {
+          // Link GitHub account to existing user
+          user.githubId = profile.id;
+          if (!user.profileIcon?.url && profile.photos?.[0]?.value) {
+            user.profileIcon = {
+              url: profile.photos[0].value,
+              initials: user.initials,
+              bgColor: user.profileIcon?.bgColor || '#6366f1'
+            };
+          }
+          await user.save();
+          return done(null, user);
+        }
+      }
+
+      // Create new user
+      if (!email) {
+        return done(new Error('No email found from GitHub'), false);
+      }
+      const name = profile.displayName || profile.username || 'GitHub User';
+      const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+
+      user = new User({
+        email,
+        username: profile.username || `github_${profile.id}`,
+        fullName: name,
+        initials,
+        githubId: profile.id,
         profileIcon: {
           url: profile.photos?.[0]?.value,
           initials,

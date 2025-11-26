@@ -1,6 +1,5 @@
-/// <reference types="@testing-library/jest-dom" />
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { TaskDetailModal } from '../TaskDetailModal';
 import { Task, Project, User } from '@/lib/api';
 import '@testing-library/jest-dom';
@@ -30,9 +29,9 @@ jest.mock('react-toastify', () => ({
 }));
 
 jest.mock('@/components/ui/Dropdown', () => ({
-    Dropdown: ({ trigger, children }: any) => <div>{trigger}{children}</div>,
-    DropdownItem: ({ children, onClick }: any) => <div onClick={onClick}>{children}</div>,
-    DropdownHeader: ({ children }: any) => <div>{children}</div>,
+    Dropdown: ({ trigger, children }: { trigger: React.ReactNode, children: React.ReactNode }) => <div>{trigger}{children}</div>,
+    DropdownItem: ({ children, onClick }: { children: React.ReactNode, onClick: () => void }) => <div onClick={onClick}>{children}</div>,
+    DropdownHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
 const mockTask: Task = {
@@ -41,12 +40,13 @@ const mockTask: Task = {
     description: 'Test Description',
     complete: false,
     position: 0,
-    taskGroupId: { _id: 'group1', name: 'To Do', position: 0, tasks: [] } as any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    taskGroupId: { _id: 'group1', name: 'To Do', position: 0, tasks: [] } as unknown as any,
     assigned: [],
     labels: [],
     dueDate: undefined,
     hasTime: false,
-} as any;
+} as unknown as Task;
 
 const mockProject: Project = {
     _id: 'project1',
@@ -58,14 +58,14 @@ const mockProject: Project = {
         { _id: 'label1', name: 'Bug', labelColorId: { _id: 'color1', colorHex: '#ff0000', name: 'Red', position: 0 } },
     ],
     members: [],
-} as any;
+} as unknown as Project;
 
 const mockUser: User = {
     _id: 'user1',
     fullName: 'User One',
     email: 'user1@example.com',
     initials: 'U1',
-} as any;
+} as unknown as User;
 
 describe('TaskDetailModal', () => {
     const mockOnClose = jest.fn();
@@ -89,11 +89,11 @@ describe('TaskDetailModal', () => {
             />
         );
 
-        expect((screen.getByDisplayValue('Test Task') as any)).toBeInTheDocument();
-        expect((screen.getByText('Test Description') as any)).toBeInTheDocument();
-        expect((screen.getByText('Status') as any)).toBeInTheDocument();
-        expect((screen.getByText('Assignees') as any)).toBeInTheDocument();
-        expect((screen.getByText('Labels') as any)).toBeInTheDocument();
+        expect(screen.getByDisplayValue('Test Task')).toBeInTheDocument();
+        expect(screen.getByText('Test Description')).toBeInTheDocument();
+        expect(screen.getByText('Status')).toBeInTheDocument();
+        expect(screen.getByText('Assignees')).toBeInTheDocument();
+        expect(screen.getByText('Labels')).toBeInTheDocument();
     });
 
     it('updates task name on blur', () => {
@@ -113,7 +113,7 @@ describe('TaskDetailModal', () => {
         fireEvent.change(input, { target: { value: 'Updated Task Name' } });
         fireEvent.blur(input);
 
-        expect((mockOnUpdateTask as any)).toHaveBeenCalledWith('task1', { name: 'Updated Task Name' });
+        expect(mockOnUpdateTask).toHaveBeenCalledWith('task1', { name: 'Updated Task Name' });
     });
 
     it('toggles completion status', () => {
@@ -132,7 +132,7 @@ describe('TaskDetailModal', () => {
         const button = screen.getByText('Mark Complete');
         fireEvent.click(button);
 
-        expect((mockOnUpdateTask as any)).toHaveBeenCalledWith('task1', { complete: true });
+        expect(mockOnUpdateTask).toHaveBeenCalledWith('task1', { complete: true });
     });
 
     it('calls onDeleteTask when delete button is clicked and confirmed', () => {
@@ -153,8 +153,8 @@ describe('TaskDetailModal', () => {
         const deleteButton = screen.getByText('Delete Task');
         fireEvent.click(deleteButton);
 
-        expect((window.confirm as any)).toHaveBeenCalled();
-        expect((mockOnDeleteTask as any)).toHaveBeenCalledWith('task1');
-        expect((mockOnClose as any)).toHaveBeenCalled();
+        expect(window.confirm).toHaveBeenCalled();
+        expect(mockOnDeleteTask).toHaveBeenCalledWith('task1');
+        expect(mockOnClose).toHaveBeenCalled();
     });
 });

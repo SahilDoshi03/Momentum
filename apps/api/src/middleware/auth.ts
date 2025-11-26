@@ -18,6 +18,7 @@ export const authenticateToken = async (
     }
 
     const decoded = jwt.verify(token, config.jwtSecret) as JWTPayload;
+
     const user = await User.findById(decoded.userId).select('-password');
 
     if (!user || !user.active) {
