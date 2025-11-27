@@ -1,12 +1,13 @@
 import express from 'express';
-import { 
-  getUsers, 
-  getUserById, 
-  getCurrentUser, 
-  updateUser, 
-  deleteUser, 
-  getUserTeams, 
-  getUserProjects 
+import {
+  getUsers,
+  getUserById,
+  getCurrentUser,
+  updateUser,
+  deleteUser,
+  getUserTeams,
+  getUserProjects,
+  searchUsers
 } from '../controllers/userController';
 import { authenticateToken, requireAdmin, validateUserUpdate } from '../middleware';
 
@@ -17,6 +18,9 @@ router.use(authenticateToken);
 
 // Get all users (admin only)
 router.get('/', requireAdmin, getUsers);
+
+// Search users
+router.get('/search', searchUsers);
 
 // Get current user with roles
 router.get('/me', getCurrentUser);

@@ -67,6 +67,16 @@ const taskSchema = new Schema<ITask>({
       default: Date.now
     }
   }],
+  createdBy: {
+    type: String,
+    ref: 'User',
+    required: false
+  },
+  updatedBy: {
+    type: String,
+    ref: 'User',
+    required: false
+  },
 }, {
   timestamps: true,
 });

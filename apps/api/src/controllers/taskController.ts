@@ -151,6 +151,8 @@ export const createTask = asyncHandler(async (req: Request, res: Response) => {
     description,
     dueDate: dueDate ? new Date(dueDate) : null,
     hasTime: hasTime || false,
+    createdBy: user._id,
+    updatedBy: user._id,
   });
 
   await task.save();
@@ -173,7 +175,9 @@ export const createTask = asyncHandler(async (req: Request, res: Response) => {
     .populate({
       path: 'labels',
       populate: { path: 'projectLabelId', populate: { path: 'labelColorId' } }
-    });
+    })
+    .populate('createdBy', 'username fullName initials profileIcon')
+    .populate('updatedBy', 'username fullName initials profileIcon');
 
   res.status(201).json({
     success: true,
@@ -201,7 +205,9 @@ export const getTaskById = asyncHandler(async (req: Request, res: Response) => {
     .populate({
       path: 'labels',
       populate: { path: 'projectLabelId', populate: { path: 'labelColorId' } }
-    });
+    })
+    .populate('createdBy', 'username fullName initials profileIcon')
+    .populate('updatedBy', 'username fullName initials profileIcon');
 
   if (!task) {
     throw new AppError('Task not found', 404);
@@ -275,6 +281,9 @@ export const updateTask = asyncHandler(async (req: Request, res: Response) => {
     }
   });
 
+  // Update updatedBy field
+  (task as any).updatedBy = user._id;
+
   await task.save();
 
   const populatedTask = await Task.findById(task._id)
@@ -286,7 +295,9 @@ export const updateTask = asyncHandler(async (req: Request, res: Response) => {
     .populate({
       path: 'labels',
       populate: { path: 'projectLabelId', populate: { path: 'labelColorId' } }
-    });
+    })
+    .populate('createdBy', 'username fullName initials profileIcon')
+    .populate('updatedBy', 'username fullName initials profileIcon');
 
   res.json({
     success: true,

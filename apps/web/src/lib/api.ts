@@ -76,6 +76,8 @@ export interface Task {
   dueDate?: string;
   hasTime: boolean;
   createdAt: string;
+  createdBy?: User;
+  updatedBy?: User;
   assigned?: Array<{
     _id: string;
     userId: User;
@@ -222,6 +224,10 @@ class ApiClient {
     return this.request(`/users/${id}`, {
       method: 'DELETE',
     });
+  }
+
+  async searchUsers(query: string): Promise<ApiResponse<User[]>> {
+    return this.request(`/users/search?query=${encodeURIComponent(query)}`);
   }
 
   // Project endpoints

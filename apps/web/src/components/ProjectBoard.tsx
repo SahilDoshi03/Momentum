@@ -15,12 +15,14 @@ import {
   horizontalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { Button } from '@/components/ui/Button';
-import { CheckCircle, Sort, Filter, Tags } from '@/components/icons';
+import { CheckCircle, Sort, Filter, Tags, Settings } from '@/components/icons';
 import { SortableTaskList } from './SortableTaskList';
 import { AddList } from './AddList';
 import { apiClient, Project, Task, User } from '@/lib/api';
 import { Dropdown, DropdownItem, DropdownHeader } from '@/components/ui/Dropdown';
 import { TaskDetailModal } from './TaskDetailModal';
+import { ProjectSettingsModal } from './ProjectSettingsModal';
+import { useRouter } from 'next/navigation';
 
 // Project interface is now imported from api.ts
 
@@ -479,6 +481,73 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
     setSelectedTask(null);
   };
 
+  // Settings Modal State
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const router = useRouter();
+
+  const handleUpdateProject = async (updates: Partial<Project>) => {
+    if (!project) return;
+    try {
+      const response = await apiClient.updateProject(project._id, updates);
+      if (response.success && response.data) {
+        setProject(prev => prev ? { ...prev, ...updates } : null);
+      }
+    } catch (error) {
+      console.error('Failed to update project:', error);
+      toast.error('Failed to update project');
+    }
+  };
+
+  const handleDeleteProject = async () => {
+    if (!project) return;
+    try {
+      const response = await apiClient.deleteProject(project._id);
+      if (response.success) {
+        toast.success('Project deleted successfully');
+        router.push('/');
+      }
+    } catch (error) {
+      console.error('Failed to delete project:', error);
+      toast.error('Failed to delete project');
+    }
+  };
+
+  const handleAddMember = async (userId: string) => {
+    if (!project) return;
+    try {
+      const response = await apiClient.addProjectMember(project._id, userId);
+      if (response.success) {
+        // Refresh project data to get updated members list
+        const projectRes = await apiClient.getProjectById(project._id);
+        if (projectRes.success && projectRes.data) {
+          setProject(projectRes.data);
+          toast.success('Member added successfully');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to add member:', error);
+      toast.error('Failed to add member');
+    }
+  };
+
+  const handleRemoveMember = async (userId: string) => {
+    if (!project) return;
+    try {
+      const response = await apiClient.removeProjectMember(project._id, userId);
+      if (response.success) {
+        // Optimistically update local state
+        setProject(prev => prev ? {
+          ...prev,
+          members: prev.members?.filter(m => m.userId._id !== userId)
+        } : null);
+        toast.success('Member removed successfully');
+      }
+    } catch (error) {
+      console.error('Failed to remove member:', error);
+      toast.error('Failed to remove member');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex-1 p-6 flex items-center justify-center">
@@ -616,8 +685,32 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
               <div className="px-4 py-2 text-sm text-[var(--text-tertiary)]">No labels found</div>
             )}
           </Dropdown>
+
+          {/* Settings */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsSettingsOpen(true)}
+          >
+            <Settings width={16} height={16} className="mr-2" />
+            Settings
+          </Button>
         </div>
       </div>
+
+      {/* Project Settings Modal */}
+      {project && (
+        <ProjectSettingsModal
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+          project={project}
+          currentUser={currentUser}
+          onUpdateProject={handleUpdateProject}
+          onDeleteProject={handleDeleteProject}
+          onAddMember={handleAddMember}
+          onRemoveMember={handleRemoveMember}
+        />
+      )}
 
       {/* Board Content */}
       <DndContext

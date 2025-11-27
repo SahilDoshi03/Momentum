@@ -13,6 +13,8 @@ import { CheckCircle } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import dayjs from 'dayjs';
 
+import { toast } from 'react-toastify';
+
 import { Task } from '@/lib/api';
 
 interface TaskCardProps {
@@ -46,7 +48,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   };
 
   const handleToggleComplete = () => {
-    onUpdate(task._id, { complete: !task.complete });
+    const newStatus = !task.complete;
+    onUpdate(task._id, { complete: newStatus });
+    toast.success(newStatus ? 'Task marked as completed' : 'Task marked as incomplete');
   };
 
   const handleSaveEdit = () => {
@@ -173,9 +177,12 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
             {/* Complete Button */}
             <button
-              onClick={handleToggleComplete}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleToggleComplete();
+              }}
               className={cn(
-                'p-1 rounded hover:bg-[var(--bg-primary)] transition-colors',
+                'p-1 rounded hover:bg-[var(--bg-primary)] transition-colors hover:text-[var(--success)]',
                 task.complete ? 'text-[var(--success)]' : 'text-[var(--text-primary)]'
               )}
               title={task.complete ? 'Mark as incomplete' : 'Mark as complete'}

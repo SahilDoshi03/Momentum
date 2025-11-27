@@ -169,3 +169,39 @@ export const getUserProjects = asyncHandler(async (req: Request, res: Response) 
     data: projectMembers,
   });
 });
+
+// Search users
+export const searchUsers = asyncHandler(async (req: Request, res: Response) => {
+  const { query } = req.query;
+  const currentUser = (req as any).user;
+
+  if (!query || typeof query !== 'string') {
+    res.json({
+      success: true,
+      data: [],
+    });
+    return;
+  }
+
+  // Search by name or email, excluding current user
+  const users = await User.find({
+    $and: [
+      { _id: { $ne: currentUser._id } },
+      { active: true },
+      {
+        $or: [
+          { fullName: { $regex: query, $options: 'i' } },
+          { username: { $regex: query, $options: 'i' } },
+          { email: { $regex: query, $options: 'i' } },
+        ],
+      },
+    ],
+  })
+    .select('username fullName email initials profileIcon')
+    .limit(10);
+
+  res.json({
+    success: true,
+    data: users,
+  });
+});

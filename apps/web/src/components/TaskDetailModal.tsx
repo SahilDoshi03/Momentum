@@ -173,6 +173,16 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     // Get users from project members
     const projectUsers = project.members?.map(m => m.userId) || [];
 
+    // Get list name
+    const getListName = () => {
+        if (typeof task.taskGroupId === 'object' && task.taskGroupId !== null) {
+            return (task.taskGroupId as any).name;
+        }
+        // Try to find in project task groups
+        const group = project.taskGroups?.find(g => g._id === task.taskGroupId);
+        return group ? group.name : 'Unknown List';
+    };
+
     const footer = (
         <div className="flex justify-end space-x-3">
             <Button variant="ghost" onClick={onClose}>
@@ -194,7 +204,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
         >
             <div className="flex flex-1 overflow-hidden h-full">
                 {/* Main Content */}
-                <div className="flex-1 pr-8 overflow-y-auto border-r border-[var(--border)]">
+                <div className="flex-1 p-8 overflow-y-auto border-r border-[var(--border)]">
                     {/* Title */}
                     <div className="mb-6">
                         <input
@@ -205,7 +215,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                             placeholder="Task Title"
                         />
                         <div className="text-sm text-[var(--text-tertiary)] mt-1">
-                            in list <span className="font-medium text-[var(--text-primary)]">{typeof task.taskGroupId === 'object' ? task.taskGroupId.name : '...'}</span>
+                            in list <span className="font-medium text-[var(--text-primary)]">{getListName()}</span>
                         </div>
                     </div>
 
@@ -218,6 +228,32 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                             className="w-full min-h-[150px] p-3 rounded-md border border-[var(--border)] bg-[var(--bg-primary)] text-[var(--text-primary)] focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent outline-none resize-y"
                             placeholder="Add a more detailed description..."
                         />
+                    </div>
+
+                    {/* Metadata (Created/Updated By) */}
+                    <div className="flex items-center space-x-6 text-sm text-[var(--text-tertiary)] border-t border-[var(--border)] pt-6">
+                        <div className="flex items-center">
+                            <span className="mr-2">Created by:</span>
+                            {task.createdBy ? (
+                                <div className="flex items-center text-[var(--text-primary)]">
+                                    <ProfileIcon user={task.createdBy} size="xs" className="mr-2" />
+                                    {task.createdBy.fullName}
+                                </div>
+                            ) : (
+                                <span>Unknown</span>
+                            )}
+                        </div>
+                        <div className="flex items-center">
+                            <span className="mr-2">Last updated by:</span>
+                            {task.updatedBy ? (
+                                <div className="flex items-center text-[var(--text-primary)]">
+                                    <ProfileIcon user={task.updatedBy} size="xs" className="mr-2" />
+                                    {task.updatedBy.fullName}
+                                </div>
+                            ) : (
+                                <span>Unknown</span>
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -261,22 +297,29 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                                     }
                                 >
                                     <DropdownHeader>Assign Member</DropdownHeader>
-                                    {projectUsers.map(user => {
-                                        const isAssigned = assigned.some(a => a.userId._id === user._id);
-                                        return (
+                                    {(() => {
+                                        const availableUsers = projectUsers.filter(user => !assigned.some(a => a.userId._id === user._id));
+
+                                        if (availableUsers.length === 0) {
+                                            return (
+                                                <div className="px-4 py-2 text-sm text-[var(--text-tertiary)]">
+                                                    No members to assign
+                                                </div>
+                                            );
+                                        }
+
+                                        return availableUsers.map(user => (
                                             <DropdownItem
                                                 key={user._id}
-                                                onClick={() => !isAssigned && handleAssignUser(user._id)}
-                                                className={isAssigned ? 'opacity-50 cursor-default' : ''}
+                                                onClick={() => handleAssignUser(user._id)}
                                             >
                                                 <div className="flex items-center">
                                                     <ProfileIcon user={user} size="xs" className="mr-2" />
                                                     {user.fullName}
-                                                    {isAssigned && <CheckCircle width={12} height={12} className="ml-auto text-[var(--success)]" />}
                                                 </div>
                                             </DropdownItem>
-                                        );
-                                    })}
+                                        ));
+                                    })()}
                                 </Dropdown>
                             </div>
                         </div>
@@ -304,25 +347,31 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                                     }
                                 >
                                     <DropdownHeader>Add Label</DropdownHeader>
-                                    {project.labels?.map(label => {
-                                        const isAssigned = labels.some(l => l.projectLabelId._id === label._id);
-                                        return (
-                                            <DropdownItem
-                                                key={label._id}
-                                                onClick={() => !isAssigned && handleAddLabel(label._id)}
-                                                className={isAssigned ? 'opacity-50 cursor-default' : ''}
-                                            >
-                                                <div className="flex items-center">
-                                                    <div
-                                                        className="w-3 h-3 rounded-full mr-2"
-                                                        style={{ backgroundColor: label.labelColorId.colorHex }}
-                                                    />
-                                                    {label.name}
-                                                    {isAssigned && <CheckCircle width={12} height={12} className="ml-auto text-[var(--success)]" />}
-                                                </div>
-                                            </DropdownItem>
-                                        );
-                                    })}
+                                    {project.labels && project.labels.length > 0 ? (
+                                        project.labels.map(label => {
+                                            const isAssigned = labels.some(l => l.projectLabelId._id === label._id);
+                                            return (
+                                                <DropdownItem
+                                                    key={label._id}
+                                                    onClick={() => !isAssigned && handleAddLabel(label._id)}
+                                                    className={isAssigned ? 'opacity-50 cursor-default' : ''}
+                                                >
+                                                    <div className="flex items-center">
+                                                        <div
+                                                            className="w-3 h-3 rounded-full mr-2"
+                                                            style={{ backgroundColor: label.labelColorId.colorHex }}
+                                                        />
+                                                        {label.name}
+                                                        {isAssigned && <CheckCircle width={12} height={12} className="ml-auto text-[var(--success)]" />}
+                                                    </div>
+                                                </DropdownItem>
+                                            );
+                                        })
+                                    ) : (
+                                        <div className="px-4 py-2 text-sm text-[var(--text-tertiary)]">
+                                            No labels in project
+                                        </div>
+                                    )}
                                 </Dropdown>
                             </div>
                         </div>
