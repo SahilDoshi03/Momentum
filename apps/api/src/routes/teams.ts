@@ -9,6 +9,7 @@ import {
   removeTeamMember,
   getTeamMembers
 } from '../controllers/teamController';
+import { createInvite } from '../controllers/inviteController';
 import { authenticateToken } from '../middleware';
 
 const router = express.Router();
@@ -36,6 +37,9 @@ router.post('/:id/members', addTeamMember);
 
 // Get team members
 router.get('/:id/members', getTeamMembers);
+
+// Create invite
+router.post('/:id/invites', createInvite);
 
 // Remove team member
 router.delete('/:id/members/:userId', removeTeamMember);

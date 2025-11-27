@@ -16,6 +16,7 @@ export { TaskChecklistItem } from './TaskChecklistItem';
 export { TaskComment } from './TaskComment';
 export { AuthToken } from './AuthToken';
 export { PersonalProject } from './PersonalProject';
+export { TeamInvite } from './TeamInvite';
 
 
 

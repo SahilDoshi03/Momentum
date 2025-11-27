@@ -7,9 +7,8 @@ import { apiClient, Team, User } from '@/lib/api';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { toast } from 'react-toastify';
-import { Trash, Plus, Search } from '@/components/icons';
+import { Trash, Plus } from '@/components/icons';
 import { ProfileIcon } from '@/components/ui/ProfileIcon';
-import { useDebounce } from '@/hooks/useDebounce';
 
 export default function TeamMembersPage() {
     const params = useParams();
@@ -17,10 +16,9 @@ export default function TeamMembersPage() {
     const [team, setTeam] = useState<Team | null>(null);
     const [members, setMembers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [searchResults, setSearchResults] = useState<User[]>([]);
-    const [isSearching, setIsSearching] = useState(false);
-    const debouncedSearch = useDebounce(searchQuery, 300);
+    const [inviteEmail, setInviteEmail] = useState('');
+    const [inviteLink, setInviteLink] = useState('');
+    const [generatingInvite, setGeneratingInvite] = useState(false);
 
     const fetchTeamData = async () => {
         try {
@@ -49,47 +47,26 @@ export default function TeamMembersPage() {
         }
     }, [teamId]);
 
-    useEffect(() => {
-        const searchUsers = async () => {
-            if (!debouncedSearch.trim()) {
-                setSearchResults([]);
-                return;
-            }
+    const handleGenerateInvite = async () => {
+        if (!inviteEmail.trim()) {
+            toast.error('Please enter an email address');
+            return;
+        }
 
-            setIsSearching(true);
-            try {
-                const response = await apiClient.searchUsers(debouncedSearch);
-                if (response.success && response.data) {
-                    // Filter out existing members
-                    const memberIds = new Set(members.map(m => m.userId._id));
-                    setSearchResults(response.data.filter(u => !memberIds.has(u._id)));
-                }
-            } catch (error) {
-                console.error('Search failed:', error);
-            } finally {
-                setIsSearching(false);
-            }
-        };
-
-        searchUsers();
-    }, [debouncedSearch, members]);
-
-    const handleAddMember = async (userId: string) => {
+        setGeneratingInvite(true);
         try {
-            const response = await apiClient.addTeamMember(teamId, userId);
-            if (response.success) {
-                toast.success('Member added successfully');
-                setSearchQuery('');
-                setSearchResults([]);
-                // Refresh members list
-                const membersRes = await apiClient.getTeamMembers(teamId);
-                if (membersRes.success && membersRes.data) {
-                    setMembers(membersRes.data);
-                }
+            const response = await apiClient.createTeamInvite(teamId, inviteEmail);
+            if (response.success && response.data) {
+                const link = `${window.location.origin}/join/${response.data.token}`;
+                setInviteLink(link);
+                navigator.clipboard.writeText(link);
+                toast.success('Invite link generated and copied!');
             }
-        } catch (error) {
-            console.error('Failed to add member:', error);
-            toast.error('Failed to add member');
+        } catch (error: any) {
+            console.error('Failed to generate invite:', error);
+            toast.error(error.message || 'Failed to generate invite link');
+        } finally {
+            setGeneratingInvite(false);
         }
     };
 
@@ -140,36 +117,39 @@ export default function TeamMembersPage() {
                 </h1>
 
                 <div className="grid gap-8">
-                    {/* Add Member Section */}
+                    {/* Invite Section */}
                     <div className="bg-[var(--bg-secondary)] rounded-lg border border-[var(--border)] p-6">
-                        <h2 className="text-lg font-medium text-[var(--text-secondary)] mb-4">Add Member</h2>
-                        <div className="relative">
-                            <Input
-                                placeholder="Search users by name or email..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                icon={<Search width={16} height={16} />}
-                            />
+                        <h2 className="text-lg font-medium text-[var(--text-secondary)] mb-4">Invite Members</h2>
+                        <p className="text-sm text-[var(--text-primary)] mb-4">
+                            Enter the email address of the person you want to invite. The generated link will only work for that email.
+                        </p>
 
-                            {/* Search Results Dropdown */}
-                            {searchResults.length > 0 && (
-                                <div className="absolute z-10 w-full mt-1 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-md shadow-lg max-h-60 overflow-y-auto">
-                                    {searchResults.map(user => (
-                                        <div
-                                            key={user._id}
-                                            className="flex items-center justify-between p-3 hover:bg-[var(--bg-primary)] cursor-pointer"
-                                            onClick={() => handleAddMember(user._id)}
-                                        >
-                                            <div className="flex items-center space-x-3">
-                                                <ProfileIcon user={user} size="sm" />
-                                                <div>
-                                                    <p className="text-sm font-medium text-[var(--text-secondary)]">{user.fullName}</p>
-                                                    <p className="text-xs text-[var(--text-tertiary)]">{user.email}</p>
-                                                </div>
-                                            </div>
-                                            <Plus width={16} height={16} className="text-[var(--primary)]" />
-                                        </div>
-                                    ))}
+                        <div className="space-y-4">
+                            <div className="flex space-x-3">
+                                <Input
+                                    placeholder="Enter email address..."
+                                    value={inviteEmail}
+                                    onChange={(e) => setInviteEmail(e.target.value)}
+                                    className="flex-1"
+                                />
+                                <Button onClick={handleGenerateInvite} disabled={generatingInvite}>
+                                    {generatingInvite ? 'Generating...' : 'Generate Link'}
+                                </Button>
+                            </div>
+
+                            {inviteLink && (
+                                <div className="flex items-center space-x-2 p-3 bg-[var(--bg-primary)] rounded border border-[var(--border)]">
+                                    <p className="flex-1 text-sm text-[var(--text-secondary)] truncate">{inviteLink}</p>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(inviteLink);
+                                            toast.success('Copied!');
+                                        }}
+                                    >
+                                        Copy
+                                    </Button>
                                 </div>
                             )}
                         </div>

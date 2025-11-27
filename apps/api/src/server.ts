@@ -18,6 +18,7 @@ import projectRoutes from './routes/projects';
 import taskRoutes from './routes/tasks';
 import labelColorRoutes from './routes/labelColors';
 import teamRoutes from './routes/teams';
+import inviteRoutes from './routes/invites';
 
 // Import passport config
 import './config/passport';
@@ -51,7 +52,7 @@ app.use(helmet({
 app.use(corsMiddleware);
 
 // Rate limiting
-app.use(generalLimiter);
+// app.use(generalLimiter);
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
@@ -98,6 +99,7 @@ app.use('/api/projects', projectRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/label-colors', labelColorRoutes);
 app.use('/api/teams', teamRoutes);
+app.use('/api/invites', inviteRoutes);
 
 // 404 handler
 app.use(notFound);

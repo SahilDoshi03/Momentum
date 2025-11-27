@@ -39,6 +39,7 @@ export interface Project {
     role: string;
     addedAt: string;
   }>;
+  currentUserRole?: string;
   taskGroups?: Array<{
     _id: string;
     name: string;
@@ -354,6 +355,23 @@ class ApiClient {
 
   async getTeamMembers(teamId: string): Promise<ApiResponse<any[]>> {
     return this.request(`/teams/${teamId}/members`);
+  }
+
+  async createTeamInvite(teamId: string, email: string): Promise<ApiResponse<{ token: string; expiresAt: string }>> {
+    return this.request(`/teams/${teamId}/invites`, {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async getInviteDetails(token: string): Promise<ApiResponse<{ teamId: { _id: string; name: string }; creatorId: string }>> {
+    return this.request(`/invites/${token}`);
+  }
+
+  async acceptTeamInvite(token: string): Promise<ApiResponse<{ teamId: string }>> {
+    return this.request(`/invites/${token}/accept`, {
+      method: 'POST',
+    });
   }
 
   // Task endpoints

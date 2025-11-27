@@ -40,33 +40,45 @@ export const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
         setProjectName(project.name);
     }, [project]);
 
-    // Debounced search
+    // Fetch and filter team members
     useEffect(() => {
-        const searchUsers = async () => {
-            if (!searchQuery.trim()) {
-                setSearchResults([]);
-                return;
-            }
+        const fetchTeamMembers = async () => {
+            if (activeTab !== 'members') return;
 
             setIsSearching(true);
             try {
-                const response = await apiClient.searchUsers(searchQuery);
+                const teamId = typeof project.teamId === 'string' ? project.teamId : project.teamId?._id;
+                if (!teamId) return;
+
+                const response = await apiClient.getTeamMembers(teamId);
                 if (response.success && response.data) {
-                    // Filter out existing members
+                    // Filter out existing project members
                     const existingMemberIds = project.members?.map(m => m.userId._id) || [];
-                    const filteredUsers = response.data.filter(user => !existingMemberIds.includes(user._id));
+
+                    // Filter by search query if present
+                    const query = searchQuery.toLowerCase();
+                    const filteredUsers = response.data
+                        .map((tm: any) => tm.userId) // Extract user object from TeamMember
+                        .filter((user: User) =>
+                            !existingMemberIds.includes(user._id) &&
+                            (user.fullName.toLowerCase().includes(query) ||
+                                user.email.toLowerCase().includes(query))
+                        );
+
                     setSearchResults(filteredUsers);
                 }
             } catch (error) {
-                console.error('Failed to search users:', error);
+                console.error('Failed to fetch team members:', error);
             } finally {
                 setIsSearching(false);
             }
         };
 
-        const timeoutId = setTimeout(searchUsers, 300);
-        return () => clearTimeout(timeoutId);
-    }, [searchQuery, project.members]);
+        if (activeTab === 'members') {
+            const timeoutId = setTimeout(fetchTeamMembers, 300);
+            return () => clearTimeout(timeoutId);
+        }
+    }, [searchQuery, project.members, project.teamId, activeTab]);
 
     const handleSaveGeneral = async () => {
         if (projectName.trim() !== project.name) {
@@ -91,8 +103,8 @@ export const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
                 <div className="flex border-b border-[var(--border)] mb-4">
                     <button
                         className={`px-4 py-2 text-sm font-medium ${activeTab === 'general'
-                                ? 'text-[var(--primary)] border-b-2 border-[var(--primary)]'
-                                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                            ? 'text-[var(--primary)] border-b-2 border-[var(--primary)]'
+                            : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                             }`}
                         onClick={() => setActiveTab('general')}
                     >
@@ -100,8 +112,8 @@ export const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
                     </button>
                     <button
                         className={`px-4 py-2 text-sm font-medium ${activeTab === 'members'
-                                ? 'text-[var(--primary)] border-b-2 border-[var(--primary)]'
-                                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                            ? 'text-[var(--primary)] border-b-2 border-[var(--primary)]'
+                            : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                             }`}
                         onClick={() => setActiveTab('members')}
                     >
@@ -175,21 +187,27 @@ export const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
                             {canManageMembers && (
                                 <div className="relative">
                                     <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
-                                        Add Member
+                                        Add Member from Team
                                     </label>
                                     <Input
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        placeholder="Search by name or email..."
+                                        placeholder="Search team members..."
                                         icon={<Plus width={16} height={16} />}
+                                        onFocus={() => {
+                                            if (searchResults.length === 0 && !searchQuery) {
+                                                // Trigger search to show all available team members
+                                                setSearchQuery('');
+                                            }
+                                        }}
                                     />
 
                                     {/* Search Results Dropdown */}
-                                    {searchQuery && (
+                                    {(searchQuery || searchResults.length > 0) && (
                                         <div className="absolute z-10 w-full mt-1 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-md shadow-lg max-h-60 overflow-y-auto">
                                             {isSearching ? (
                                                 <div className="p-4 text-center text-sm text-[var(--text-tertiary)]">
-                                                    Searching...
+                                                    Loading team members...
                                                 </div>
                                             ) : searchResults.length > 0 ? (
                                                 searchResults.map(user => (
@@ -220,7 +238,18 @@ export const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
                                                 ))
                                             ) : (
                                                 <div className="p-4 text-center text-sm text-[var(--text-tertiary)]">
-                                                    No users found
+                                                    <p>No matching team members found.</p>
+                                                    <p className="mt-2">
+                                                        Need to add someone new?{' '}
+                                                        <a
+                                                            href={`/teams/${typeof project.teamId === 'string' ? project.teamId : project.teamId?._id}/members`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-[var(--primary)] hover:underline"
+                                                        >
+                                                            Invite them to the Team first
+                                                        </a>
+                                                    </p>
                                                 </div>
                                             )}
                                         </div>

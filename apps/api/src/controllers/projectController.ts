@@ -23,8 +23,14 @@ export const getProjects = asyncHandler(async (req: Request, res: Response) => {
     });
 
   const projects = projectMembers
-    .map(pm => pm.projectId)
-    .filter(project => project !== null);
+    .filter(pm => pm.projectId !== null)
+    .map(pm => {
+      const projectObj = (pm.projectId as any).toObject();
+      return {
+        ...projectObj,
+        currentUserRole: pm.role
+      };
+    });
 
   res.json({
     success: true,
@@ -82,10 +88,15 @@ export const getProjectById = asyncHandler(async (req: Request, res: Response) =
     return groupObj;
   });
 
+  // Fetch project members
+  const members = await ProjectMember.find({ projectId: id })
+    .populate('userId', 'fullName email username initials profileIcon');
+
   res.json({
     success: true,
     data: {
       ...project.toObject(),
+      members,
       taskGroups: taskGroupsWithTasks
     },
   });

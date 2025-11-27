@@ -183,18 +183,20 @@ export const ProjectsList: React.FC = () => {
                   </div>
                 </div>
               </Link>
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setProjectToDelete(project);
-                  setShowDeleteConfirm(true);
-                }}
-                className="absolute top-2 right-2 p-1.5 rounded-full bg-black/20 text-white opacity-0 group-hover:opacity-100 hover:bg-black/40 transition-all z-20"
-                title="Delete project"
-              >
-                <Trash width={14} height={14} />
-              </button>
+              {project.currentUserRole === 'owner' && (
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setProjectToDelete(project);
+                    setShowDeleteConfirm(true);
+                  }}
+                  className="absolute top-2 right-2 p-1.5 rounded-full bg-black/20 text-white opacity-0 group-hover:opacity-100 hover:bg-black/40 transition-all z-20"
+                  title="Delete project"
+                >
+                  <Trash width={14} height={14} />
+                </button>
+              )}
             </div>
           ))}
 
@@ -256,18 +258,20 @@ export const ProjectsList: React.FC = () => {
                     </div>
                   </div>
                 </Link>
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setProjectToDelete(project);
-                    setShowDeleteConfirm(true);
-                  }}
-                  className="absolute top-2 right-2 p-1.5 rounded-full bg-black/20 text-white opacity-0 group-hover:opacity-100 hover:bg-black/40 transition-all z-20"
-                  title="Delete project"
-                >
-                  <Trash width={14} height={14} />
-                </button>
+                {project.currentUserRole === 'owner' && (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setProjectToDelete(project);
+                      setShowDeleteConfirm(true);
+                    }}
+                    className="absolute top-2 right-2 p-1.5 rounded-full bg-black/20 text-white opacity-0 group-hover:opacity-100 hover:bg-black/40 transition-all z-20"
+                    title="Delete project"
+                  >
+                    <Trash width={14} height={14} />
+                  </button>
+                )}
               </div>
             ))}
 
