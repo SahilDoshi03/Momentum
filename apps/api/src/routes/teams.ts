@@ -1,12 +1,13 @@
 import express from 'express';
-import { 
-  getTeams, 
-  getTeamById, 
-  createTeam, 
-  updateTeam, 
+import {
+  getTeams,
+  getTeamById,
+  createTeam,
+  updateTeam,
   deleteTeam,
   addTeamMember,
-  removeTeamMember
+  removeTeamMember,
+  getTeamMembers
 } from '../controllers/teamController';
 import { authenticateToken } from '../middleware';
 
@@ -32,6 +33,9 @@ router.delete('/:id', deleteTeam);
 
 // Add team member
 router.post('/:id/members', addTeamMember);
+
+// Get team members
+router.get('/:id/members', getTeamMembers);
 
 // Remove team member
 router.delete('/:id/members/:userId', removeTeamMember);

@@ -1,37 +1,60 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { ProfileIcon } from '@/components/ui/ProfileIcon';
 import { Plus, Settings, UserPlus } from '@/components/icons';
 import { cn } from '@/lib/utils';
-import mockData from '@/data/mock-data.json';
-
-interface Team {
-  id: string;
-  name: string;
-  organizationID: string;
-  members: Array<{
-    id: string;
-    username: string;
-    fullName: string;
-    email: string;
-    initials: string;
-    role: string;
-  }>;
-}
+import { apiClient, Team, Project, User } from '@/lib/api';
+import { toast } from 'react-toastify';
 
 interface TeamDetailsProps {
   team: Team;
 }
 
+interface TeamMember {
+  _id: string;
+  userId: User;
+  role: string;
+  teamId: string;
+  joinedAt: string;
+}
+
 export const TeamDetails: React.FC<TeamDetailsProps> = ({ team }) => {
   const [activeTab, setActiveTab] = useState<'projects' | 'members'>('projects');
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [members, setMembers] = useState<TeamMember[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Get team projects
-  const teamProjects = mockData.projects.filter(p => p.team?.id === team.id);
   const projectColors = ['#e362e3', '#7a6ff0', '#37c5ab', '#aa62e3', '#e8384f'];
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [projectsRes, membersRes] = await Promise.all([
+          apiClient.getProjects(team._id),
+          apiClient.getTeamMembers(team._id)
+        ]);
+
+        if (projectsRes.success && projectsRes.data) {
+          setProjects(projectsRes.data);
+        }
+        if (membersRes.success && membersRes.data) {
+          setMembers(membersRes.data);
+        }
+      } catch (error) {
+        console.error('Failed to load team details:', error);
+        toast.error('Failed to load team details');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (team._id) {
+      fetchData();
+    }
+  }, [team._id]);
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
@@ -42,14 +65,18 @@ export const TeamDetails: React.FC<TeamDetailsProps> = ({ team }) => {
           <p className="text-[var(--text-primary)]">Team management and collaboration</p>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm">
-            <UserPlus width={16} height={16} className="mr-2" />
-            Invite Members
-          </Button>
-          <Button variant="outline" size="sm">
-            <Settings width={16} height={16} className="mr-2" />
-            Settings
-          </Button>
+          <Link href={`/teams/${team._id}/members`}>
+            <Button variant="outline" size="sm">
+              <UserPlus width={16} height={16} className="mr-2" />
+              Manage Members
+            </Button>
+          </Link>
+          <Link href={`/teams/${team._id}/settings`}>
+            <Button variant="outline" size="sm">
+              <Settings width={16} height={16} className="mr-2" />
+              Settings
+            </Button>
+          </Link>
         </div>
       </div>
 
@@ -64,7 +91,7 @@ export const TeamDetails: React.FC<TeamDetailsProps> = ({ team }) => {
               : 'border-transparent text-[var(--text-primary)] hover:text-[var(--text-secondary)]'
           )}
         >
-          Projects ({teamProjects.length})
+          Projects ({projects.length})
         </button>
         <button
           onClick={() => setActiveTab('members')}
@@ -75,7 +102,7 @@ export const TeamDetails: React.FC<TeamDetailsProps> = ({ team }) => {
               : 'border-transparent text-[var(--text-primary)] hover:text-[var(--text-secondary)]'
           )}
         >
-          Members ({team.members.length})
+          Members ({members.length})
         </button>
       </div>
 
@@ -90,12 +117,12 @@ export const TeamDetails: React.FC<TeamDetailsProps> = ({ team }) => {
             </Button>
           </div>
 
-          {teamProjects.length > 0 ? (
+          {projects.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {teamProjects.map((project, index) => (
+              {projects.map((project, index) => (
                 <Link
-                  key={project.id}
-                  href={`/project/${project.id}`}
+                  key={project._id}
+                  href={`/project/${project._id}`}
                   className="group"
                 >
                   <div
@@ -131,31 +158,33 @@ export const TeamDetails: React.FC<TeamDetailsProps> = ({ team }) => {
         <div>
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-[var(--text-secondary)]">Team Members</h2>
-            <Button>
-              <UserPlus width={16} height={16} className="mr-2" />
-              Invite Member
-            </Button>
+            <Link href={`/teams/${team._id}/members`}>
+              <Button>
+                <UserPlus width={16} height={16} className="mr-2" />
+                Manage Members
+              </Button>
+            </Link>
           </div>
 
           <div className="bg-[var(--bg-secondary)] rounded-lg overflow-hidden">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-6">
-              {team.members.map((member) => (
+              {members.map((member) => (
                 <div
-                  key={member.id}
+                  key={member._id}
                   className="flex items-center space-x-3 p-4 bg-[var(--bg-primary)] rounded-lg hover:bg-[var(--bg-secondary)] transition-colors"
                 >
-                  <ProfileIcon user={member} size="md" />
+                  <ProfileIcon user={member.userId} size="md" />
                   <div className="flex-1 min-w-0">
                     <h3 className="font-medium text-[var(--text-secondary)] truncate">
-                      {member.fullName}
+                      {member.userId.fullName}
                     </h3>
                     <p className="text-sm text-[var(--text-primary)] truncate">
-                      {member.email}
+                      {member.userId.email}
                     </p>
                     <span className={cn(
                       'inline-block px-2 py-1 text-xs rounded mt-1',
-                      member.role === 'ADMIN' 
-                        ? 'bg-[var(--primary)] text-white' 
+                      member.role === 'owner'
+                        ? 'bg-[var(--primary)] text-white'
                         : 'bg-[var(--bg-secondary)] text-[var(--text-primary)]'
                     )}>
                       {member.role}

@@ -260,3 +260,26 @@ export const removeTeamMember = asyncHandler(async (req: Request, res: Response)
   });
 });
 
+// Get team members
+export const getTeamMembers = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const user = (req as any).user;
+
+  // Check if user is a member of this team
+  const teamMember = await TeamMember.findOne({
+    teamId: id,
+    userId: user._id
+  });
+
+  if (!teamMember) {
+    throw new AppError('Not authorized to view members of this team', 403);
+  }
+
+  const members = await TeamMember.find({ teamId: id })
+    .populate('userId', 'fullName email username initials profileIcon');
+
+  res.json({
+    success: true,
+    data: members,
+  });
+});

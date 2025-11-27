@@ -11,3 +11,4 @@ export * from './Trash';
 export * from './User';
 export * from './UserPlus';
 export * from './X';
+export * from './Search';

@@ -339,6 +339,23 @@ class ApiClient {
     });
   }
 
+  async addTeamMember(teamId: string, userId: string, role: string = 'member'): Promise<ApiResponse> {
+    return this.request(`/teams/${teamId}/members`, {
+      method: 'POST',
+      body: JSON.stringify({ userId, role }),
+    });
+  }
+
+  async removeTeamMember(teamId: string, userId: string): Promise<ApiResponse> {
+    return this.request(`/teams/${teamId}/members/${userId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getTeamMembers(teamId: string): Promise<ApiResponse<any[]>> {
+    return this.request(`/teams/${teamId}/members`);
+  }
+
   // Task endpoints
   async getMyTasks(status: string = 'ALL', sort: string = 'NONE'): Promise<ApiResponse<{
     tasks: Task[];

@@ -1,16 +1,48 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { TopNavbar } from '@/components/TopNavbar';
 import { TeamDetails } from '@/components/TeamDetails';
-import mockData from '@/data/mock-data.json';
+import { apiClient, Team } from '@/lib/api';
+import { toast } from 'react-toastify';
 
 export default function TeamPage() {
   const params = useParams();
   const teamId = params.teamId as string;
-  
-  const team = mockData.teams.find(t => t.id === teamId);
+  const [team, setTeam] = useState<Team | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTeam = async () => {
+      try {
+        const response = await apiClient.getTeamById(teamId);
+        if (response.success && response.data) {
+          setTeam(response.data);
+        }
+      } catch (error) {
+        console.error('Failed to load team:', error);
+        toast.error('Failed to load team data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (teamId) {
+      fetchTeam();
+    }
+  }, [teamId]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[var(--bg-primary)]">
+        <TopNavbar />
+        <div className="flex items-center justify-center h-[calc(100vh-3rem)]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--primary)]"></div>
+        </div>
+      </div>
+    );
+  }
 
   if (!team) {
     return (
