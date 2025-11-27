@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Dropdown, DropdownItem, DropdownHeader } from '@/components/ui/Dropdown';
 import { ProfileIcon } from '@/components/ui/ProfileIcon';
-import { CheckCircle, Tags, User, Trash, Plus } from '@/components/icons';
+import { CheckCircle, Plus, Trash } from '@/components/icons';
 import { Task, User as UserType, Project, apiClient } from '@/lib/api';
 import { toast } from 'react-toastify';
 import dayjs from 'dayjs';
@@ -29,111 +29,138 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
 }) => {
     const [name, setName] = useState(task.name);
     const [description, setDescription] = useState(task.description || '');
-    const [isEditingDesc, setIsEditingDesc] = useState(false);
-    const [users, setUsers] = useState<UserType[]>([]);
+    const [dueDate, setDueDate] = useState(task.dueDate);
+    const [complete, setComplete] = useState(task.complete);
+    const [assigned, setAssigned] = useState(task.assigned || []);
+    const [labels, setLabels] = useState(task.labels || []);
 
+    // Sync state with task prop when it changes
     useEffect(() => {
         setName(task.name);
         setDescription(task.description || '');
+        setDueDate(task.dueDate);
+        setComplete(task.complete);
+        setAssigned(task.assigned || []);
+        setLabels(task.labels || []);
     }, [task]);
 
-    useEffect(() => {
-        const loadUsers = async () => {
-            try {
-                const response = await apiClient.getUsers();
-                if (response.success && response.data) {
-                    setUsers(response.data);
-                }
-            } catch (error) {
-                console.error('Failed to load users:', error);
+    const handleSave = async () => {
+        try {
+            const updates: Partial<Task> = {};
+            let hasUpdates = false;
+
+            // Check for scalar updates
+            if (name.trim() !== task.name) {
+                updates.name = name.trim();
+                hasUpdates = true;
             }
-        };
-        if (isOpen) {
-            loadUsers();
-        }
-    }, [isOpen]);
+            if (description !== (task.description || '')) {
+                updates.description = description;
+                hasUpdates = true;
+            }
+            if (dueDate !== task.dueDate) {
+                updates.dueDate = dueDate;
+                hasUpdates = true;
+            }
+            if (complete !== task.complete) {
+                updates.complete = complete;
+                hasUpdates = true;
+            }
 
-    const handleNameBlur = () => {
-        if (name.trim() !== task.name) {
-            onUpdateTask(task._id, { name: name.trim() });
-        }
-    };
+            // Apply scalar updates
+            if (hasUpdates) {
+                await apiClient.updateTask(task._id, updates);
+            }
 
-    const handleDescriptionSave = () => {
-        if (description !== task.description) {
-            onUpdateTask(task._id, { description });
+            // Handle Assignments
+            const originalAssignedIds = new Set(task.assigned?.map(a => a.userId._id) || []);
+            const currentAssignedIds = new Set(assigned.map(a => a.userId._id));
+
+            // Added assignments
+            for (const a of assigned) {
+                if (!originalAssignedIds.has(a.userId._id)) {
+                    await apiClient.assignUserToTask(task._id, a.userId._id);
+                }
+            }
+
+            // Removed assignments
+            for (const a of task.assigned || []) {
+                if (!currentAssignedIds.has(a.userId._id)) {
+                    await apiClient.unassignUserFromTask(task._id, a.userId._id);
+                }
+            }
+
+            // Handle Labels
+            const originalLabelIds = new Set(task.labels?.map(l => l.projectLabelId._id) || []);
+            const currentLabelIds = new Set(labels.map(l => l.projectLabelId._id));
+
+            // Added labels
+            for (const l of labels) {
+                if (!originalLabelIds.has(l.projectLabelId._id)) {
+                    await apiClient.addLabelToTask(task._id, l.projectLabelId._id);
+                }
+            }
+
+            // Removed labels
+            for (const l of task.labels || []) {
+                if (!currentLabelIds.has(l.projectLabelId._id)) {
+                    await apiClient.removeLabelFromTask(task._id, l._id);
+                }
+            }
+
+            // Notify parent to update UI (or reload)
+            onUpdateTask(task._id, {
+                ...updates,
+                assigned,
+                labels
+            });
+
+            toast.success('Task saved successfully');
+            onClose();
+        } catch (error) {
+            console.error('Failed to save task:', error);
+            toast.error('Failed to save task');
         }
-        setIsEditingDesc(false);
     };
 
     const handleToggleComplete = () => {
-        onUpdateTask(task._id, { complete: !task.complete });
+        setComplete(!complete);
     };
 
     const handleDueDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        onUpdateTask(task._id, { dueDate: e.target.value });
+        setDueDate(e.target.value);
     };
 
-    const handleAssignUser = async (userId: string) => {
-        try {
-            await apiClient.assignUserToTask(task._id, userId);
-            // Optimistic update or refetch would be ideal here, but for now we rely on parent update
-            // We need to manually trigger the update in parent because assignUserToTask returns void/success
-            // So we might need to reload the task or manually update the local state passed down
-            // For simplicity, we'll assume the parent refreshes or we construct the new state
-            const user = users.find(u => u._id === userId);
-            if (user) {
-                const newAssigned = [...(task.assigned || []), { _id: 'temp', userId: user, assignedDate: new Date().toISOString() }];
-                onUpdateTask(task._id, { assigned: newAssigned } as unknown as Partial<Task>);
-            }
-        } catch (error) {
-            console.error('Failed to assign user:', error);
-            toast.error('Failed to assign user');
+    const handleAssignUser = (userId: string) => {
+        const user = project.members?.find(m => m.userId._id === userId)?.userId;
+        if (user) {
+            const newAssignment = {
+                _id: 'temp-' + Date.now(), // Temp ID
+                userId: user,
+                assignedDate: new Date().toISOString()
+            };
+            setAssigned([...assigned, newAssignment]);
         }
     };
 
-    const handleUnassignUser = async (userId: string) => {
-        try {
-            await apiClient.unassignUserFromTask(task._id, userId);
-            const newAssigned = (task.assigned || []).filter(a => a.userId._id !== userId);
-            onUpdateTask(task._id, { assigned: newAssigned } as unknown as Partial<Task>);
-        } catch (error) {
-            console.error('Failed to unassign user:', error);
-            toast.error('Failed to unassign user');
+    const handleUnassignUser = (userId: string) => {
+        setAssigned(assigned.filter(a => a.userId._id !== userId));
+    };
+
+    const handleAddLabel = (labelId: string) => {
+        const label = project.labels?.find(l => l._id === labelId);
+        if (label) {
+            const newLabel = {
+                _id: 'temp-' + Date.now(),
+                projectLabelId: label,
+                assignedDate: new Date().toISOString()
+            };
+            setLabels([...labels, newLabel]);
         }
     };
 
-    const handleAddLabel = async (labelId: string) => {
-        try {
-            await apiClient.addLabelToTask(task._id, labelId);
-            const label = project.labels?.find(l => l._id === labelId);
-            if (label) {
-                const newLabels = [...(task.labels || []), { _id: 'temp', projectLabelId: label, assignedDate: new Date().toISOString() }];
-                onUpdateTask(task._id, { labels: newLabels } as unknown as Partial<Task>);
-            }
-        } catch (error) {
-            console.error('Failed to add label:', error);
-            toast.error('Failed to add label');
-        }
-    };
-
-    const handleRemoveLabel = async (labelId: string) => {
-        // We need the assignment ID (the ID in the labels array), not the projectLabelId
-        // But the API expects labelId (which seems to be the assignment ID based on api.ts removeLabelFromTask signature? 
-        // Wait, api.ts says removeLabelFromTask(taskId, labelId). Let's assume it means the projectLabelId or the assignment ID.
-        // Looking at api.ts: delete `/tasks/${taskId}/labels/${labelId}`. Usually this is the assignment ID.
-        // Let's find the assignment ID.
-        const assignment = task.labels?.find(l => l.projectLabelId._id === labelId);
-        if (assignment) {
-            try {
-                await apiClient.removeLabelFromTask(task._id, assignment._id); // Use assignment ID if possible, or try labelId if backend is smart
-                const newLabels = (task.labels || []).filter(l => l.projectLabelId._id !== labelId);
-                onUpdateTask(task._id, { labels: newLabels } as unknown as Partial<Task>);
-            } catch (error) {
-                console.error('Failed to remove label:', error);
-                toast.error('Failed to remove label');
-            }
-        }
+    const handleRemoveLabel = (projectLabelId: string) => {
+        setLabels(labels.filter(l => l.projectLabelId._id !== projectLabelId));
     };
 
     const handleDelete = () => {
@@ -143,20 +170,37 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
         }
     };
 
-    return (
-        <Modal isOpen={isOpen} onClose={onClose} className="max-w-4xl h-[80vh] flex flex-col p-0 overflow-hidden">
-            {/* Header Image/Banner could go here */}
+    // Get users from project members
+    const projectUsers = project.members?.map(m => m.userId) || [];
 
-            <div className="flex flex-1 overflow-hidden">
+    const footer = (
+        <div className="flex justify-end space-x-3">
+            <Button variant="ghost" onClick={onClose}>
+                Cancel
+            </Button>
+            <Button onClick={handleSave}>
+                Save Changes
+            </Button>
+        </div>
+    );
+
+    return (
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
+            className="max-w-4xl h-[80vh] flex flex-col p-0 overflow-hidden"
+            footer={footer}
+            showCloseButton={true}
+        >
+            <div className="flex flex-1 overflow-hidden h-full">
                 {/* Main Content */}
-                <div className="flex-1 p-8 overflow-y-auto border-r border-[var(--border)]">
+                <div className="flex-1 pr-8 overflow-y-auto border-r border-[var(--border)]">
                     {/* Title */}
                     <div className="mb-6">
                         <input
                             type="text"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            onBlur={handleNameBlur}
                             className="w-full text-2xl font-bold bg-transparent border-none outline-none text-[var(--text-secondary)] placeholder-[var(--text-tertiary)]"
                             placeholder="Task Title"
                         />
@@ -167,175 +211,144 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
 
                     {/* Description */}
                     <div className="mb-8">
-                        <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Description</h3>
-                            {!isEditingDesc && description && (
-                                <Button variant="ghost" size="sm" onClick={() => setIsEditingDesc(true)}>Edit</Button>
-                            )}
-                        </div>
-
-                        {isEditingDesc ? (
-                            <div className="space-y-2">
-                                <textarea
-                                    value={description}
-                                    onChange={(e) => setDescription(e.target.value)}
-                                    className="w-full min-h-[150px] p-3 rounded-md border border-[var(--border)] bg-[var(--bg-primary)] text-[var(--text-primary)] focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent outline-none resize-y"
-                                    placeholder="Add a more detailed description..."
-                                    autoFocus
-                                />
-                                <div className="flex space-x-2">
-                                    <Button size="sm" onClick={handleDescriptionSave}>Save</Button>
-                                    <Button variant="ghost" size="sm" onClick={() => {
-                                        setDescription(task.description || '');
-                                        setIsEditingDesc(false);
-                                    }}>Cancel</Button>
-                                </div>
-                            </div>
-                        ) : (
-                            <div
-                                className="prose dark:prose-invert max-w-none text-[var(--text-primary)] min-h-[60px] cursor-pointer hover:bg-[var(--bg-secondary)] p-2 -ml-2 rounded"
-                                onClick={() => setIsEditingDesc(true)}
-                            >
-                                {description ? (
-                                    <p className="whitespace-pre-wrap">{description}</p>
-                                ) : (
-                                    <p className="text-[var(--text-tertiary)] italic">Add a more detailed description...</p>
-                                )}
-                            </div>
-                        )}
+                        <h3 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-2">Description</h3>
+                        <textarea
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            className="w-full min-h-[150px] p-3 rounded-md border border-[var(--border)] bg-[var(--bg-primary)] text-[var(--text-primary)] focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent outline-none resize-y"
+                            placeholder="Add a more detailed description..."
+                        />
                     </div>
-
-                    {/* Checklists could go here */}
-
-                    {/* Comments could go here */}
                 </div>
 
                 {/* Sidebar */}
-                <div className="w-80 bg-[var(--bg-secondary)] p-6 overflow-y-auto">
-                    {/* Status */}
-                    <div className="mb-6">
-                        <h3 className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-3">Status</h3>
-                        <Button
-                            variant={task.complete ? "success" : "outline"}
-                            className="w-full justify-start"
-                            onClick={handleToggleComplete}
-                        >
-                            <CheckCircle width={16} height={16} className="mr-2" />
-                            {task.complete ? 'Completed' : 'Mark Complete'}
-                        </Button>
-                    </div>
-
-                    {/* Assignees */}
-                    <div className="mb-6">
-                        <h3 className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-3">Assignees</h3>
-                        <div className="flex flex-wrap gap-2 mb-2">
-                            {task.assigned?.map((assignment) => (
-                                <div key={assignment._id} className="flex items-center bg-[var(--bg-primary)] rounded-full pl-1 pr-3 py-1 border border-[var(--border)]">
-                                    <ProfileIcon user={assignment.userId} size="xs" className="mr-2" />
-                                    <span className="text-sm text-[var(--text-primary)] mr-2">{assignment.userId.fullName}</span>
-                                    <button
-                                        onClick={() => handleUnassignUser(assignment.userId._id)}
-                                        className="text-[var(--text-tertiary)] hover:text-[var(--danger)]"
-                                    >
-                                        ×
-                                    </button>
-                                </div>
-                            ))}
-                            <Dropdown
-                                trigger={
-                                    <button className="flex items-center justify-center w-8 h-8 rounded-full bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-tertiary)] hover:text-[var(--primary)] hover:border-[var(--primary)] transition-colors">
-                                        <Plus width={16} height={16} />
-                                    </button>
-                                }
+                <div className="w-80 pl-6 overflow-y-auto flex flex-col">
+                    <div className="flex-1">
+                        {/* Status */}
+                        <div className="mb-6">
+                            <h3 className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-3">Status</h3>
+                            <Button
+                                variant={complete ? "success" : "outline"}
+                                className="w-full justify-start"
+                                onClick={handleToggleComplete}
                             >
-                                <DropdownHeader>Assign Member</DropdownHeader>
-                                {users.map(user => {
-                                    const isAssigned = task.assigned?.some(a => a.userId._id === user._id);
-                                    return (
-                                        <DropdownItem
-                                            key={user._id}
-                                            onClick={() => !isAssigned && handleAssignUser(user._id)}
-                                            className={isAssigned ? 'opacity-50 cursor-default' : ''}
-                                        >
-                                            <div className="flex items-center">
-                                                <ProfileIcon user={user} size="xs" className="mr-2" />
-                                                {user.fullName}
-                                                {isAssigned && <CheckCircle width={12} height={12} className="ml-auto text-[var(--success)]" />}
-                                            </div>
-                                        </DropdownItem>
-                                    );
-                                })}
-                            </Dropdown>
+                                <CheckCircle width={16} height={16} className="mr-2" />
+                                {complete ? 'Completed' : 'Mark Complete'}
+                            </Button>
                         </div>
-                    </div>
 
-                    {/* Labels */}
-                    <div className="mb-6">
-                        <h3 className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-3">Labels</h3>
-                        <div className="flex flex-wrap gap-2 mb-2">
-                            {task.labels?.map((label) => (
-                                <div
-                                    key={label._id}
-                                    className="flex items-center px-2 py-1 rounded text-xs text-white cursor-pointer hover:opacity-80"
-                                    style={{ backgroundColor: label.projectLabelId.labelColorId.colorHex }}
-                                    onClick={() => handleRemoveLabel(label.projectLabelId._id)}
-                                    title="Click to remove"
+                        {/* Assignees */}
+                        <div className="mb-6">
+                            <h3 className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-3">Assignees</h3>
+                            <div className="flex flex-wrap gap-2 mb-2">
+                                {assigned.map((assignment) => (
+                                    <div key={assignment._id} className="flex items-center bg-[var(--bg-primary)] rounded-full pl-1 pr-3 py-1 border border-[var(--border)]">
+                                        <ProfileIcon user={assignment.userId} size="xs" className="mr-2" />
+                                        <span className="text-sm text-[var(--text-primary)] mr-2">{assignment.userId.fullName}</span>
+                                        <button
+                                            onClick={() => handleUnassignUser(assignment.userId._id)}
+                                            className="text-[var(--text-tertiary)] hover:text-[var(--danger)]"
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
+                                ))}
+                                <Dropdown
+                                    trigger={
+                                        <button className="flex items-center justify-center w-8 h-8 rounded-full bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-tertiary)] hover:text-[var(--primary)] hover:border-[var(--primary)] transition-colors">
+                                            <Plus width={16} height={16} />
+                                        </button>
+                                    }
                                 >
-                                    {label.projectLabelId.name}
-                                </div>
-                            ))}
-                            <Dropdown
-                                trigger={
-                                    <button className="flex items-center justify-center w-8 h-8 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-tertiary)] hover:text-[var(--primary)] hover:border-[var(--primary)] transition-colors">
-                                        <Plus width={16} height={16} />
-                                    </button>
-                                }
-                            >
-                                <DropdownHeader>Add Label</DropdownHeader>
-                                {project.labels?.map(label => {
-                                    const isAssigned = task.labels?.some(l => l.projectLabelId._id === label._id);
-                                    return (
-                                        <DropdownItem
-                                            key={label._id}
-                                            onClick={() => !isAssigned && handleAddLabel(label._id)}
-                                            className={isAssigned ? 'opacity-50 cursor-default' : ''}
-                                        >
-                                            <div className="flex items-center">
-                                                <div
-                                                    className="w-3 h-3 rounded-full mr-2"
-                                                    style={{ backgroundColor: label.labelColorId.colorHex }}
-                                                />
-                                                {label.name}
-                                                {isAssigned && <CheckCircle width={12} height={12} className="ml-auto text-[var(--success)]" />}
-                                            </div>
-                                        </DropdownItem>
-                                    );
-                                })}
-                            </Dropdown>
+                                    <DropdownHeader>Assign Member</DropdownHeader>
+                                    {projectUsers.map(user => {
+                                        const isAssigned = assigned.some(a => a.userId._id === user._id);
+                                        return (
+                                            <DropdownItem
+                                                key={user._id}
+                                                onClick={() => !isAssigned && handleAssignUser(user._id)}
+                                                className={isAssigned ? 'opacity-50 cursor-default' : ''}
+                                            >
+                                                <div className="flex items-center">
+                                                    <ProfileIcon user={user} size="xs" className="mr-2" />
+                                                    {user.fullName}
+                                                    {isAssigned && <CheckCircle width={12} height={12} className="ml-auto text-[var(--success)]" />}
+                                                </div>
+                                            </DropdownItem>
+                                        );
+                                    })}
+                                </Dropdown>
+                            </div>
                         </div>
-                    </div>
 
-                    {/* Due Date */}
-                    <div className="mb-6">
-                        <h3 className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-3">Due Date</h3>
-                        <input
-                            type="date"
-                            value={task.dueDate ? dayjs(task.dueDate).format('YYYY-MM-DD') : ''}
-                            onChange={handleDueDateChange}
-                            className="w-full p-2 rounded border border-[var(--border)] bg-[var(--bg-primary)] text-[var(--text-primary)] text-sm focus:ring-2 focus:ring-[var(--primary)] outline-none"
-                        />
-                    </div>
+                        {/* Labels */}
+                        <div className="mb-6">
+                            <h3 className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-3">Labels</h3>
+                            <div className="flex flex-wrap gap-2 mb-2">
+                                {labels.map((label) => (
+                                    <div
+                                        key={label._id}
+                                        className="flex items-center px-2 py-1 rounded text-xs text-white cursor-pointer hover:opacity-80"
+                                        style={{ backgroundColor: label.projectLabelId.labelColorId.colorHex }}
+                                        onClick={() => handleRemoveLabel(label.projectLabelId._id)}
+                                        title="Click to remove"
+                                    >
+                                        {label.projectLabelId.name}
+                                    </div>
+                                ))}
+                                <Dropdown
+                                    trigger={
+                                        <button className="flex items-center justify-center w-8 h-8 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-tertiary)] hover:text-[var(--primary)] hover:border-[var(--primary)] transition-colors">
+                                            <Plus width={16} height={16} />
+                                        </button>
+                                    }
+                                >
+                                    <DropdownHeader>Add Label</DropdownHeader>
+                                    {project.labels?.map(label => {
+                                        const isAssigned = labels.some(l => l.projectLabelId._id === label._id);
+                                        return (
+                                            <DropdownItem
+                                                key={label._id}
+                                                onClick={() => !isAssigned && handleAddLabel(label._id)}
+                                                className={isAssigned ? 'opacity-50 cursor-default' : ''}
+                                            >
+                                                <div className="flex items-center">
+                                                    <div
+                                                        className="w-3 h-3 rounded-full mr-2"
+                                                        style={{ backgroundColor: label.labelColorId.colorHex }}
+                                                    />
+                                                    {label.name}
+                                                    {isAssigned && <CheckCircle width={12} height={12} className="ml-auto text-[var(--success)]" />}
+                                                </div>
+                                            </DropdownItem>
+                                        );
+                                    })}
+                                </Dropdown>
+                            </div>
+                        </div>
 
-                    {/* Actions */}
-                    <div className="mt-8 pt-6 border-t border-[var(--border)]">
-                        <Button
-                            variant="ghost"
-                            className="w-full justify-start text-[var(--danger)] hover:bg-[var(--danger)]/10 hover:text-[var(--danger)]"
-                            onClick={handleDelete}
-                        >
-                            <Trash width={16} height={16} className="mr-2" />
-                            Delete Task
-                        </Button>
+                        {/* Due Date */}
+                        <div className="mb-6">
+                            <h3 className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-3">Due Date</h3>
+                            <input
+                                type="date"
+                                value={dueDate ? dayjs(dueDate).format('YYYY-MM-DD') : ''}
+                                onChange={handleDueDateChange}
+                                className="w-full p-2 rounded border border-[var(--border)] bg-[var(--bg-primary)] text-[var(--text-primary)] text-sm focus:ring-2 focus:ring-[var(--primary)] outline-none"
+                            />
+                        </div>
+
+                        {/* Delete Action */}
+                        <div className="mt-auto pt-4 border-t border-[var(--border)]">
+                            <Button
+                                variant="ghost"
+                                className="w-full justify-start text-[var(--danger)] hover:bg-[var(--danger)]/10 hover:text-[var(--danger)]"
+                                onClick={handleDelete}
+                            >
+                                <Trash width={16} height={16} className="mr-2" />
+                                Delete Task
+                            </Button>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import { X } from '@/components/icons';
 
 interface ModalProps {
   isOpen: boolean;
@@ -7,6 +8,8 @@ interface ModalProps {
   title?: string;
   children: React.ReactNode;
   className?: string;
+  footer?: React.ReactNode;
+  showCloseButton?: boolean;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -15,6 +18,8 @@ export const Modal: React.FC<ModalProps> = ({
   title,
   children,
   className,
+  footer,
+  showCloseButton = true,
 }) => {
   useEffect(() => {
     if (isOpen) {
@@ -53,42 +58,50 @@ export const Modal: React.FC<ModalProps> = ({
         className="fixed inset-0 bg-black/50"
         onClick={onClose}
       />
-      
+
       {/* Modal */}
       <div
         className={cn(
-          'relative z-10 w-full max-w-md rounded-lg bg-[var(--bg-primary)] border border-[var(--border)] shadow-lg',
+          'relative z-10 w-full max-w-md rounded-lg bg-[var(--bg-primary)] border border-[var(--border)] shadow-lg flex flex-col max-h-[90vh]',
           className
         )}
       >
-        {title && (
-          <div className="flex items-center justify-between p-6 border-b border-[var(--border)]">
-            <h2 className="text-lg font-semibold text-[var(--text-primary)]">
-              {title}
-            </h2>
-            <button
-              onClick={onClose}
-              className="text-[var(--text-primary)] hover:text-[var(--text-secondary)]"
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+        {/* Header */}
+        {(title || showCloseButton) && (
+          <div className={cn(
+            "flex items-center justify-between p-6 border-b border-[var(--border)]",
+            !title && "border-none pb-0" // If no title, reduce padding/border
+          )}>
+            {title && (
+              <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+                {title}
+              </h2>
+            )}
+            {showCloseButton && (
+              <button
+                onClick={onClose}
+                className={cn(
+                  "text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors",
+                  !title && "absolute top-4 right-4" // Position absolute if no title to avoid taking up flow space
+                )}
               >
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
+                <X width={20} height={20} />
+              </button>
+            )}
           </div>
         )}
-        <div className="p-6">
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-6">
           {children}
         </div>
+
+        {/* Footer */}
+        {footer && (
+          <div className="p-6 border-t border-[var(--border)] bg-[var(--bg-secondary)]/50 rounded-b-lg">
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   );
