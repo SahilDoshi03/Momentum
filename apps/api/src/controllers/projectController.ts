@@ -67,7 +67,15 @@ export const getProjectById = asyncHandler(async (req: Request, res: Response) =
       path: 'tasks',
       populate: [
         { path: 'assigned.userId', select: 'username fullName initials profileIcon' },
-        { path: 'labels.projectLabelId', populate: { path: 'labelColorId' } }
+        {
+          path: 'labels',
+          populate: {
+            path: 'projectLabelId',
+            populate: { path: 'labelColorId', select: 'name colorHex position' }
+          }
+        },
+        { path: 'createdBy', select: 'username fullName initials profileIcon' },
+        { path: 'updatedBy', select: 'username fullName initials profileIcon' }
       ]
     });
 
@@ -92,12 +100,17 @@ export const getProjectById = asyncHandler(async (req: Request, res: Response) =
   const members = await ProjectMember.find({ projectId: id })
     .populate('userId', 'fullName email username initials profileIcon');
 
+  // Fetch project labels
+  const labels = await ProjectLabel.find({ projectId: id })
+    .populate('labelColorId', 'name colorHex position');
+
   res.json({
     success: true,
     data: {
       ...project.toObject(),
       members,
-      taskGroups: taskGroupsWithTasks
+      taskGroups: taskGroupsWithTasks,
+      labels
     },
   });
 });
@@ -410,8 +423,13 @@ export const deleteProjectLabel = asyncHandler(async (req: Request, res: Respons
     throw new AppError('Label not found', 404);
   }
 
+  // Clean up all TaskLabel references to this ProjectLabel
+  const TaskLabel = (await import('../models')).TaskLabel;
+  await TaskLabel.deleteMany({ projectLabelId: labelId });
+
   res.json({
     success: true,
     message: 'Label deleted successfully',
   });
 });
+

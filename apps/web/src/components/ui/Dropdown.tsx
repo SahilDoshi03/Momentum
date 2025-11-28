@@ -44,11 +44,11 @@ export const Dropdown: React.FC<DropdownProps> = ({
             {isOpen && (
                 <div
                     className={cn(
-                        "absolute z-50 mt-2 w-56 rounded-md bg-[var(--bg-secondary)] shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none border border-[var(--border)]",
+                        "absolute z-50 mt-2 w-56 max-w-[calc(100vw-2rem)] rounded-md bg-[var(--bg-secondary)] shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none border border-[var(--border)]",
                         align === 'right' ? 'right-0' : 'left-0'
                     )}
                 >
-                    <div className="py-1" role="menu" aria-orientation="vertical">
+                    <div className="py-1 max-h-80 overflow-y-auto" role="menu" aria-orientation="vertical">
                         {children}
                     </div>
                 </div>

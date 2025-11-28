@@ -56,17 +56,6 @@ const taskSchema = new Schema<ITask>({
       default: Date.now
     }
   }],
-  labels: [{
-    projectLabelId: {
-      type: String,
-      ref: 'ProjectLabel',
-      required: true
-    },
-    assignedDate: {
-      type: Date,
-      default: Date.now
-    }
-  }],
   createdBy: {
     type: String,
     ref: 'User',
@@ -79,6 +68,15 @@ const taskSchema = new Schema<ITask>({
   },
 }, {
   timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+});
+
+// Virtual populate for labels
+taskSchema.virtual('labels', {
+  ref: 'TaskLabel',
+  localField: '_id',
+  foreignField: 'taskId',
 });
 
 // Indexes

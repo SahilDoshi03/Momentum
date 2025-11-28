@@ -114,19 +114,22 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                 }
             }
 
-            // Handle Labels
-            const originalLabelIds = new Set(task.labels?.map(l => l.projectLabelId._id) || []);
-            const currentLabelIds = new Set(labels.map(l => l.projectLabelId._id));
+            // Handle Labels - filter out null projectLabelIds
+            const validOriginalLabels = task.labels?.filter(l => l.projectLabelId) || [];
+            const validCurrentLabels = labels.filter(l => l.projectLabelId);
+
+            const originalLabelIds = new Set(validOriginalLabels.map(l => l.projectLabelId._id));
+            const currentLabelIds = new Set(validCurrentLabels.map(l => l.projectLabelId._id));
 
             // Added labels
-            for (const l of labels) {
+            for (const l of validCurrentLabels) {
                 if (!originalLabelIds.has(l.projectLabelId._id)) {
                     await apiClient.addLabelToTask(task._id, l.projectLabelId._id);
                 }
             }
 
             // Removed labels
-            for (const l of task.labels || []) {
+            for (const l of validOriginalLabels) {
                 if (!currentLabelIds.has(l.projectLabelId._id)) {
                     await apiClient.removeLabelFromTask(task._id, l._id);
                 }
@@ -402,17 +405,19 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                         <div className="mb-6">
                             <h3 className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-3">Labels</h3>
                             <div className="flex flex-wrap gap-2 mb-2">
-                                {labels.map((label) => (
-                                    <div
-                                        key={label._id}
-                                        className="flex items-center px-2 py-1 rounded text-xs text-white cursor-pointer hover:opacity-80"
-                                        style={{ backgroundColor: label.projectLabelId.labelColorId.colorHex }}
-                                        onClick={() => handleRemoveLabel(label.projectLabelId._id)}
-                                        title="Click to remove"
-                                    >
-                                        {label.projectLabelId.name}
-                                    </div>
-                                ))}
+                                {labels
+                                    .filter((label) => label.projectLabelId && label.projectLabelId.labelColorId)
+                                    .map((label) => (
+                                        <div
+                                            key={label._id}
+                                            className="flex items-center px-2 py-1 rounded text-xs text-white cursor-pointer hover:opacity-80"
+                                            style={{ backgroundColor: label.projectLabelId.labelColorId.colorHex }}
+                                            onClick={() => handleRemoveLabel(label.projectLabelId._id)}
+                                            title="Click to remove"
+                                        >
+                                            {label.projectLabelId.name}
+                                        </div>
+                                    ))}
 
                                 {!isCreatingLabel && (
                                     <Dropdown
@@ -425,7 +430,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                                         <DropdownHeader>Add Label</DropdownHeader>
                                         {project.labels && project.labels.length > 0 ? (
                                             project.labels.map(label => {
-                                                const isAssigned = labels.some(l => l.projectLabelId._id === label._id);
+                                                const isAssigned = labels.some(l => l.projectLabelId && l.projectLabelId._id === label._id);
                                                 return (
                                                     <DropdownItem
                                                         key={label._id}

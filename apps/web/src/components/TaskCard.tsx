@@ -93,15 +93,17 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         {/* Labels */}
         {task.labels && task.labels.length > 0 && (
           <div className="flex flex-wrap gap-1 mb-2">
-            {task.labels.map((label) => (
-              <span
-                key={label._id}
-                className="px-2 py-1 text-xs rounded text-white"
-                style={{ backgroundColor: label.projectLabelId?.labelColorId?.colorHex || '#ccc' }}
-              >
-                {label.projectLabelId?.name || 'Label'}
-              </span>
-            ))}
+            {task.labels
+              .filter((label) => label.projectLabelId && label.projectLabelId.labelColorId)
+              .map((label) => (
+                <span
+                  key={label._id}
+                  className="px-2 py-1 text-xs rounded text-white"
+                  style={{ backgroundColor: label.projectLabelId.labelColorId.colorHex }}
+                >
+                  {label.projectLabelId.name}
+                </span>
+              ))}
           </div>
         )}
 
