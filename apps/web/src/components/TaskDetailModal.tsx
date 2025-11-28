@@ -3,8 +3,8 @@ import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Dropdown, DropdownItem, DropdownHeader } from '@/components/ui/Dropdown';
 import { ProfileIcon } from '@/components/ui/ProfileIcon';
-import { CheckCircle, Plus, Trash } from '@/components/icons';
-import { Task, User as UserType, Project, apiClient } from '@/lib/api';
+import { CheckCircle, Plus, Trash, X } from '@/components/icons';
+import { Task, User as UserType, Project, apiClient, LabelColor } from '@/lib/api';
 import { toast } from 'react-toastify';
 import dayjs from 'dayjs';
 
@@ -16,6 +16,7 @@ interface TaskDetailModalProps {
     currentUser: UserType | null;
     onUpdateTask: (taskId: string, updates: Partial<Task>) => void;
     onDeleteTask: (taskId: string) => void;
+    onUpdateProject?: (project: Project) => void;
 }
 
 export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
@@ -26,6 +27,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     currentUser,
     onUpdateTask,
     onDeleteTask,
+    onUpdateProject,
 }) => {
     const [name, setName] = useState(task.name);
     const [description, setDescription] = useState(task.description || '');
@@ -33,6 +35,12 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     const [complete, setComplete] = useState(task.complete);
     const [assigned, setAssigned] = useState(task.assigned || []);
     const [labels, setLabels] = useState(task.labels || []);
+
+    // Label creation state
+    const [isCreatingLabel, setIsCreatingLabel] = useState(false);
+    const [newLabelName, setNewLabelName] = useState('');
+    const [selectedColorId, setSelectedColorId] = useState<string>('');
+    const [labelColors, setLabelColors] = useState<LabelColor[]>([]);
 
     // Sync state with task prop when it changes
     useEffect(() => {
@@ -43,6 +51,20 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
         setAssigned(task.assigned || []);
         setLabels(task.labels || []);
     }, [task]);
+
+    // Fetch label colors on mount
+    // useEffect(() => {
+    //     if (isOpen) {
+    //         apiClient.getLabelColors().then(response => {
+    //             if (response.success && response.data) {
+    //                 setLabelColors(response.data);
+    //                 if (response.data.length > 0) {
+    //                     setSelectedColorId(response.data[0]._id);
+    //                 }
+    //             }
+    //         });
+    //     }
+    // }, [isOpen]);
 
     const handleSave = async () => {
         try {
@@ -59,7 +81,9 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                 hasUpdates = true;
             }
             if (dueDate !== task.dueDate) {
-                updates.dueDate = dueDate;
+                // If dueDate is empty string or null, send null to backend
+                // Otherwise send the date string
+                updates.dueDate = dueDate ? dueDate : null as any;
                 hasUpdates = true;
             }
             if (complete !== task.complete) {
@@ -161,6 +185,56 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
 
     const handleRemoveLabel = (projectLabelId: string) => {
         setLabels(labels.filter(l => l.projectLabelId._id !== projectLabelId));
+    };
+
+    const handleCreateLabel = async () => {
+        if (!newLabelName.trim() || !selectedColorId) return;
+
+        try {
+            const response = await apiClient.createProjectLabel(project._id, {
+                name: newLabelName.trim(),
+                labelColorId: selectedColorId
+            });
+
+            if (response.success) {
+                toast.success('Label created');
+                setIsCreatingLabel(false);
+                setNewLabelName('');
+
+                // Refresh project data to get the new label
+                // Ideally we should have a way to update the project in the parent
+                // For now, we'll try to fetch the project again or just manually construct the label if we had the ID
+                // Since we don't get the full label object back easily without refetching or assuming structure,
+                // let's refetch the project labels or the project itself.
+
+                // A better approach for immediate UI feedback:
+                // The API should return the created label. Let's assume it does or we fetch it.
+                // Actually, createProjectLabel returns ApiResponse which might contain data.
+                // Let's check api.ts... it returns ApiResponse (any).
+
+                // Let's fetch the project again to be safe and update parent
+                const projectResponse = await apiClient.getProjectById(project._id);
+                if (projectResponse.success && projectResponse.data) {
+                    if (onUpdateProject) {
+                        onUpdateProject(projectResponse.data);
+                    }
+
+                    // Also find the new label and add it to the task immediately
+                    const newLabel = projectResponse.data.labels?.find(l => l.name === newLabelName.trim());
+                    if (newLabel) {
+                        const newTaskLabel = {
+                            _id: 'temp-' + Date.now(),
+                            projectLabelId: newLabel,
+                            assignedDate: new Date().toISOString()
+                        };
+                        setLabels([...labels, newTaskLabel]);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Failed to create label:', error);
+            toast.error('Failed to create label');
+        }
     };
 
     const handleDelete = () => {
@@ -339,41 +413,99 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                                         {label.projectLabelId.name}
                                     </div>
                                 ))}
-                                <Dropdown
-                                    trigger={
-                                        <button className="flex items-center justify-center w-8 h-8 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-tertiary)] hover:text-[var(--primary)] hover:border-[var(--primary)] transition-colors">
-                                            <Plus width={16} height={16} />
-                                        </button>
-                                    }
-                                >
-                                    <DropdownHeader>Add Label</DropdownHeader>
-                                    {project.labels && project.labels.length > 0 ? (
-                                        project.labels.map(label => {
-                                            const isAssigned = labels.some(l => l.projectLabelId._id === label._id);
-                                            return (
-                                                <DropdownItem
-                                                    key={label._id}
-                                                    onClick={() => !isAssigned && handleAddLabel(label._id)}
-                                                    className={isAssigned ? 'opacity-50 cursor-default' : ''}
-                                                >
-                                                    <div className="flex items-center">
-                                                        <div
-                                                            className="w-3 h-3 rounded-full mr-2"
-                                                            style={{ backgroundColor: label.labelColorId.colorHex }}
-                                                        />
-                                                        {label.name}
-                                                        {isAssigned && <CheckCircle width={12} height={12} className="ml-auto text-[var(--success)]" />}
-                                                    </div>
-                                                </DropdownItem>
-                                            );
-                                        })
-                                    ) : (
-                                        <div className="px-4 py-2 text-sm text-[var(--text-tertiary)]">
-                                            No labels in project
+
+                                {!isCreatingLabel && (
+                                    <Dropdown
+                                        trigger={
+                                            <button className="flex items-center justify-center w-8 h-8 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-tertiary)] hover:text-[var(--primary)] hover:border-[var(--primary)] transition-colors">
+                                                <Plus width={16} height={16} />
+                                            </button>
+                                        }
+                                    >
+                                        <DropdownHeader>Add Label</DropdownHeader>
+                                        {project.labels && project.labels.length > 0 ? (
+                                            project.labels.map(label => {
+                                                const isAssigned = labels.some(l => l.projectLabelId._id === label._id);
+                                                return (
+                                                    <DropdownItem
+                                                        key={label._id}
+                                                        onClick={() => !isAssigned && handleAddLabel(label._id)}
+                                                        className={isAssigned ? 'opacity-50 cursor-default' : ''}
+                                                    >
+                                                        <div className="flex items-center">
+                                                            <div
+                                                                className="w-3 h-3 rounded-full mr-2"
+                                                                style={{ backgroundColor: label.labelColorId.colorHex }}
+                                                            />
+                                                            {label.name}
+                                                            {isAssigned && <CheckCircle width={12} height={12} className="ml-auto text-[var(--success)]" />}
+                                                        </div>
+                                                    </DropdownItem>
+                                                );
+                                            })
+                                        ) : (
+                                            <div className="px-4 py-2 text-sm text-[var(--text-tertiary)]">
+                                                No labels in project
+                                            </div>
+                                        )}
+                                        <div className="border-t border-[var(--border)] mt-1 pt-1">
+                                            <DropdownItem onClick={(e) => {
+                                                // Close dropdown logic is handled by Dropdown component on click
+                                                // We just need to set state
+                                                setIsCreatingLabel(true);
+                                            }}>
+                                                <div className="flex items-center text-[var(--primary)]">
+                                                    <Plus width={14} height={14} className="mr-2" />
+                                                    Create New Label
+                                                </div>
+                                            </DropdownItem>
                                         </div>
-                                    )}
-                                </Dropdown>
+                                    </Dropdown>
+                                )}
                             </div>
+
+                            {isCreatingLabel && (
+                                <div className="mt-3 p-3 border border-[var(--border)] rounded-md bg-[var(--bg-primary)]">
+                                    <div className="text-xs font-semibold text-[var(--text-secondary)] mb-3">CREATE NEW LABEL</div>
+                                    <div className="mb-3">
+                                        <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Name</label>
+                                        <input
+                                            type="text"
+                                            value={newLabelName}
+                                            onChange={(e) => setNewLabelName(e.target.value)}
+                                            className="w-full p-2 text-sm rounded border border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)] focus:ring-1 focus:ring-[var(--primary)] outline-none"
+                                            placeholder="Label name"
+                                            autoFocus
+                                        />
+                                    </div>
+                                    <div className="mb-4">
+                                        <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Color</label>
+                                        <div className="flex flex-wrap gap-2">
+                                            {labelColors.map(color => (
+                                                <button
+                                                    key={color._id}
+                                                    className={`w-6 h-6 rounded-full border-2 ${selectedColorId === color._id ? 'border-[var(--text-primary)]' : 'border-transparent'}`}
+                                                    style={{ backgroundColor: color.colorHex }}
+                                                    onClick={() => setSelectedColorId(color._id)}
+                                                    title={color.name}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-end space-x-2">
+                                        <Button size="sm" variant="ghost" onClick={() => setIsCreatingLabel(false)}>
+                                            Cancel
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            onClick={handleCreateLabel}
+                                            disabled={!newLabelName.trim() || !selectedColorId}
+                                        >
+                                            Create
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Due Date */}
@@ -404,3 +536,4 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
         </Modal>
     );
 };
+

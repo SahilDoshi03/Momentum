@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { User, Project, Task, TaskGroup, ProjectMember, TaskAssigned } from '../../models';
+import { User, Project, Task, TaskGroup, ProjectMember, TaskAssigned, Team } from '../../models';
 import bcrypt from 'bcryptjs';
 
 /**
@@ -13,7 +13,7 @@ export const createTestUser = async (overrides: Partial<any> = {}) => {
     const userData = {
         email: overrides.email || `test${timestamp}@example.com`,
         username: overrides.username || `testuser${timestamp}`,
-        password: await bcrypt.hash('password123', 10),
+        password: 'password123',
         fullName: overrides.fullName || 'Test User',
         initials: overrides.initials || 'TU',
         bio: overrides.bio || 'Test bio',
@@ -100,6 +100,36 @@ export const assignUserToTask = async (taskId: string, userId: string) => {
     return taskAssigned;
 };
 
+// Team factory - creates a real team in the database
+export const createTestTeam = async (userId: string, overrides: Partial<any> = {}) => {
+    const timestamp = Date.now();
+
+    // Create organization if not provided
+    let organizationId = overrides.organizationId;
+    if (!organizationId) {
+        const Organization = require('../../models/Organization').Organization;
+        const org = await Organization.create({ name: `Test Org ${timestamp}` });
+        organizationId = org._id.toString();
+    }
+
+    const teamData = {
+        name: overrides.name || `Test Team ${timestamp}`,
+        organizationId,
+        ...overrides,
+    };
+
+    const team = await Team.create(teamData);
+
+    // Create team membership for the owner
+    await require('../../models/TeamMember').TeamMember.create({
+        teamId: team._id,
+        userId,
+        role: overrides.memberRole || 'owner',
+    });
+
+    return team;
+};
+
 // Helper to clear all collections (useful for cleanup)
 export const clearDatabase = async () => {
     const collections = mongoose.connection.collections;
@@ -128,6 +158,8 @@ export const mockResponse = () => {
     res.json = jest.fn().mockReturnValue(res);
     res.send = jest.fn().mockReturnValue(res);
     res.sendStatus = jest.fn().mockReturnValue(res);
+    res.cookie = jest.fn().mockReturnValue(res);
+    res.clearCookie = jest.fn().mockReturnValue(res);
     return res;
 };
 

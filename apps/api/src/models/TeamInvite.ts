@@ -46,7 +46,7 @@ const teamInviteSchema = new Schema<ITeamInvite>({
 });
 
 // Index for faster lookups and automatic expiration (optional, but good practice)
-teamInviteSchema.index({ token: 1 });
+
 teamInviteSchema.index({ teamId: 1 });
 
 export const TeamInvite = mongoose.model<ITeamInvite>('TeamInvite', teamInviteSchema);

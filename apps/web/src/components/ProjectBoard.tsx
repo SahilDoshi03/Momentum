@@ -755,6 +755,7 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
             setSelectedTask(prev => prev ? { ...prev, ...updates } : null);
           }}
           onDeleteTask={handleDeleteTask}
+          onUpdateProject={(updatedProject) => setProject(updatedProject)}
         />
       )}
     </div>

@@ -93,6 +93,8 @@ export interface ITask extends Document {
     projectLabelId: string;
     assignedDate: Date;
   }>;
+  createdBy?: string;
+  updatedBy?: string;
   createdAt: Date;
   updatedAt: Date;
 }

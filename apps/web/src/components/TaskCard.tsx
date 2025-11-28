@@ -113,13 +113,17 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             onChange={(e) => setEditName(e.target.value)}
             onBlur={handleSaveEdit}
             onKeyDown={handleKeyDown}
+            onClick={(e) => e.stopPropagation()}
             className="w-full bg-transparent border-none outline-none text-[var(--text-primary)] font-medium"
             autoFocus
           />
         ) : (
           <div
             className="text-[var(--text-primary)] font-medium cursor-pointer hover:bg-[var(--bg-secondary)] -m-1 p-1 rounded"
-            onClick={() => setIsEditing(true)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsEditing(true);
+            }}
           >
             {task.name}
           </div>

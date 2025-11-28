@@ -87,12 +87,14 @@ taskSchema.index({ taskGroupId: 1, position: 1 });
 taskSchema.index({ complete: 1 });
 
 // Generate shortId before validation
+// Generate shortId before validation
 taskSchema.pre('validate', async function (next) {
-  if (!this.isNew || this.shortId) return next();
+  const doc = this as any;
+  if (!doc.isNew || doc.shortId) return next();
 
   try {
     const count = await mongoose.model('Task').countDocuments();
-    this.shortId = String(count + 1);
+    doc.shortId = String(count + 1);
     next();
   } catch (error) {
     next(error as Error);
@@ -102,7 +104,8 @@ taskSchema.pre('validate', async function (next) {
 // Update completedAt when complete changes
 taskSchema.pre('save', function (next) {
   if (this.isModified('complete')) {
-    this.completedAt = this.complete ? new Date() : undefined;
+    const doc = this as any;
+    doc.completedAt = doc.complete ? new Date() : undefined;
   }
   next();
 });

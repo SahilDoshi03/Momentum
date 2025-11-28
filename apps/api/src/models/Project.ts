@@ -10,7 +10,6 @@ const projectSchema = new Schema<IProject>({
   },
   shortId: {
     type: String,
-    required: true,
     unique: true,
     uppercase: true,
     maxlength: 10,
@@ -33,13 +32,14 @@ projectSchema.index({ teamId: 1 });
 // shortId index is automatically created by unique: true
 projectSchema.index({ name: 1 });
 
-// Generate shortId before saving
-projectSchema.pre('save', async function(next) {
-  if (!this.isNew || this.shortId) return next();
-  
+// Generate shortId before validation
+projectSchema.pre('validate', async function (next) {
+  const doc = this as any;
+  if (!doc.isNew || doc.shortId) return next();
+
   try {
     const count = await mongoose.model('Project').countDocuments();
-    this.shortId = `P${String(count + 1).padStart(3, '0')}`;
+    doc.shortId = `P${String(count + 1).padStart(3, '0')}`;
     next();
   } catch (error) {
     next(error as Error);

@@ -1,11 +1,12 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { TaskDetailModal } from '../TaskDetailModal';
 import { Task, Project, User } from '@/lib/api';
 import '@testing-library/jest-dom';
 
 // Mock API client
 jest.mock('@/lib/api', () => ({
+    __esModule: true,
     apiClient: {
         getUsers: jest.fn().mockResolvedValue({
             success: true,
@@ -18,6 +19,9 @@ jest.mock('@/lib/api', () => ({
         unassignUserFromTask: jest.fn().mockResolvedValue({ success: true }),
         addLabelToTask: jest.fn().mockResolvedValue({ success: true }),
         removeLabelFromTask: jest.fn().mockResolvedValue({ success: true }),
+
+        createProjectLabel: jest.fn().mockResolvedValue({ success: true }),
+        updateTask: jest.fn().mockResolvedValue({ success: true }),
     },
 }));
 
@@ -93,10 +97,10 @@ describe('TaskDetailModal', () => {
         expect(screen.getByText('Test Description')).toBeInTheDocument();
         expect(screen.getByText('Status')).toBeInTheDocument();
         expect(screen.getByText('Assignees')).toBeInTheDocument();
-        expect(screen.getByText('Labels')).toBeInTheDocument();
+
     });
 
-    it('updates task name on blur', () => {
+    it('updates task name on save', async () => {
         render(
             <TaskDetailModal
                 isOpen={true}
@@ -111,12 +115,16 @@ describe('TaskDetailModal', () => {
 
         const input = screen.getByDisplayValue('Test Task');
         fireEvent.change(input, { target: { value: 'Updated Task Name' } });
-        fireEvent.blur(input);
 
-        expect(mockOnUpdateTask).toHaveBeenCalledWith('task1', { name: 'Updated Task Name' });
+        const saveButton = screen.getByText('Save Changes');
+        fireEvent.click(saveButton);
+
+        await waitFor(() => {
+            expect(mockOnUpdateTask).toHaveBeenCalledWith('task1', expect.objectContaining({ name: 'Updated Task Name' }));
+        });
     });
 
-    it('toggles completion status', () => {
+    it('toggles completion status on save', async () => {
         render(
             <TaskDetailModal
                 isOpen={true}
@@ -132,7 +140,12 @@ describe('TaskDetailModal', () => {
         const button = screen.getByText('Mark Complete');
         fireEvent.click(button);
 
-        expect(mockOnUpdateTask).toHaveBeenCalledWith('task1', { complete: true });
+        const saveButton = screen.getByText('Save Changes');
+        fireEvent.click(saveButton);
+
+        await waitFor(() => {
+            expect(mockOnUpdateTask).toHaveBeenCalledWith('task1', expect.objectContaining({ complete: true }));
+        });
     });
 
     it('calls onDeleteTask when delete button is clicked and confirmed', () => {

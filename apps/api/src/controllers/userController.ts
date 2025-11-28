@@ -134,13 +134,19 @@ export const getUserTeams = asyncHandler(async (req: Request, res: Response) => 
   const currentUser = (req as any).user;
 
   // Users can only view their own teams unless they're admin
-  if (id !== currentUser._id && !['admin', 'owner'].includes(currentUser.role)) {
+  if (id !== currentUser._id.toString() && !['admin', 'owner'].includes(currentUser.role)) {
     throw new AppError('Not authorized to view this user\'s teams', 403);
   }
 
   const teamMembers = await TeamMember.find({ userId: id })
-    .populate('teamId', 'name organizationId createdAt')
-    .populate('organizationId', 'name')
+    .populate({
+      path: 'teamId',
+      select: 'name organizationId createdAt',
+      populate: {
+        path: 'organizationId',
+        select: 'name',
+      },
+    })
     .sort({ addedDate: -1 });
 
   res.json({
@@ -155,13 +161,23 @@ export const getUserProjects = asyncHandler(async (req: Request, res: Response) 
   const currentUser = (req as any).user;
 
   // Users can only view their own projects unless they're admin
-  if (id !== currentUser._id && !['admin', 'owner'].includes(currentUser.role)) {
+  if (id !== currentUser._id.toString() && !['admin', 'owner'].includes(currentUser.role)) {
     throw new AppError('Not authorized to view this user\'s projects', 403);
   }
 
   const projectMembers = await ProjectMember.find({ userId: id })
-    .populate('projectId', 'name shortId teamId createdAt')
-    .populate('teamId', 'name organizationId')
+    .populate({
+      path: 'projectId',
+      select: 'name shortId teamId createdAt',
+      populate: {
+        path: 'teamId',
+        select: 'name organizationId',
+        populate: {
+          path: 'organizationId',
+          select: 'name',
+        },
+      },
+    })
     .sort({ addedAt: -1 });
 
   res.json({
