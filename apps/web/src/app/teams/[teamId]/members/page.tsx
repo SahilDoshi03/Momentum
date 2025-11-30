@@ -1,26 +1,34 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { TopNavbar } from '@/components/TopNavbar';
 import { apiClient, Team, User } from '@/lib/api';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { toast } from 'react-toastify';
-import { Trash, Plus } from '@/components/icons';
+import { Trash } from '@/components/icons';
 import { ProfileIcon } from '@/components/ui/ProfileIcon';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
+
+interface TeamMember {
+    _id: string;
+    userId: User;
+    role: string;
+}
 
 export default function TeamMembersPage() {
     const params = useParams();
     const teamId = params.teamId as string;
     const [team, setTeam] = useState<Team | null>(null);
-    const [members, setMembers] = useState<any[]>([]);
+    const [members, setMembers] = useState<TeamMember[]>([]);
     const [loading, setLoading] = useState(true);
     const [inviteEmail, setInviteEmail] = useState('');
     const [inviteLink, setInviteLink] = useState('');
     const [generatingInvite, setGeneratingInvite] = useState(false);
+    const [memberToRemove, setMemberToRemove] = useState<string | null>(null);
 
-    const fetchTeamData = async () => {
+    const fetchTeamData = useCallback(async () => {
         try {
             const [teamRes, membersRes] = await Promise.all([
                 apiClient.getTeamById(teamId),
@@ -31,7 +39,7 @@ export default function TeamMembersPage() {
                 setTeam(teamRes.data);
             }
             if (membersRes.success && membersRes.data) {
-                setMembers(membersRes.data);
+                setMembers(membersRes.data as TeamMember[]);
             }
         } catch (error) {
             console.error('Failed to load team:', error);
@@ -39,17 +47,23 @@ export default function TeamMembersPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [teamId]);
 
     useEffect(() => {
         if (teamId) {
             fetchTeamData();
         }
-    }, [teamId]);
+    }, [teamId, fetchTeamData]);
 
     const handleGenerateInvite = async () => {
         if (!inviteEmail.trim()) {
             toast.error('Please enter an email address');
+            return;
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(inviteEmail)) {
+            toast.error('Please enter a valid email address');
             return;
         }
 
@@ -62,21 +76,23 @@ export default function TeamMembersPage() {
                 navigator.clipboard.writeText(link);
                 toast.success('Invite link generated and copied!');
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Failed to generate invite:', error);
-            toast.error(error.message || 'Failed to generate invite link');
+            const message = error instanceof Error ? error.message : 'Failed to generate invite link';
+            toast.error(message);
         } finally {
             setGeneratingInvite(false);
         }
     };
 
-    const handleRemoveMember = async (userId: string) => {
-        if (!confirm('Are you sure you want to remove this member?')) return;
+    const handleRemoveMember = async () => {
+        if (!memberToRemove) return;
         try {
-            const response = await apiClient.removeTeamMember(teamId, userId);
+            const response = await apiClient.removeTeamMember(teamId, memberToRemove);
             if (response.success) {
                 toast.success('Member removed successfully');
-                setMembers(prev => prev.filter(m => m.userId._id !== userId));
+                setMembers(prev => prev.filter(m => m.userId._id !== memberToRemove));
+                setMemberToRemove(null);
             }
         } catch (error) {
             console.error('Failed to remove member:', error);
@@ -110,7 +126,12 @@ export default function TeamMembersPage() {
 
     return (
         <div className="min-h-screen bg-[var(--bg-primary)]">
-            <TopNavbar />
+            <TopNavbar
+                breadcrumbs={[
+                    { label: team.name, href: `/teams/${teamId}` },
+                    { label: 'Members' }
+                ]}
+            />
             <div className="max-w-4xl mx-auto px-4 py-8">
                 <h1 className="text-2xl font-bold text-[var(--text-secondary)] mb-6">
                     {team.name} Members
@@ -179,7 +200,7 @@ export default function TeamMembersPage() {
                                                 variant="ghost"
                                                 size="sm"
                                                 className="text-[var(--danger)] hover:bg-[var(--danger)]/10"
-                                                onClick={() => handleRemoveMember(member.userId._id)}
+                                                onClick={() => setMemberToRemove(member.userId._id)}
                                             >
                                                 <Trash width={16} height={16} />
                                             </Button>
@@ -191,6 +212,15 @@ export default function TeamMembersPage() {
                     </div>
                 </div>
             </div>
+            <ConfirmationModal
+                isOpen={!!memberToRemove}
+                onClose={() => setMemberToRemove(null)}
+                onConfirm={handleRemoveMember}
+                title="Remove Member"
+                message="Are you sure you want to remove this member? They will lose access to all team projects."
+                confirmText="Remove Member"
+                variant="danger"
+            />
         </div>
     );
 }

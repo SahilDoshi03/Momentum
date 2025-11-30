@@ -132,7 +132,6 @@ export const TeamDetails: React.FC<TeamDetailsProps> = ({ team }) => {
                     <div className="absolute inset-0 bg-black/15" />
                     <div className="relative z-10">
                       <h3 className="font-semibold text-lg">{project.name}</h3>
-                      <p className="text-sm opacity-90">{project.shortId}</p>
                     </div>
                   </div>
                 </Link>

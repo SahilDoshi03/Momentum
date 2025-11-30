@@ -96,11 +96,7 @@ export const validateCreateProject = [
     .optional()
     .isMongoId()
     .withMessage('Invalid team ID'),
-  body('shortId')
-    .optional()
-    .trim()
-    .isLength({ min: 1, max: 10 })
-    .withMessage('Short ID must be between 1 and 10 characters'),
+
   handleValidationErrors,
 ];
 

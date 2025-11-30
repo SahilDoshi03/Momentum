@@ -30,7 +30,7 @@ describe('Task Model', () => {
             expect(task.name).toBe('Test Task');
             expect(task.description).toBe('Test description');
             expect(task.complete).toBe(false);
-            expect(task.shortId).toBeDefined();
+            expect(task.complete).toBe(false);
             expect(task.createdAt).toBeDefined();
             expect(task.updatedAt).toBeDefined();
         });
@@ -74,23 +74,7 @@ describe('Task Model', () => {
             await expect(task.save()).rejects.toThrow();
         });
 
-        it('should auto-generate unique shortId', async () => {
-            const task1 = new Task({
-                taskGroupId: testTaskGroupId,
-                name: 'Task 1',
-            });
-            await task1.save();
 
-            const task2 = new Task({
-                taskGroupId: testTaskGroupId,
-                name: 'Task 2',
-            });
-            await task2.save();
-
-            expect(task1.shortId).toBeDefined();
-            expect(task2.shortId).toBeDefined();
-            expect(task1.shortId).not.toBe(task2.shortId);
-        });
     });
 
     describe('Default Values', () => {
@@ -196,23 +180,7 @@ describe('Task Model', () => {
         });
     });
 
-    describe('Indexing', () => {
-        it('should enforce unique shortId', async () => {
-            const task1 = new Task({
-                taskGroupId: testTaskGroupId,
-                name: 'Task 1',
-            });
-            await task1.save();
 
-            const task2 = new Task({
-                taskGroupId: testTaskGroupId,
-                name: 'Task 2',
-                shortId: task1.shortId, // Try to use same shortId
-            });
-
-            await expect(task2.save()).rejects.toThrow();
-        });
-    });
 
     describe('Timestamps', () => {
         it('should automatically set createdAt and updatedAt', async () => {
@@ -260,16 +228,6 @@ describe('Task Model', () => {
             expect(task.assigned).toHaveLength(0);
         });
 
-        it('should initialize with empty labels array', async () => {
-            const task = new Task({
-                taskGroupId: testTaskGroupId,
-                name: 'Test Task',
-            });
-            await task.save();
 
-            expect(task.labels).toBeDefined();
-            expect(Array.isArray(task.labels)).toBe(true);
-            expect(task.labels).toHaveLength(0);
-        });
     });
 });

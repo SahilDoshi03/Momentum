@@ -29,7 +29,6 @@ export interface User {
 export interface Project {
   _id: string;
   name: string;
-  shortId: string;
   teamId?: string | { _id: string; name: string; organizationId: string };
   createdAt: string;
   publicOn?: string;
@@ -65,11 +64,9 @@ export interface Task {
     projectId: string | {
       _id: string;
       name: string;
-      shortId: string;
     };
   };
   name: string;
-  shortId: string;
   description?: string;
   position: number;
   complete: boolean;
@@ -244,7 +241,6 @@ class ApiClient {
   async createProject(projectData: {
     name: string;
     teamId?: string;
-    shortId?: string;
   }): Promise<ApiResponse<Project>> {
     return this.request('/projects', {
       method: 'POST',

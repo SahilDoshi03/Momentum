@@ -20,7 +20,7 @@ describe('Project Model', () => {
 
             expect(project._id).toBeDefined();
             expect(project.name).toBe('Test Project');
-            expect(project.shortId).toBeDefined();
+
             expect(project.createdAt).toBeDefined();
             expect(project.createdAt).toBeDefined();
         });
@@ -39,47 +39,6 @@ describe('Project Model', () => {
             });
 
             await expect(project.save()).rejects.toThrow();
-        });
-
-        it('should auto-generate unique shortId', async () => {
-            const project1 = new Project({
-                name: 'Project 1',
-            });
-            await project1.save();
-
-            const project2 = new Project({
-                name: 'Project 2',
-            });
-            await project2.save();
-
-            expect(project1.shortId).toBeDefined();
-            expect(project2.shortId).toBeDefined();
-            expect(project1.shortId).not.toBe(project2.shortId);
-        });
-
-        it('should allow custom shortId', async () => {
-            const customShortId = 'CUSTOM123';
-            const project = new Project({
-                name: 'Test Project',
-                shortId: customShortId,
-            });
-            await project.save();
-
-            expect(project.shortId).toBe(customShortId);
-        });
-
-        it('should enforce unique shortId', async () => {
-            const project1 = new Project({
-                name: 'Project 1',
-            });
-            await project1.save();
-
-            const project2 = new Project({
-                name: 'Project 2',
-                shortId: project1.shortId,
-            });
-
-            await expect(project2.save()).rejects.toThrow();
         });
     });
 });

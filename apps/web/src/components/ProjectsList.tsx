@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { toast } from 'react-toastify';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { Input } from '@/components/ui/Input';
 import { Plus, Trash } from '@/components/icons';
 import { apiClient, Project, Team } from '@/lib/api';
@@ -98,7 +99,6 @@ export const ProjectsList: React.FC = () => {
       try {
         const response = await apiClient.createProject({
           name: newProjectName,
-          shortId: newProjectName.substring(0, 3).toUpperCase(),
           teamId: selectedTeamId || undefined
         });
 
@@ -179,7 +179,6 @@ export const ProjectsList: React.FC = () => {
                   <div className="absolute inset-0 bg-black/15 rounded-lg" />
                   <div className="relative z-10 h-full flex flex-col justify-center">
                     <h3 className="font-semibold text-lg leading-tight text-clip-fix">{project.name}</h3>
-                    <p className="text-sm opacity-90 mt-1">{project.shortId}</p>
                   </div>
                 </div>
               </Link>
@@ -254,7 +253,6 @@ export const ProjectsList: React.FC = () => {
                     <div className="absolute inset-0 bg-black/15 rounded-lg" />
                     <div className="relative z-10 h-full flex flex-col justify-center">
                       <h3 className="font-semibold text-lg leading-tight text-clip-fix">{project.name}</h3>
-                      <p className="text-sm opacity-90 mt-1">{project.shortId}</p>
                     </div>
                   </div>
                 </Link>
@@ -349,37 +347,22 @@ export const ProjectsList: React.FC = () => {
       </Modal>
 
       {/* Delete Project Confirmation Modal */}
-      <Modal
+      <ConfirmationModal
         isOpen={showDeleteConfirm}
         onClose={() => {
           setShowDeleteConfirm(false);
           setProjectToDelete(null);
         }}
+        onConfirm={handleDeleteProject}
         title="Delete Project"
-      >
-        <div className="space-y-4">
-          <p className="text-[var(--text-primary)]">
+        message={
+          <p>
             Are you sure you want to delete the project <strong>{projectToDelete?.name}</strong>? This action cannot be undone and will delete all tasks and data associated with this project.
           </p>
-          <div className="flex justify-end space-x-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowDeleteConfirm(false);
-                setProjectToDelete(null);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleDeleteProject}
-              className="bg-red-600 hover:bg-red-700 text-white"
-            >
-              Delete Project
-            </Button>
-          </div>
-        </div>
-      </Modal>
+        }
+        confirmText="Delete Project"
+        variant="danger"
+      />
     </div>
   );
 };

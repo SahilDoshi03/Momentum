@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
-import { Task, TaskGroup, TaskAssigned, TaskLabel, ProjectMember, ProjectLabel } from '../models';
+import { Task, TaskGroup, TaskLabel, ProjectMember, ProjectLabel } from '../models';
 import { ITask } from '../types';
 import { AppError, asyncHandler } from '../middleware';
 
@@ -10,17 +10,18 @@ export const getMyTasks = asyncHandler(async (req: Request, res: Response) => {
   const { status = 'ALL', sort = 'NONE' } = req.query;
 
   // Get all tasks assigned to user
-  const taskAssignments = await TaskAssigned.find({ userId: user._id })
+  let tasks = await Task.find({ 'assigned.userId': user._id })
+    .populate('taskGroupId', 'name projectId')
     .populate({
-      path: 'taskId',
-      populate: [
-        { path: 'taskGroupId', select: 'name projectId' },
-        { path: 'assigned', populate: { path: 'userId', select: 'username fullName initials profileIcon' } },
-        { path: 'labels', populate: { path: 'projectLabelId', populate: { path: 'labelColorId' } } }
-      ]
-    });
-
-  let tasks = taskAssignments.map(ta => ta.taskId as unknown as ITask).filter(task => task !== null);
+      path: 'assigned',
+      populate: { path: 'userId', select: 'username fullName initials profileIcon' }
+    })
+    .populate({
+      path: 'labels',
+      populate: { path: 'projectLabelId', populate: { path: 'labelColorId' } }
+    })
+    .populate('createdBy', 'username fullName initials profileIcon')
+    .populate('updatedBy', 'username fullName initials profileIcon') as unknown as ITask[];
 
   // Apply status filter
   if (status !== 'ALL') {
@@ -159,11 +160,11 @@ export const createTask = asyncHandler(async (req: Request, res: Response) => {
 
   // Assign to creator if they have member role or higher
   if (['owner', 'admin', 'member'].includes(projectMember.role)) {
-    const taskAssigned = new TaskAssigned({
-      taskId: task._id,
+    task.assigned.push({
       userId: user._id,
-    });
-    await taskAssigned.save();
+      assignedDate: new Date(),
+    } as any);
+    await task.save();
   }
 
   const populatedTask = await Task.findById(task._id)
@@ -339,7 +340,6 @@ export const deleteTask = asyncHandler(async (req: Request, res: Response) => {
   }
 
   // Delete related data
-  await TaskAssigned.deleteMany({ taskId: id });
   await TaskLabel.deleteMany({ taskId: id });
   await Task.findByIdAndDelete(id);
 
@@ -383,22 +383,24 @@ export const assignUserToTask = asyncHandler(async (req: Request, res: Response)
   }
 
   // Check if user is already assigned
-  const existingAssignment = await TaskAssigned.findOne({ taskId: id, userId });
-  if (existingAssignment) {
+  const isAlreadyAssigned = task.assigned.some(a => (a.userId as any)._id?.toString() === userId || (a.userId as any).toString() === userId);
+  if (isAlreadyAssigned) {
     throw new AppError('User is already assigned to this task', 400);
   }
 
-  const taskAssigned = new TaskAssigned({
-    taskId: id,
+  // Add to Task.assigned
+  const newAssignment = {
     userId,
-  });
+    assignedDate: new Date(),
+  };
 
-  await taskAssigned.save();
+  task.assigned.push(newAssignment as any);
+  await task.save();
 
   res.status(201).json({
     success: true,
     message: 'User assigned to task successfully',
-    data: taskAssigned,
+    data: newAssignment,
   });
 });
 
@@ -434,7 +436,14 @@ export const unassignUserFromTask = asyncHandler(async (req: Request, res: Respo
     throw new AppError('Not authorized to unassign users from this task', 403);
   }
 
-  await TaskAssigned.findOneAndDelete({ taskId: id, userId });
+  // Remove from Task.assigned
+  await Task.findByIdAndUpdate(id, {
+    $pull: {
+      assigned: {
+        userId
+      }
+    }
+  });
 
   res.json({
     success: true,

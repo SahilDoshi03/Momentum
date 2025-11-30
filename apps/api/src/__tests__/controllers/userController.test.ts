@@ -152,7 +152,7 @@ describe('User Controller', () => {
 
     describe('getUserProjects', () => {
         it('should return user projects', async () => {
-            const project = await Project.create({ name: 'Test Project', shortId: 'TP1' });
+            const project = await Project.create({ name: 'Test Project' });
             await ProjectMember.create({ projectId: project._id, userId: testUser._id, role: 'member' });
 
             const req = mockRequest({

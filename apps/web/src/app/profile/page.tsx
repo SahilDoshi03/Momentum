@@ -7,7 +7,7 @@ import { Profile } from '@/components/Profile';
 export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-[var(--bg-primary)]">
-      <TopNavbar />
+      <TopNavbar breadcrumbs={[{ label: 'Profile' }]} />
       <Profile />
     </div>
   );

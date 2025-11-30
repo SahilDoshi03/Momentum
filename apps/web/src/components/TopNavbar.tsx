@@ -10,15 +10,22 @@ import { ProfileIcon } from '@/components/ui/ProfileIcon';
 import { Sun, Moon, User, Settings } from '@/components/icons';
 
 
+interface BreadcrumbItem {
+  label: string;
+  href?: string;
+}
+
 interface TopNavbarProps {
   projectName?: string | null;
   projectID?: string | null;
+  breadcrumbs?: BreadcrumbItem[];
   // onSaveProjectName?: (name: string) => void;
 }
 
 export const TopNavbar: React.FC<TopNavbarProps> = ({
   projectName,
   projectID,
+  breadcrumbs = [],
   // onSaveProjectName,
 }) => {
   const { theme, setTheme } = useTheme();
@@ -50,9 +57,15 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
     setTheme(theme === 'dark' ? 'light' : 'dark');
   };
 
+  // Combine legacy projectName with breadcrumbs if needed
+  const displayBreadcrumbs = [...breadcrumbs];
+  if (projectName && displayBreadcrumbs.length === 0) {
+    displayBreadcrumbs.push({ label: projectName });
+  }
+
   return (
     <nav className="flex items-center justify-between h-12 px-4 bg-[var(--bg-secondary)] border-b border-[var(--border)]">
-      {/* Left side - Logo and Project Name */}
+      {/* Left side - Logo and Breadcrumbs */}
       <div className="flex items-center space-x-4">
         <Link href="/" className="flex items-center space-x-2">
           <div className="w-8 h-8 bg-[var(--primary)] rounded-md flex items-center justify-center">
@@ -61,10 +74,20 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
           <span className="font-semibold text-[var(--text-secondary)]">Taskcafe</span>
         </Link>
 
-        {projectName && (
+        {displayBreadcrumbs.length > 0 && (
           <div className="flex items-center space-x-2">
-            <span className="text-[var(--text-primary)]">/</span>
-            <span className="text-[var(--text-primary)] font-medium">{projectName}</span>
+            {displayBreadcrumbs.map((item, index) => (
+              <React.Fragment key={index}>
+                <span className="text-[var(--text-primary)]">/</span>
+                {item.href ? (
+                  <Link href={item.href} className="text-[var(--text-primary)] hover:text-[var(--text-secondary)] font-medium">
+                    {item.label}
+                  </Link>
+                ) : (
+                  <span className="text-[var(--text-primary)] font-medium">{item.label}</span>
+                )}
+              </React.Fragment>
+            ))}
           </div>
         )}
       </div>

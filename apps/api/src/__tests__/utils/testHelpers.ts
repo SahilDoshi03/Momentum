@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { User, Project, Task, TaskGroup, ProjectMember, TaskAssigned, Team } from '../../models';
+import { Project, ProjectMember, Task, TaskGroup, Team, User } from '../../models';
 import bcrypt from 'bcryptjs';
 
 /**
@@ -33,12 +33,9 @@ export const createTestUser = async (overrides: Partial<any> = {}) => {
 // Project factory - creates a real project with owner membership
 export const createTestProject = async (userId: string, overrides: Partial<any> = {}) => {
     const timestamp = Date.now();
-    // Generate a short ID that's max 10 characters
-    const shortId = overrides.shortId || `TP${timestamp.toString().slice(-7)}`;
 
     const projectData = {
         name: overrides.name || `Test Project ${timestamp}`,
-        shortId,
         description: overrides.description || 'Test project description',
         ...overrides,
     };
@@ -91,13 +88,17 @@ export const createTestTask = async (taskGroupId: string, overrides: Partial<any
 
 // Assign user to task - creates a real task assignment
 export const assignUserToTask = async (taskId: string, userId: string) => {
-    const taskAssigned = await TaskAssigned.create({
-        taskId,
-        userId,
-        assignedDate: new Date(),
-    });
+    // Create task assignment
+    const task = await Task.findById(taskId);
+    if (task) {
+        task.assigned.push({
+            userId: userId as any,
+            assignedDate: new Date()
+        });
+        await task.save();
+    }
 
-    return taskAssigned;
+    return task;
 };
 
 // Team factory - creates a real team in the database

@@ -60,7 +60,7 @@ export default function TeamPage() {
 
   return (
     <div className="min-h-screen bg-[var(--bg-primary)]">
-      <TopNavbar projectName={team.name} />
+      <TopNavbar breadcrumbs={[{ label: team.name }]} />
       <TeamDetails team={team} />
     </div>
   );

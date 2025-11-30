@@ -168,7 +168,7 @@ export const getUserProjects = asyncHandler(async (req: Request, res: Response) 
   const projectMembers = await ProjectMember.find({ userId: id })
     .populate({
       path: 'projectId',
-      select: 'name shortId teamId createdAt',
+      select: 'name teamId createdAt',
       populate: {
         path: 'teamId',
         select: 'name organizationId',

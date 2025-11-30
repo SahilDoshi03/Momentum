@@ -7,7 +7,7 @@ import { MyTasks } from '@/components/MyTasks';
 export default function TasksPage() {
   return (
     <div className="min-h-screen bg-[var(--bg-primary)]">
-      <TopNavbar />
+      <TopNavbar breadcrumbs={[{ label: 'My Tasks' }]} />
       <MyTasks />
     </div>
   );

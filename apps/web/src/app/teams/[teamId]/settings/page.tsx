@@ -7,6 +7,7 @@ import { apiClient, Team } from '@/lib/api';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { toast } from 'react-toastify';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 
 export default function TeamSettingsPage() {
     const params = useParams();
@@ -15,6 +16,7 @@ export default function TeamSettingsPage() {
     const [team, setTeam] = useState<Team | null>(null);
     const [loading, setLoading] = useState(true);
     const [name, setName] = useState('');
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     useEffect(() => {
         const fetchTeam = async () => {
@@ -52,7 +54,6 @@ export default function TeamSettingsPage() {
     };
 
     const handleDelete = async () => {
-        if (!confirm('Are you sure you want to delete this team?')) return;
         try {
             const response = await apiClient.deleteTeam(teamId);
             if (response.success) {
@@ -117,13 +118,22 @@ export default function TeamSettingsPage() {
                         <Button
                             variant="outline"
                             className="text-red-500 border-red-500 hover:bg-red-50"
-                            onClick={handleDelete}
+                            onClick={() => setShowDeleteConfirm(true)}
                         >
                             Delete Team
                         </Button>
                     </div>
                 </div>
             </div>
-        </div>
+            <ConfirmationModal
+                isOpen={showDeleteConfirm}
+                onClose={() => setShowDeleteConfirm(false)}
+                onConfirm={handleDelete}
+                title="Delete Team"
+                message="Are you sure you want to delete this team? This action cannot be undone and all projects within this team will be deleted."
+                confirmText="Delete Team"
+                variant="danger"
+            />
+        </div >
     );
 }

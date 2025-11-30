@@ -1,18 +1,18 @@
 import mongoose from 'mongoose';
 import { config } from '../config';
-import { 
-  User, 
-  Organization, 
-  Team, 
-  TeamMember, 
-  Project, 
-  ProjectMember, 
-  TaskGroup, 
-  Task, 
-  TaskAssigned, 
+import {
+  User,
+  Organization,
+  Team,
+  TeamMember,
+  Project,
+  ProjectMember,
+  TaskGroup,
+  Task,
+  TaskAssigned,
   TaskLabel,
-  ProjectLabel, 
-  LabelColor 
+  ProjectLabel,
+  LabelColor
 } from '../models';
 
 const seedData = async (): Promise<void> => {
@@ -141,17 +141,14 @@ const seedData = async (): Promise<void> => {
     const projects = [
       {
         name: 'Website Redesign',
-        shortId: 'WR',
         teamId: team._id,
       },
       {
         name: 'Mobile App',
-        shortId: 'MA',
         teamId: team._id,
       },
       {
         name: 'Personal Tasks',
-        shortId: 'PT',
         teamId: null,
       },
     ];
@@ -258,7 +255,6 @@ const seedData = async (): Promise<void> => {
       {
         taskGroupId: taskGroups[0]._id, // To Do
         name: 'Design new homepage layout',
-        shortId: '1',
         description: 'Create a modern, responsive homepage layout',
         complete: false,
         position: 0,
@@ -268,7 +264,6 @@ const seedData = async (): Promise<void> => {
       {
         taskGroupId: taskGroups[0]._id, // To Do
         name: 'Research competitor websites',
-        shortId: '2',
         description: 'Analyze top 10 competitor websites for inspiration',
         complete: false,
         position: 1,
@@ -277,7 +272,6 @@ const seedData = async (): Promise<void> => {
       {
         taskGroupId: taskGroups[1]._id, // In Progress
         name: 'Create wireframes',
-        shortId: '3',
         description: 'Develop low-fidelity wireframes for key pages',
         complete: false,
         position: 0,
@@ -287,7 +281,6 @@ const seedData = async (): Promise<void> => {
       {
         taskGroupId: taskGroups[2]._id, // Done
         name: 'Project kickoff meeting',
-        shortId: '4',
         description: 'Initial project planning and requirements gathering',
         complete: true,
         position: 0,
@@ -298,7 +291,6 @@ const seedData = async (): Promise<void> => {
       {
         taskGroupId: taskGroups[3]._id, // To Do
         name: 'Set up development environment',
-        shortId: '5',
         description: 'Configure React Native development setup',
         complete: false,
         position: 0,
@@ -308,7 +300,6 @@ const seedData = async (): Promise<void> => {
       {
         taskGroupId: taskGroups[6]._id, // To Do
         name: 'Buy groceries',
-        shortId: '6',
         description: 'Weekly grocery shopping',
         complete: false,
         position: 0,

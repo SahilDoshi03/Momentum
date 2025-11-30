@@ -8,6 +8,7 @@ import {
   CSS,
 } from '@dnd-kit/utilities';
 import { Card } from '@/components/ui/Card';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { ProfileIcon } from '@/components/ui/ProfileIcon';
 import { CheckCircle } from '@/components/icons';
 import { cn } from '@/lib/utils';
@@ -32,6 +33,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(task.name);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const {
     attributes,
@@ -167,9 +169,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                if (confirm('Are you sure you want to delete this task?')) {
-                  onDelete(task._id);
-                }
+                setShowDeleteConfirm(true);
               }}
               className="p-1 rounded hover:bg-[var(--bg-primary)] text-[var(--text-tertiary)] hover:text-[var(--danger)] transition-colors"
               title="Delete task"
@@ -198,6 +198,18 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           </div>
         </div>
       </Card>
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={() => {
+          onDelete(task._id);
+          setShowDeleteConfirm(false);
+        }}
+        title="Delete Task"
+        message="Are you sure you want to delete this task? This action cannot be undone."
+        confirmText="Delete Task"
+        variant="danger"
+      />
     </div>
   );
 };

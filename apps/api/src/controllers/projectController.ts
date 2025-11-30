@@ -118,12 +118,11 @@ export const getProjectById = asyncHandler(async (req: Request, res: Response) =
 // Create project
 export const createProject = asyncHandler(async (req: Request, res: Response) => {
   const user = (req as any).user;
-  const { name, teamId, shortId } = req.body;
+  const { name, teamId } = req.body;
 
   const project = new Project({
     name,
-    teamId: teamId || null,
-    shortId,
+    teamId: teamId,
   });
 
   await project.save();

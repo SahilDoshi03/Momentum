@@ -19,7 +19,7 @@ import {
     mockResponse,
     mockNext,
 } from '../utils/testHelpers';
-import { Task, TaskAssigned, ProjectMember } from '../../models';
+import { Project, ProjectMember, Task, TaskGroup, TaskLabel, User } from '../../models';
 
 describe('Task Controller', () => {
     let app: Application;
@@ -90,12 +90,9 @@ describe('Task Controller', () => {
             await createTask(req, res, next);
 
             const task = await Task.findOne({ name: 'Task with Assignment' });
-            const assignment = await TaskAssigned.findOne({
-                taskId: task?._id,
-                userId: testUser._id,
-            });
-
-            expect(assignment).toBeTruthy();
+            const taskInDb = await Task.findById(task?._id);
+            expect(taskInDb?.assigned).toHaveLength(1);
+            expect(taskInDb?.assigned[0].userId.toString()).toBe(testUser._id.toString());
         });
 
         it('should return 404 if task group not found', async () => {
@@ -250,14 +247,14 @@ describe('Task Controller', () => {
 
         it('should only update allowed fields', async () => {
             const task = await createTestTask(testTaskGroup._id);
-            const originalShortId = task.shortId;
+
 
             const req = mockRequest({
                 user: testUser,
                 params: { id: task._id },
                 body: {
                     name: 'Updated Name',
-                    shortId: 'HACKED', // Should not be updated
+
                     createdAt: new Date(), // Should not be updated
                 },
             });
@@ -268,7 +265,7 @@ describe('Task Controller', () => {
 
             const updatedTask = await Task.findById(task._id);
             expect(updatedTask?.name).toBe('Updated Name');
-            expect(updatedTask?.shortId).toBe(originalShortId); // Should remain unchanged
+
         });
     });
 
@@ -295,10 +292,9 @@ describe('Task Controller', () => {
 
             // Verify task and related data are deleted
             const deletedTask = await Task.findById(task._id);
-            const assignments = await TaskAssigned.find({ taskId: task._id });
-
+            const taskInDb = await Task.findById(task._id);
+            expect(taskInDb?.assigned).toHaveLength(0);
             expect(deletedTask).toBeNull();
-            expect(assignments).toHaveLength(0);
         });
 
         it('should return 403 if user does not have permission', async () => {
@@ -459,11 +455,9 @@ describe('Task Controller', () => {
             );
 
             // Verify assignment in database
-            const assignment = await TaskAssigned.findOne({
-                taskId: task._id,
-                userId: userToAssign._id,
-            });
-            expect(assignment).toBeTruthy();
+            const taskInDb = await Task.findById(task._id);
+            expect(taskInDb?.assigned).toHaveLength(1);
+            expect(taskInDb?.assigned[0].userId.toString()).toBe(userToAssign._id.toString());
         });
 
         it('should return 400 if user already assigned', async () => {
@@ -511,11 +505,8 @@ describe('Task Controller', () => {
             );
 
             // Verify assignment removed
-            const assignment = await TaskAssigned.findOne({
-                taskId: task._id,
-                userId: testUser._id,
-            });
-            expect(assignment).toBeNull();
+            const taskInDb = await Task.findById(task._id);
+            expect(taskInDb?.assigned).toHaveLength(0);
         });
     });
 });

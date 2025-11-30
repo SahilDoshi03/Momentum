@@ -13,12 +13,6 @@ const taskSchema = new Schema<ITask>({
     trim: true,
     maxlength: 200,
   },
-  shortId: {
-    type: String,
-    required: true,
-    unique: true,
-    maxlength: 10,
-  },
   description: {
     type: String,
     default: '',
@@ -81,23 +75,10 @@ taskSchema.virtual('labels', {
 
 // Indexes
 taskSchema.index({ taskGroupId: 1, position: 1 });
-// shortId index is automatically created by unique: true
 taskSchema.index({ complete: 1 });
+taskSchema.index({ 'assigned.userId': 1 });
 
-// Generate shortId before validation
-// Generate shortId before validation
-taskSchema.pre('validate', async function (next) {
-  const doc = this as any;
-  if (!doc.isNew || doc.shortId) return next();
-
-  try {
-    const count = await mongoose.model('Task').countDocuments();
-    doc.shortId = String(count + 1);
-    next();
-  } catch (error) {
-    next(error as Error);
-  }
-});
+// Update completedAt when complete changes
 
 // Update completedAt when complete changes
 taskSchema.pre('save', function (next) {

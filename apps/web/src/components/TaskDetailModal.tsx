@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { Button } from '@/components/ui/Button';
 import { Dropdown, DropdownItem, DropdownHeader } from '@/components/ui/Dropdown';
 import { ProfileIcon } from '@/components/ui/ProfileIcon';
@@ -41,6 +42,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     const [newLabelName, setNewLabelName] = useState('');
     const [selectedColorId, setSelectedColorId] = useState<string>('');
     const [labelColors, setLabelColors] = useState<LabelColor[]>([]);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     // Sync state with task prop when it changes
     useEffect(() => {
@@ -241,10 +243,13 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     };
 
     const handleDelete = () => {
-        if (confirm('Are you sure you want to delete this task?')) {
-            onDeleteTask(task._id);
-            onClose();
-        }
+        setShowDeleteConfirm(true);
+    };
+
+    const handleConfirmDelete = () => {
+        onDeleteTask(task._id);
+        setShowDeleteConfirm(false);
+        onClose();
     };
 
     // Get users from project members
@@ -454,7 +459,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                                             </div>
                                         )}
                                         <div className="border-t border-[var(--border)] mt-1 pt-1">
-                                            <DropdownItem onClick={(e) => {
+                                            <DropdownItem onClick={() => {
                                                 // Close dropdown logic is handled by Dropdown component on click
                                                 // We just need to set state
                                                 setIsCreatingLabel(true);
@@ -538,7 +543,15 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                     </div>
                 </div>
             </div>
-        </Modal>
+            <ConfirmationModal
+                isOpen={showDeleteConfirm}
+                onClose={() => setShowDeleteConfirm(false)}
+                onConfirm={handleConfirmDelete}
+                title="Delete Task"
+                message="Are you sure you want to delete this task? This action cannot be undone."
+                confirmText="Delete Task"
+                variant="danger"
+            />
+        </Modal >
     );
 };
-

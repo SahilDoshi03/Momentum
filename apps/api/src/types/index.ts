@@ -48,7 +48,6 @@ export interface ITeamMember extends Document {
 export interface IProject extends Document {
   _id: string;
   name: string;
-  shortId: string;
   teamId?: string;
   createdAt: Date;
   publicOn?: Date;
@@ -75,7 +74,6 @@ export interface ITask extends Document {
   _id: string;
   taskGroupId: string;
   name: string;
-  shortId: string;
   description?: string;
   position: number;
   complete: boolean;
@@ -197,7 +195,6 @@ export interface CreateTeamRequest {
 export interface CreateProjectRequest {
   name: string;
   teamId?: string;
-  shortId?: string;
 }
 
 export interface CreateTaskGroupRequest {
