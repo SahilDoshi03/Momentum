@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { TaskDetailModal } from '../TaskDetailModal';
+import { TaskDetailModal } from '../../components/TaskDetailModal';
 import { Task, Project, User } from '@/lib/api';
 import '@testing-library/jest-dom';
 
@@ -36,6 +36,12 @@ jest.mock('@/components/ui/Dropdown', () => ({
     Dropdown: ({ trigger, children }: { trigger: React.ReactNode, children: React.ReactNode }) => <div>{trigger}{children}</div>,
     DropdownItem: ({ children, onClick }: { children: React.ReactNode, onClick: () => void }) => <div onClick={onClick}>{children}</div>,
     DropdownHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}));
+
+jest.mock('@/components/ui/ConfirmationModal', () => ({
+    ConfirmationModal: ({ isOpen, onConfirm }: { isOpen: boolean, onConfirm: () => void }) => (
+        isOpen ? <button onClick={onConfirm}>Confirm Delete</button> : null
+    ),
 }));
 
 const mockTask: Task = {
@@ -148,9 +154,9 @@ describe('TaskDetailModal', () => {
         });
     });
 
-    it('calls onDeleteTask when delete button is clicked and confirmed', () => {
-        window.confirm = jest.fn().mockReturnValue(true);
 
+
+    it('calls onDeleteTask when delete button is clicked and confirmed', () => {
         render(
             <TaskDetailModal
                 isOpen={true}
@@ -166,7 +172,9 @@ describe('TaskDetailModal', () => {
         const deleteButton = screen.getByText('Delete Task');
         fireEvent.click(deleteButton);
 
-        expect(window.confirm).toHaveBeenCalled();
+        const confirmButton = screen.getByText('Confirm Delete');
+        fireEvent.click(confirmButton);
+
         expect(mockOnDeleteTask).toHaveBeenCalledWith('task1');
         expect(mockOnClose).toHaveBeenCalled();
     });

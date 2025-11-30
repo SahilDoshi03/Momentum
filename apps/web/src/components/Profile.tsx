@@ -161,12 +161,14 @@ export const Profile: React.FC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
+                  id="fullName"
                   label="Full Name"
                   value={formData.fullName}
                   onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                   disabled={!isEditing}
                 />
                 <Input
+                  id="email"
                   label="Email"
                   type="email"
                   value={formData.email}
@@ -176,6 +178,7 @@ export const Profile: React.FC = () => {
               </div>
 
               <Input
+                id="bio"
                 label="Bio"
                 value={formData.bio}
                 onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
@@ -184,6 +187,7 @@ export const Profile: React.FC = () => {
               />
 
               <Input
+                id="initials"
                 label="Initials"
                 value={formData.initials}
                 onChange={(e) => setFormData({ ...formData, initials: e.target.value })}
