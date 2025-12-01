@@ -1,0 +1,14 @@
+{
+    "personal": {
+        "name": "Personal Project",
+        "description": "A personal project for testing"
+    },
+    "team": {
+        "name": "Team Project",
+        "description": "A team project for testing collaboration"
+    },
+    "sample": {
+        "name": "Sample Project",
+        "description": "Sample project with tasks"
+    }
+}

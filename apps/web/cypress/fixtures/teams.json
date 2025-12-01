@@ -1,0 +1,10 @@
+{
+    "engineering": {
+        "name": "Engineering Team",
+        "description": "Engineering team for product development"
+    },
+    "design": {
+        "name": "Design Team",
+        "description": "Design and UX team"
+    }
+}

@@ -1,0 +1,21 @@
+{
+    "basic": {
+        "name": "Basic Task",
+        "description": "A simple task for testing"
+    },
+    "withDueDate": {
+        "name": "Task with Due Date",
+        "description": "Task with a due date",
+        "dueDate": "2024-12-31",
+        "hasTime": false
+    },
+    "withLabels": {
+        "name": "Task with Labels",
+        "description": "Task with labels attached"
+    },
+    "completed": {
+        "name": "Completed Task",
+        "description": "A completed task",
+        "complete": true
+    }
+}
