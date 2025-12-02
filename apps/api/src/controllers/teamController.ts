@@ -283,3 +283,59 @@ export const getTeamMembers = asyncHandler(async (req: Request, res: Response) =
     data: members,
   });
 });
+
+// Update team member role
+export const updateTeamMember = asyncHandler(async (req: Request, res: Response) => {
+  const { id, userId } = req.params;
+  const { role } = req.body;
+  const user = (req as any).user;
+
+  if (!['owner', 'admin', 'member', 'observer'].includes(role)) {
+    throw new AppError('Invalid role', 400);
+  }
+
+  // Check if requester is admin or owner
+  const requesterMember = await TeamMember.findOne({
+    teamId: id,
+    userId: user._id
+  });
+
+  if (!requesterMember || !['owner', 'admin'].includes(requesterMember.role)) {
+    throw new AppError('Not authorized to update member roles', 403);
+  }
+
+  const memberToUpdate = await TeamMember.findOne({
+    teamId: id,
+    userId
+  });
+
+  if (!memberToUpdate) {
+    throw new AppError('Member not found', 404);
+  }
+
+  // Admins cannot change role of owner
+  if (memberToUpdate.role === 'owner' && requesterMember.role !== 'owner') {
+    throw new AppError('Only the owner can change owner role', 403);
+  }
+
+  // Prevent removing the last owner
+  if (memberToUpdate.role === 'owner' && role !== 'owner') {
+    const ownerCount = await TeamMember.countDocuments({
+      teamId: id,
+      role: 'owner'
+    });
+
+    if (ownerCount <= 1) {
+      throw new AppError('Cannot demote the last owner of the team', 400);
+    }
+  }
+
+  memberToUpdate.role = role;
+  await memberToUpdate.save();
+
+  res.json({
+    success: true,
+    message: 'Team member role updated successfully',
+    data: memberToUpdate,
+  });
+});

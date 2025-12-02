@@ -114,6 +114,27 @@ export interface Team {
   updatedAt: string;
 }
 
+// Custom error class for API errors
+export class ApiError extends Error {
+  public statusCode: number;
+  public isExpected: boolean;
+
+  constructor(message: string, statusCode: number, isExpected: boolean = true) {
+    super(message);
+    this.name = 'ApiError';
+    this.statusCode = statusCode;
+    this.isExpected = isExpected;
+
+    // Prevent Next.js error overlay for expected errors (like validation failures)
+    if (isExpected && typeof window !== 'undefined') {
+      // Suppress the error from being reported to Next.js error overlay
+      Object.defineProperty(this, 'stack', {
+        get: () => undefined,
+      });
+    }
+  }
+}
+
 class ApiClient {
   private baseUrl: string;
   private defaultHeaders: HeadersInit;
@@ -155,12 +176,21 @@ class ApiClient {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || `HTTP error! status: ${response.status}`);
+        // Determine if this is an expected error (4xx) or unexpected (5xx)
+        const isExpected = response.status >= 400 && response.status < 500;
+        throw new ApiError(
+          data.message || `HTTP error! status: ${response.status}`,
+          response.status,
+          isExpected
+        );
       }
 
       return data;
     } catch (error) {
-      console.error('API request failed:', error);
+      // Only log unexpected errors to console
+      if (!(error instanceof ApiError) || !error.isExpected) {
+        console.error('API request failed:', error);
+      }
       throw error;
     }
   }
@@ -274,6 +304,13 @@ class ApiClient {
     });
   }
 
+  async updateProjectMember(projectId: string, userId: string, role: string): Promise<ApiResponse> {
+    return this.request(`/projects/${projectId}/members/${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ role }),
+    });
+  }
+
   async getProjectLabels(projectId: string): Promise<ApiResponse> {
     return this.request(`/projects/${projectId}/labels`);
   }
@@ -346,6 +383,13 @@ class ApiClient {
   async removeTeamMember(teamId: string, userId: string): Promise<ApiResponse> {
     return this.request(`/teams/${teamId}/members/${userId}`, {
       method: 'DELETE',
+    });
+  }
+
+  async updateTeamMember(teamId: string, userId: string, role: string): Promise<ApiResponse> {
+    return this.request(`/teams/${teamId}/members/${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ role }),
     });
   }
 

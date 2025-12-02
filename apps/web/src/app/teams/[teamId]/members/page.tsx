@@ -28,11 +28,14 @@ export default function TeamMembersPage() {
     const [generatingInvite, setGeneratingInvite] = useState(false);
     const [memberToRemove, setMemberToRemove] = useState<string | null>(null);
 
+    const [currentUser, setCurrentUser] = useState<User | null>(null);
+
     const fetchTeamData = useCallback(async () => {
         try {
-            const [teamRes, membersRes] = await Promise.all([
+            const [teamRes, membersRes, userRes] = await Promise.all([
                 apiClient.getTeamById(teamId),
-                apiClient.getTeamMembers(teamId)
+                apiClient.getTeamMembers(teamId),
+                apiClient.getCurrentUser()
             ]);
 
             if (teamRes.success && teamRes.data) {
@@ -40,6 +43,9 @@ export default function TeamMembersPage() {
             }
             if (membersRes.success && membersRes.data) {
                 setMembers(membersRes.data as TeamMember[]);
+            }
+            if (userRes.success && userRes.data) {
+                setCurrentUser(userRes.data);
             }
         } catch (error) {
             console.error('Failed to load team:', error);
@@ -99,6 +105,22 @@ export default function TeamMembersPage() {
             toast.error('Failed to remove member');
         }
     };
+
+    const handleUpdateRole = async (userId: string, role: string) => {
+        try {
+            const response = await apiClient.updateTeamMember(teamId, userId, role);
+            if (response.success) {
+                setMembers(prev => prev.map(m => m.userId._id === userId ? { ...m, role } : m));
+                toast.success('Member role updated successfully');
+            }
+        } catch (error) {
+            console.error('Failed to update role:', error);
+            toast.error('Failed to update role');
+        }
+    };
+
+    const currentUserMember = members.find(m => m.userId._id === currentUser?._id);
+    const canManageMembers = currentUserMember && ['owner', 'admin'].includes(currentUserMember.role);
 
     if (loading) {
         return (
@@ -192,9 +214,21 @@ export default function TeamMembersPage() {
                                         </div>
                                     </div>
                                     <div className="flex items-center space-x-4">
-                                        <span className="text-sm px-2 py-1 rounded bg-[var(--bg-primary)] text-[var(--text-primary)] capitalize">
-                                            {member.role}
-                                        </span>
+                                        {canManageMembers && member.role !== 'owner' ? (
+                                            <select
+                                                value={member.role}
+                                                onChange={(e) => handleUpdateRole(member.userId._id, e.target.value)}
+                                                className="text-sm bg-[var(--bg-primary)] border border-[var(--border)] rounded px-2 py-1 text-[var(--text-secondary)] focus:outline-none focus:border-[var(--primary)]"
+                                            >
+                                                <option value="admin">Admin</option>
+                                                <option value="member">Member</option>
+                                                <option value="observer">Observer</option>
+                                            </select>
+                                        ) : (
+                                            <span className="text-sm px-2 py-1 rounded bg-[var(--bg-primary)] text-[var(--text-primary)] capitalize">
+                                                {member.role}
+                                            </span>
+                                        )}
                                         {member.role !== 'owner' && (
                                             <Button
                                                 variant="ghost"

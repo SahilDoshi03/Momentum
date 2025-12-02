@@ -130,6 +130,7 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
             size="sm"
             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
             className="flex items-center space-x-2"
+            data-testid="user-menu"
           >
             {user && (
               <>

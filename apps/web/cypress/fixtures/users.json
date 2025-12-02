@@ -1,17 +1,23 @@
 {
     "testUser": {
+        "firstName": "Test",
+        "lastName": "User",
         "email": "test@momentum.com",
         "password": "Test123!@#",
         "fullName": "Test User",
         "initials": "TU"
     },
     "secondUser": {
+        "firstName": "Second",
+        "lastName": "User",
         "email": "user2@momentum.com",
         "password": "User123!@#",
         "fullName": "Second User",
         "initials": "SU"
     },
     "teamMember": {
+        "firstName": "Team",
+        "lastName": "Member",
         "email": "member@momentum.com",
         "password": "Member123!@#",
         "fullName": "Team Member",

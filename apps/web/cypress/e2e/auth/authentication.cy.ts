@@ -8,8 +8,9 @@ describe('Authentication Flow', () => {
         it('should display registration form', () => {
             cy.visit('/register');
 
-            cy.contains('Create your account').should('be.visible');
-            cy.get('input[name="fullName"]').should('be.visible');
+            cy.contains('Create account').should('be.visible');
+            cy.get('input[placeholder*="first name"]').should('be.visible');
+            cy.get('input[placeholder*="last name"]').should('be.visible');
             cy.get('input[type="email"]').should('be.visible');
             cy.get('input[type="password"]').should('be.visible');
             cy.get('button[type="submit"]').should('be.visible');
@@ -19,15 +20,17 @@ describe('Authentication Flow', () => {
             cy.visit('/register');
 
             cy.get('button[type="submit"]').click();
-            cy.get('input[name="fullName"]:invalid').should('exist');
+            cy.get('input[placeholder*="first name"]:invalid').should('exist');
         });
 
         it('should validate email format', () => {
             cy.visit('/register');
 
-            cy.get('input[name="fullName"]').type('Test User');
+            cy.get('input[placeholder*="first name"]').type('Test');
+            cy.get('input[placeholder*="last name"]').type('User');
             cy.get('input[type="email"]').type('invalid-email');
-            cy.get('input[type="password"]').type('Password123!');
+            cy.get('input[placeholder="Create a password"]').type('Password123!');
+            cy.get('input[placeholder="Confirm your password"]').type('Password123!');
             cy.get('button[type="submit"]').click();
 
             cy.get('input[type="email"]:invalid').should('exist');
@@ -36,16 +39,19 @@ describe('Authentication Flow', () => {
         it('should register a new user successfully', () => {
             const timestamp = Date.now();
             const newUser = {
-                fullName: 'New Test User',
+                firstName: 'New',
+                lastName: 'User',
                 email: `newuser${timestamp}@test.com`,
                 password: 'NewUser123!@#',
             };
 
             cy.visit('/register');
 
-            cy.get('input[name="fullName"]').type(newUser.fullName);
+            cy.get('input[placeholder*="first name"]').type(newUser.firstName);
+            cy.get('input[placeholder*="last name"]').type(newUser.lastName);
             cy.get('input[type="email"]').type(newUser.email);
-            cy.get('input[type="password"]').type(newUser.password);
+            cy.get('input[placeholder="Create a password"]').type(newUser.password);
+            cy.get('input[placeholder="Confirm your password"]').type(newUser.password);
             cy.get('button[type="submit"]').click();
 
             // Should redirect to home page after successful registration
@@ -57,9 +63,11 @@ describe('Authentication Flow', () => {
             cy.fixture('users').then((users) => {
                 cy.visit('/register');
 
-                cy.get('input[name="fullName"]').type('Duplicate User');
+                cy.get('input[placeholder*="first name"]').type('Duplicate');
+                cy.get('input[placeholder*="last name"]').type('User');
                 cy.get('input[type="email"]').type(users.testUser.email);
-                cy.get('input[type="password"]').type('Password123!');
+                cy.get('input[placeholder="Create a password"]').type('Password123!');
+                cy.get('input[placeholder="Confirm your password"]').type('Password123!');
                 cy.get('button[type="submit"]').click();
 
                 cy.contains(/already exists|already registered/i, { timeout: 10000 }).should('be.visible');
@@ -102,17 +110,28 @@ describe('Authentication Flow', () => {
         });
 
         it('should login successfully with valid credentials', () => {
-            cy.fixture('users').then((users) => {
-                cy.login(users.testUser.email, users.testUser.password);
+            const timestamp = Date.now();
+            const testUser = {
+                firstName: 'Login',
+                lastName: 'Test',
+                email: `logintest${timestamp}@test.com`,
+                password: 'LoginTest123!@#',
+            };
 
-                // Should be on home page
-                cy.url().should('eq', `${Cypress.config().baseUrl}/`);
+            // Register a new user to ensure valid credentials
+            cy.registerUser(testUser);
+            cy.logout();
 
-                // User should be authenticated
-                cy.window().then((win) => {
-                    const user = JSON.parse(win.localStorage.getItem('currentUser') || '{}');
-                    expect(user.email).to.equal(users.testUser.email);
-                });
+            // Now test the login flow
+            cy.login(testUser.email, testUser.password);
+
+            // Should be on home page
+            cy.url().should('eq', `${Cypress.config().baseUrl}/`);
+
+            // User should be authenticated
+            cy.window().then((win) => {
+                const user = JSON.parse(win.localStorage.getItem('currentUser') || '{}');
+                expect(user.email).to.equal(testUser.email);
             });
         });
 

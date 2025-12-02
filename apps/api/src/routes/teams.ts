@@ -7,10 +7,12 @@ import {
   deleteTeam,
   addTeamMember,
   removeTeamMember,
-  getTeamMembers
+  getTeamMembers,
+  updateTeamMember
 } from '../controllers/teamController';
 import { createInvite } from '../controllers/inviteController';
-import { authenticateToken } from '../middleware';
+import { authenticateToken, requireTeamPermission } from '../middleware';
+import { TEAM_PERMISSIONS } from '../config/permissions';
 
 const router = express.Router();
 
@@ -27,22 +29,24 @@ router.get('/:id', getTeamById);
 router.post('/', createTeam);
 
 // Update team
-router.put('/:id', updateTeam);
+router.put('/:id', requireTeamPermission(TEAM_PERMISSIONS.UPDATE_SETTINGS), updateTeam);
 
 // Delete team
-router.delete('/:id', deleteTeam);
+router.delete('/:id', requireTeamPermission(TEAM_PERMISSIONS.DELETE_TEAM), deleteTeam);
 
 // Add team member
-router.post('/:id/members', addTeamMember);
+router.post('/:id/members', requireTeamPermission(TEAM_PERMISSIONS.MANAGE_MEMBERS), addTeamMember);
 
 // Get team members
 router.get('/:id/members', getTeamMembers);
 
 // Create invite
-router.post('/:id/invites', createInvite);
+router.post('/:id/invites', requireTeamPermission(TEAM_PERMISSIONS.MANAGE_MEMBERS), createInvite);
 
 // Remove team member
-router.delete('/:id/members/:userId', removeTeamMember);
+router.delete('/:id/members/:userId', requireTeamPermission(TEAM_PERMISSIONS.MANAGE_MEMBERS), removeTeamMember);
+
+// Update team member role
+router.put('/:id/members/:userId', requireTeamPermission(TEAM_PERMISSIONS.MANAGE_MEMBERS), updateTeamMember);
 
 export default router;
-

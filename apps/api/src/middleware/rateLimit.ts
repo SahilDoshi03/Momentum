@@ -10,6 +10,7 @@ export const generalLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => config.nodeEnv === 'development',
 });
 
 // Auth rate limiting (more restrictive)
@@ -21,6 +22,7 @@ export const authLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => config.nodeEnv === 'development',
 });
 
 // Password reset rate limiting (very restrictive)
@@ -32,5 +34,6 @@ export const passwordResetLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => config.nodeEnv === 'development',
 });
 

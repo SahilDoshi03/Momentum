@@ -15,6 +15,7 @@ interface ProjectSettingsModalProps {
     onDeleteProject: () => Promise<void>;
     onAddMember: (userId: string) => Promise<void>;
     onRemoveMember: (userId: string) => Promise<void>;
+    onUpdateMemberRole: (userId: string, role: string) => Promise<void>;
 }
 
 export const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
@@ -26,6 +27,7 @@ export const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
     onDeleteProject,
     onAddMember,
     onRemoveMember,
+    onUpdateMemberRole,
 }) => {
     const [activeTab, setActiveTab] = useState<'general' | 'members'>('general');
     const [projectName, setProjectName] = useState(project.name);
@@ -279,9 +281,21 @@ export const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
                                                     <div className="text-sm font-medium text-[var(--text-primary)]">
                                                         {member.userId.fullName}
                                                     </div>
-                                                    <div className="text-xs text-[var(--text-tertiary)]">
-                                                        {member.role}
-                                                    </div>
+                                                    {canManageMembers && member.role !== 'owner' ? (
+                                                        <select
+                                                            value={member.role}
+                                                            onChange={(e) => onUpdateMemberRole(member.userId._id, e.target.value)}
+                                                            className="text-xs bg-[var(--bg-primary)] border border-[var(--border)] rounded px-1 py-0.5 text-[var(--text-secondary)] focus:outline-none focus:border-[var(--primary)]"
+                                                        >
+                                                            <option value="admin">Admin</option>
+                                                            <option value="member">Member</option>
+                                                            <option value="observer">Observer</option>
+                                                        </select>
+                                                    ) : (
+                                                        <div className="text-xs text-[var(--text-tertiary)] capitalize">
+                                                            {member.role}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
 

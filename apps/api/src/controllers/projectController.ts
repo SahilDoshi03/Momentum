@@ -432,3 +432,54 @@ export const deleteProjectLabel = asyncHandler(async (req: Request, res: Respons
   });
 });
 
+
+// Update project member role
+export const updateProjectMember = asyncHandler(async (req: Request, res: Response) => {
+  const { id, userId } = req.params;
+  const { role } = req.body;
+  const currentUser = (req as any).user;
+
+  if (!['owner', 'admin', 'member', 'observer'].includes(role)) {
+    throw new AppError('Invalid role', 400);
+  }
+
+  // Check if current user can manage members
+  const currentUserMember = await ProjectMember.findOne({
+    projectId: id,
+    userId: currentUser._id
+  });
+
+  if (!currentUserMember || !['owner', 'admin'].includes(currentUserMember.role)) {
+    throw new AppError('Not authorized to update member roles', 403);
+  }
+
+  const memberToUpdate = await ProjectMember.findOne({ projectId: id, userId });
+  if (!memberToUpdate) {
+    throw new AppError('Member not found', 404);
+  }
+
+  // Admins cannot change role of owner
+  if (memberToUpdate.role === 'owner' && currentUserMember.role !== 'owner') {
+    throw new AppError('Only the owner can change owner role', 403);
+  }
+
+  // Prevent removing the last owner
+  if (memberToUpdate.role === 'owner' && role !== 'owner') {
+    const ownerCount = await ProjectMember.countDocuments({
+      projectId: id,
+      role: 'owner'
+    });
+    if (ownerCount <= 1) {
+      throw new AppError('Cannot demote the last owner', 400);
+    }
+  }
+
+  memberToUpdate.role = role;
+  await memberToUpdate.save();
+
+  res.json({
+    success: true,
+    message: 'Member role updated successfully',
+    data: memberToUpdate
+  });
+});

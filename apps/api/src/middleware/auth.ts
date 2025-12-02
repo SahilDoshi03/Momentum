@@ -52,5 +52,4 @@ export const requireRole = (roles: string[]) => {
 export const requireAdmin = requireRole(['admin', 'owner']);
 export const requireOwner = requireRole(['owner']);
 
-
-
+export * from './rbac';

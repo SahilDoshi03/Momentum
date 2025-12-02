@@ -548,6 +548,24 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
     }
   };
 
+  const handleUpdateMemberRole = async (userId: string, role: string) => {
+    if (!project) return;
+    try {
+      const response = await apiClient.updateProjectMember(project._id, userId, role);
+      if (response.success) {
+        // Optimistically update local state
+        setProject(prev => prev ? {
+          ...prev,
+          members: prev.members?.map(m => m.userId._id === userId ? { ...m, role } : m)
+        } : null);
+        toast.success('Member role updated successfully');
+      }
+    } catch (error) {
+      console.error('Failed to update member role:', error);
+      toast.error('Failed to update member role');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex-1 p-6 flex items-center justify-center">
@@ -709,6 +727,7 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
           onDeleteProject={handleDeleteProject}
           onAddMember={handleAddMember}
           onRemoveMember={handleRemoveMember}
+          onUpdateMemberRole={handleUpdateMemberRole}
         />
       )}
 
