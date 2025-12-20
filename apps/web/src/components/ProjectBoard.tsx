@@ -767,7 +767,7 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
           onClose={handleCloseModal}
           task={selectedTask}
           project={project}
-          currentUser={currentUser}
+
           onUpdateTask={(taskId, updates) => {
             handleUpdateTask(taskId, updates);
             // Update local selected task state to reflect changes immediately in modal

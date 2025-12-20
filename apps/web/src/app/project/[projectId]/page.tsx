@@ -1,41 +1,29 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useParams } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 import { TopNavbar } from '@/components/TopNavbar';
 import { ProjectBoard } from '@/components/ProjectBoard';
-import { apiClient, Project } from '@/lib/api';
+import { apiClient } from '@/lib/api';
 
 export default function ProjectPage() {
   const params = useParams();
   const projectId = params.projectId as string;
-  const [project, setProject] = useState<Project | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    const fetchProject = async () => {
-      try {
-        const response = await apiClient.getProjectById(projectId);
-        if (response.success && response.data) {
-          setProject(response.data);
-        } else {
-          setError(true);
-        }
-      } catch (err) {
-        console.error('Failed to fetch project:', err);
-        setError(true);
-      } finally {
-        setLoading(false);
+  const { data: project, isLoading, isError } = useQuery({
+    queryKey: ['project', projectId],
+    queryFn: async () => {
+      const response = await apiClient.getProjectById(projectId);
+      if (!response.success || !response.data) {
+        throw new Error('Failed to fetch project');
       }
-    };
+      return response.data;
+    },
+    enabled: !!projectId,
+    retry: false
+  });
 
-    if (projectId) {
-      fetchProject();
-    }
-  }, [projectId]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-[var(--bg-primary)]">
         <TopNavbar />
@@ -46,7 +34,7 @@ export default function ProjectPage() {
     );
   }
 
-  if (error || !project) {
+  if (isError || !project) {
     return (
       <div className="min-h-screen bg-[var(--bg-primary)]">
         <TopNavbar />

@@ -10,6 +10,7 @@ import { Sun, Moon } from '@/components/icons';
 import { apiClient } from '@/lib/api';
 import { toast } from 'react-toastify';
 import { useRouter } from 'next/navigation';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 export const Profile: React.FC = () => {
   const { theme, setTheme } = useTheme();
@@ -22,76 +23,15 @@ export const Profile: React.FC = () => {
     initials: '',
   });
 
-  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const loadUser = async () => {
-      // First try to get user from localStorage
-      let user = getCurrentUser();
-
-      // If not in localStorage, try to fetch from API
-      // The API will use the httpOnly cookie for authentication
-      if (!user) {
-        try {
-          const response = await apiClient.validateToken();
-          if (response.success && response.data?.user) {
-            const apiUser = response.data.user;
-            user = {
-              ...apiUser,
-              id: apiUser._id,
-              avatar: apiUser.profileIcon?.url || null,
-            };
-            // Save to localStorage for future use
-            localStorage.setItem('currentUser', JSON.stringify(user));
-          }
-        } catch (error) {
-          console.error('Failed to fetch user:', error);
-          // If API call fails, redirect to login
-          router.push('/login');
-          setIsLoading(false);
-          return;
-        }
-      }
-
-      if (user) {
-        setCurrentUser(user);
-        setFormData({
-          fullName: user.fullName || '',
-          email: user.email || '',
-          bio: user.bio || '',
-          initials: user.initials || '',
-        });
-      } else {
-        // No user found, redirect to login
-        router.push('/login');
-      }
-      setIsLoading(false);
-    };
-    loadUser();
-  }, [router]);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--primary)]"></div>
-      </div>
-    );
-  }
-
-  if (!currentUser) {
-    return null; // Or redirect to login
-  }
-
-  const handleSave = async () => {
-    if (!currentUser) return;
-
-    try {
-      const response = await apiClient.updateUser(currentUser._id, {
-        fullName: formData.fullName,
-        bio: formData.bio,
-      });
-
+  const updateUserMutation = useMutation({
+    mutationFn: (data: Partial<AuthUser>) =>
+      apiClient.updateUser(data.id!, {
+        fullName: data.fullName,
+        bio: data.bio,
+      }),
+    onSuccess: (response) => {
       if (response.success && response.data) {
         const apiUser = response.data;
         const authUser: AuthUser = {
@@ -99,16 +39,86 @@ export const Profile: React.FC = () => {
           id: apiUser._id,
           avatar: apiUser.profileIcon?.url || null,
         };
-        setCurrentUser(authUser);
-        // Update localStorage so the changes persist on refresh
+
+        // Update cache
+        queryClient.setQueryData(['currentUser'], authUser);
+
+        // Update localStorage
         localStorage.setItem('currentUser', JSON.stringify(apiUser));
+
         toast.success('Profile updated successfully');
         setIsEditing(false);
       }
-    } catch (error) {
-      console.error('Failed to update profile:', error);
+    },
+    onError: () => {
       toast.error('Failed to update profile');
     }
+  });
+
+  const { data: currentUser, isLoading } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: async () => {
+      // First try to get user from localStorage for immediate render (optional, but good for UX if data is fresh)
+      const stored = getCurrentUser();
+      // We could return stored if we wanted to rely on it, but let's verify with API
+
+      try {
+        const response = await apiClient.validateToken();
+        if (response.success && response.data?.user) {
+          const apiUser = response.data.user;
+          const user: AuthUser = {
+            ...apiUser,
+            id: apiUser._id,
+            avatar: apiUser.profileIcon?.url || null,
+          };
+          // Save to localStorage
+          localStorage.setItem('currentUser', JSON.stringify(user));
+          return user;
+        }
+      } catch (error) {
+        console.error('Failed to validate token', error);
+      }
+
+      if (stored) return stored;
+      return null;
+    },
+    // We can add retry: false if we want to fail fast on auth errors
+    retry: false
+  });
+
+  // Sync form data when user loads
+  useEffect(() => {
+    if (currentUser) {
+      setFormData({
+        fullName: currentUser.fullName || '',
+        email: currentUser.email || '',
+        bio: currentUser.bio || '',
+        initials: currentUser.initials || '',
+      });
+    } else if (!isLoading && !currentUser) {
+      // Redirect if done loading and no user
+      router.push('/login');
+    }
+  }, [currentUser, isLoading, router]);
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <p className="text-lg text-[var(--text-primary)]">Loading profile...</p>
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return null;
+  }
+
+  const handleSave = async () => {
+    updateUserMutation.mutate({
+      ...currentUser,
+      fullName: formData.fullName,
+      bio: formData.bio
+    });
   };
 
   const handleCancel = () => {

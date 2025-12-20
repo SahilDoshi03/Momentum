@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { toast } from 'react-toastify';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { apiClient, Project, User } from '@/lib/api';
-import { Trash, Plus, X } from '@/components/icons';
+import { Plus, X } from '@/components/icons';
+import { useQuery } from '@tanstack/react-query';
+
+const EMPTY_ARRAY: User[] = [];
 
 interface ProjectSettingsModalProps {
     isOpen: boolean;
@@ -35,52 +38,44 @@ export const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
 
     // Member search state
     const [searchQuery, setSearchQuery] = useState('');
-    const [searchResults, setSearchResults] = useState<User[]>([]);
-    const [isSearching, setIsSearching] = useState(false);
+    // Removed searchResults state to prevent infinite loop
 
     useEffect(() => {
         setProjectName(project.name);
     }, [project]);
 
-    // Fetch and filter team members
-    useEffect(() => {
-        const fetchTeamMembers = async () => {
-            if (activeTab !== 'members') return;
+    // Fetch team members for search
+    const { data: teamMembersData, isFetching: isSearching } = useQuery({
+        queryKey: ['team-members', typeof project.teamId === 'string' ? project.teamId : project.teamId?._id],
+        queryFn: async () => {
+            const teamId = typeof project.teamId === 'string' ? project.teamId : project.teamId?._id;
+            if (!teamId) return [];
+            const response = await apiClient.getTeamMembers(teamId);
+            return response.data || [];
+        },
+        enabled: activeTab === 'members' && !!(typeof project.teamId === 'string' ? project.teamId : project.teamId?._id),
+    });
 
-            setIsSearching(true);
-            try {
-                const teamId = typeof project.teamId === 'string' ? project.teamId : project.teamId?._id;
-                if (!teamId) return;
+    const teamMembers = teamMembersData || EMPTY_ARRAY;
 
-                const response = await apiClient.getTeamMembers(teamId);
-                if (response.success && response.data) {
-                    // Filter out existing project members
-                    const existingMemberIds = project.members?.map(m => m.userId._id) || [];
-
-                    // Filter by search query if present
-                    const query = searchQuery.toLowerCase();
-                    const filteredUsers = response.data
-                        .map((tm: any) => tm.userId) // Extract user object from TeamMember
-                        .filter((user: User) =>
-                            !existingMemberIds.includes(user._id) &&
-                            (user.fullName.toLowerCase().includes(query) ||
-                                user.email.toLowerCase().includes(query))
-                        );
-
-                    setSearchResults(filteredUsers);
-                }
-            } catch (error) {
-                console.error('Failed to fetch team members:', error);
-            } finally {
-                setIsSearching(false);
-            }
-        };
-
-        if (activeTab === 'members') {
-            const timeoutId = setTimeout(fetchTeamMembers, 300);
-            return () => clearTimeout(timeoutId);
+    // Filter members based on search query
+    const searchResults = useMemo(() => {
+        if (!teamMembers.length) {
+            return EMPTY_ARRAY;
         }
-    }, [searchQuery, project.members, project.teamId, activeTab]);
+
+        const existingMemberIds = project.members?.map(m => m.userId._id) || [];
+        const query = searchQuery.toLowerCase();
+
+        return teamMembers
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            .map((tm: any) => tm.userId)
+            .filter((user: User) =>
+                !existingMemberIds.includes(user._id) &&
+                (user.fullName.toLowerCase().includes(query) ||
+                    user.email.toLowerCase().includes(query))
+            );
+    }, [searchQuery, teamMembers, project.members]);
 
     const handleSaveGeneral = async () => {
         if (projectName.trim() !== project.name) {
@@ -219,7 +214,6 @@ export const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
                                                         onClick={() => {
                                                             onAddMember(user._id);
                                                             setSearchQuery('');
-                                                            setSearchResults([]);
                                                         }}
                                                     >
                                                         <div

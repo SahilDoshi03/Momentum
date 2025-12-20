@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { TopNavbar } from '@/components/TopNavbar';
-import { apiClient, Team, User } from '@/lib/api';
+import { apiClient, User } from '@/lib/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { toast } from 'react-toastify';
@@ -20,46 +21,83 @@ interface TeamMember {
 export default function TeamMembersPage() {
     const params = useParams();
     const teamId = params.teamId as string;
-    const [team, setTeam] = useState<Team | null>(null);
-    const [members, setMembers] = useState<TeamMember[]>([]);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
+
     const [inviteEmail, setInviteEmail] = useState('');
-    const [inviteLink, setInviteLink] = useState('');
     const [generatingInvite, setGeneratingInvite] = useState(false);
-    const [memberToRemove, setMemberToRemove] = useState<string | null>(null);
+    const [inviteLink, setInviteLink] = useState('');
+    const [memberToRemove, setMemberToRemove] = useState<TeamMember | null>(null);
 
-    const [currentUser, setCurrentUser] = useState<User | null>(null);
+    const { data: team, isLoading: isLoadingTeam } = useQuery({
+        queryKey: ['team', teamId],
+        queryFn: async () => {
+            const response = await apiClient.getTeamById(teamId);
+            return response.data || null;
+        },
+        enabled: !!teamId
+    });
 
-    const fetchTeamData = useCallback(async () => {
-        try {
-            const [teamRes, membersRes, userRes] = await Promise.all([
-                apiClient.getTeamById(teamId),
-                apiClient.getTeamMembers(teamId),
-                apiClient.getCurrentUser()
-            ]);
+    const { data: members = [] } = useQuery({
+        queryKey: ['team-members', teamId],
+        queryFn: async () => {
+            const response = await apiClient.getTeamMembers(teamId);
+            return (response.data || []) as TeamMember[];
+        },
+        enabled: !!teamId
+    });
 
-            if (teamRes.success && teamRes.data) {
-                setTeam(teamRes.data);
-            }
-            if (membersRes.success && membersRes.data) {
-                setMembers(membersRes.data as TeamMember[]);
-            }
-            if (userRes.success && userRes.data) {
-                setCurrentUser(userRes.data);
-            }
-        } catch (error) {
-            console.error('Failed to load team:', error);
-            toast.error('Failed to load team data');
-        } finally {
-            setLoading(false);
+    const { data: currentUser } = useQuery({
+        queryKey: ['currentUser'],
+        queryFn: async () => {
+            const response = await apiClient.getCurrentUser();
+            return response.data || null;
         }
-    }, [teamId]);
+    });
 
-    useEffect(() => {
-        if (teamId) {
-            fetchTeamData();
+    const createInviteMutation = useMutation({
+        mutationFn: (email: string) => apiClient.createTeamInvite(teamId, email),
+        onSuccess: (response) => {
+            if (response.success && response.data) {
+                const link = `${window.location.origin}/join/${response.data.token}`;
+                setInviteLink(link);
+                navigator.clipboard.writeText(link);
+                toast.success('Invite link generated and copied!');
+            }
+        },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        onError: (error: any) => {
+            const message = error?.message || 'Failed to generate invite link';
+            toast.error(message);
         }
-    }, [teamId, fetchTeamData]);
+    });
+
+    const removeMemberMutation = useMutation({
+        mutationFn: (userId: string) => apiClient.removeTeamMember(teamId, userId),
+        onSuccess: (_, userId) => {
+            toast.success('Member removed successfully');
+            queryClient.setQueryData(['team-members', teamId], (old: TeamMember[] | undefined) =>
+                old ? old.filter(m => m.userId._id !== userId) : []
+            );
+            setMemberToRemove(null);
+        },
+        onError: () => {
+            toast.error('Failed to remove member');
+        }
+    });
+
+    const updateRoleMutation = useMutation({
+        mutationFn: (variables: { userId: string; role: string }) =>
+            apiClient.updateTeamMember(teamId, variables.userId, variables.role),
+        onSuccess: (_, variables) => {
+            toast.success('Member role updated successfully');
+            queryClient.setQueryData(['team-members', teamId], (old: TeamMember[] | undefined) =>
+                old ? old.map(m => m.userId._id === variables.userId ? { ...m, role: variables.role } : m) : []
+            );
+        },
+        onError: () => {
+            toast.error('Failed to update role');
+        }
+    });
 
     const handleGenerateInvite = async () => {
         if (!inviteEmail.trim()) {
@@ -75,17 +113,7 @@ export default function TeamMembersPage() {
 
         setGeneratingInvite(true);
         try {
-            const response = await apiClient.createTeamInvite(teamId, inviteEmail);
-            if (response.success && response.data) {
-                const link = `${window.location.origin}/join/${response.data.token}`;
-                setInviteLink(link);
-                navigator.clipboard.writeText(link);
-                toast.success('Invite link generated and copied!');
-            }
-        } catch (error: unknown) {
-            console.error('Failed to generate invite:', error);
-            const message = error instanceof Error ? error.message : 'Failed to generate invite link';
-            toast.error(message);
+            await createInviteMutation.mutateAsync(inviteEmail);
         } finally {
             setGeneratingInvite(false);
         }
@@ -93,36 +121,17 @@ export default function TeamMembersPage() {
 
     const handleRemoveMember = async () => {
         if (!memberToRemove) return;
-        try {
-            const response = await apiClient.removeTeamMember(teamId, memberToRemove);
-            if (response.success) {
-                toast.success('Member removed successfully');
-                setMembers(prev => prev.filter(m => m.userId._id !== memberToRemove));
-                setMemberToRemove(null);
-            }
-        } catch (error) {
-            console.error('Failed to remove member:', error);
-            toast.error('Failed to remove member');
-        }
+        removeMemberMutation.mutate(memberToRemove.userId._id);
     };
 
     const handleUpdateRole = async (userId: string, role: string) => {
-        try {
-            const response = await apiClient.updateTeamMember(teamId, userId, role);
-            if (response.success) {
-                setMembers(prev => prev.map(m => m.userId._id === userId ? { ...m, role } : m));
-                toast.success('Member role updated successfully');
-            }
-        } catch (error) {
-            console.error('Failed to update role:', error);
-            toast.error('Failed to update role');
-        }
+        updateRoleMutation.mutate({ userId, role });
     };
 
     const currentUserMember = members.find(m => m.userId._id === currentUser?._id);
     const canManageMembers = currentUserMember && ['owner', 'admin'].includes(currentUserMember.role);
 
-    if (loading) {
+    if (isLoadingTeam) {
         return (
             <div className="min-h-screen bg-[var(--bg-primary)]">
                 <TopNavbar />
@@ -234,7 +243,7 @@ export default function TeamMembersPage() {
                                                 variant="ghost"
                                                 size="sm"
                                                 className="text-[var(--danger)] hover:bg-[var(--danger)]/10"
-                                                onClick={() => setMemberToRemove(member.userId._id)}
+                                                onClick={() => setMemberToRemove(member)}
                                             >
                                                 <Trash width={16} height={16} />
                                             </Button>

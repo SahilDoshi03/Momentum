@@ -1,39 +1,28 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useParams } from 'next/navigation';
 import { TopNavbar } from '@/components/TopNavbar';
 import { TeamDetails } from '@/components/TeamDetails';
-import { apiClient, Team } from '@/lib/api';
-import { toast } from 'react-toastify';
+import { apiClient } from '@/lib/api';
+import { useQuery } from '@tanstack/react-query';
 
 export default function TeamPage() {
   const params = useParams();
   const teamId = params.teamId as string;
-  const [team, setTeam] = useState<Team | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchTeam = async () => {
-      try {
-        const response = await apiClient.getTeamById(teamId);
-        if (response.success && response.data) {
-          setTeam(response.data);
-        }
-      } catch (error) {
-        console.error('Failed to load team:', error);
-        toast.error('Failed to load team data');
-      } finally {
-        setLoading(false);
+  const { data: team, isLoading, isError } = useQuery({
+    queryKey: ['team', teamId],
+    queryFn: async () => {
+      const response = await apiClient.getTeamById(teamId);
+      if (!response.success || !response.data) {
+        throw new Error('Failed to fetch team');
       }
-    };
+      return response.data;
+    },
+    enabled: !!teamId
+  });
 
-    if (teamId) {
-      fetchTeam();
-    }
-  }, [teamId]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-[var(--bg-primary)]">
         <TopNavbar />
@@ -44,7 +33,7 @@ export default function TeamPage() {
     );
   }
 
-  if (!team) {
+  if (isError || !team) {
     return (
       <div className="min-h-screen bg-[var(--bg-primary)]">
         <TopNavbar />

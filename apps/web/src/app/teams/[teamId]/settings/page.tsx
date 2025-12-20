@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { TopNavbar } from '@/components/TopNavbar';
-import { apiClient, Team } from '@/lib/api';
+import { apiClient } from '@/lib/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { toast } from 'react-toastify';
@@ -13,60 +14,64 @@ export default function TeamSettingsPage() {
     const params = useParams();
     const router = useRouter();
     const teamId = params.teamId as string;
-    const [team, setTeam] = useState<Team | null>(null);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
+    const { data: team, isLoading } = useQuery({
+        queryKey: ['team', teamId],
+        queryFn: async () => {
+            const response = await apiClient.getTeamById(teamId);
+            if (!response.success || !response.data) {
+                throw new Error('Failed to fetch team');
+            }
+            return response.data;
+        },
+        enabled: !!teamId
+    });
+
     const [name, setName] = useState('');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     useEffect(() => {
-        const fetchTeam = async () => {
-            try {
-                const response = await apiClient.getTeamById(teamId);
-                if (response.success && response.data) {
-                    setTeam(response.data);
-                    setName(response.data.name);
-                }
-            } catch (error) {
-                console.error('Failed to load team:', error);
-                toast.error('Failed to load team data');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        if (teamId) {
-            fetchTeam();
+        if (team) {
+            setName(team.name);
         }
-    }, [teamId]);
+    }, [team]);
 
-    const handleSave = async () => {
-        if (!team) return;
-        try {
-            const response = await apiClient.updateTeam(teamId, { name });
-            if (response.success) {
+    const updateTeamMutation = useMutation({
+        mutationFn: (updates: { name: string }) => apiClient.updateTeam(teamId, updates),
+        onSuccess: (response) => {
+            if (response.success && response.data) {
+                queryClient.setQueryData(['team', teamId], response.data);
                 toast.success('Team updated successfully');
-                setTeam(prev => prev ? { ...prev, name } : null);
             }
-        } catch (error) {
-            console.error('Failed to update team:', error);
+        },
+        onError: () => {
             toast.error('Failed to update team');
         }
-    };
+    });
 
-    const handleDelete = async () => {
-        try {
-            const response = await apiClient.deleteTeam(teamId);
+    const deleteTeamMutation = useMutation({
+        mutationFn: () => apiClient.deleteTeam(teamId),
+        onSuccess: (response) => {
             if (response.success) {
                 toast.success('Team deleted successfully');
                 router.push('/');
             }
-        } catch (error) {
-            console.error('Failed to delete team:', error);
+        },
+        onError: () => {
             toast.error('Failed to delete team');
         }
+    });
+
+    const handleSave = async () => {
+        if (!team) return;
+        updateTeamMutation.mutate({ name });
     };
 
-    if (loading) {
+    const handleDelete = async () => {
+        deleteTeamMutation.mutate();
+    };
+
+    if (isLoading) {
         return (
             <div className="min-h-screen bg-[var(--bg-primary)]">
                 <TopNavbar />
