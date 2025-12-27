@@ -1,7 +1,15 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import { Task } from '../models/Task';
-import { TaskAssigned } from '../models/TaskAssigned';
+// import { TaskAssigned } from '../models/TaskAssigned';
+
+// Define inline for migration/build purposes since model is removed
+const taskAssignedSchema = new mongoose.Schema({
+    taskId: { type: String, required: true },
+    userId: { type: String, required: true },
+    assignedDate: { type: Date, default: Date.now }
+});
+const TaskAssigned = mongoose.model('TaskAssigned', taskAssignedSchema);
 
 dotenv.config();
 
