@@ -1,4 +1,5 @@
 import React from 'react';
+import { toast } from 'react-toastify';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MyTasks } from '../../components/MyTasks';
 import { apiClient } from '@/lib/api';
@@ -133,7 +134,7 @@ describe('MyTasks', () => {
         render(<MyTasks />);
 
         await waitFor(() => {
-            expect(require('react-toastify').toast.error).toHaveBeenCalledWith('Failed to load tasks');
+            expect(toast.error).toHaveBeenCalledWith('Failed to load tasks');
         });
 
         consoleSpy.mockRestore();

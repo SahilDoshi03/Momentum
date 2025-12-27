@@ -14,9 +14,7 @@ jest.mock('@dnd-kit/core', () => ({
 
 jest.mock('@dnd-kit/sortable', () => ({
     SortableContext: ({ children }: { children: React.ReactNode }) => {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const React = require('react');
-        return React.createElement('div', { 'data-testid': 'sortable-context' }, children);
+        return <div data-testid="sortable-context">{children}</div>;
     },
     verticalListSortingStrategy: {},
 }));
@@ -24,30 +22,26 @@ jest.mock('@dnd-kit/sortable', () => ({
 // Mock TaskCard
 jest.mock('../../components/TaskCard', () => ({
     TaskCard: ({ task }: { task: Task }) => {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const React = require('react');
-        return React.createElement('div', { 'data-testid': `task-card-${task._id}` }, task.name);
+        return <div data-testid={`task-card-${task._id}`}>{task.name}</div>;
     },
 }));
 
 // Mock CardComposer
 jest.mock('../../components/CardComposer', () => ({
     CardComposer: ({ onSave, onCancel }: { onSave: (name: string) => void, onCancel: () => void }) => {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const React = require('react');
-        return React.createElement('div', { 'data-testid': 'card-composer' }, [
-            React.createElement('button', { key: 'save', onClick: () => onSave('New Task') }, 'Save'),
-            React.createElement('button', { key: 'cancel', onClick: onCancel }, 'Cancel')
-        ]);
+        return (
+            <div data-testid="card-composer">
+                <button key="save" onClick={() => onSave('New Task')}>Save</button>
+                <button key="cancel" onClick={onCancel}>Cancel</button>
+            </div>
+        );
     },
 }));
 
 // Mock Plus icon
 jest.mock('@/components/icons', () => ({
     Plus: () => {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const React = require('react');
-        return React.createElement('div', { 'data-testid': 'plus-icon' });
+        return <div data-testid="plus-icon" />;
     },
 }));
 

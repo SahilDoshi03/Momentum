@@ -11,17 +11,17 @@ import { Trash } from '@/components/icons';
 import { ProfileIcon } from '@/components/ui/ProfileIcon';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 
-interface TeamMember {
-    _id: string;
-    userId: User;
-    role: string;
-}
+
 
 export default function TeamMembersPage() {
     const params = useParams();
     const teamId = params.teamId as string;
     const [team, setTeam] = useState<Team | null>(null);
-    const [members, setMembers] = useState<TeamMember[]>([]);
+    const [members, setMembers] = useState<{
+        _id: string;
+        userId: User;
+        role: string;
+    }[]>([]);
     const [loading, setLoading] = useState(true);
     const [inviteEmail, setInviteEmail] = useState('');
     const [inviteLink, setInviteLink] = useState('');
@@ -42,7 +42,11 @@ export default function TeamMembersPage() {
                 setTeam(teamRes.data);
             }
             if (membersRes.success && membersRes.data) {
-                setMembers(membersRes.data as TeamMember[]);
+                setMembers(membersRes.data as {
+                    _id: string;
+                    userId: User;
+                    role: string;
+                }[]);
             }
             if (userRes.success && userRes.data) {
                 setCurrentUser(userRes.data);

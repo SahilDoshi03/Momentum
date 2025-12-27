@@ -28,36 +28,28 @@ jest.mock('@dnd-kit/utilities', () => ({
 jest.mock('@/components/ui/ConfirmationModal', () => ({
     ConfirmationModal: ({ isOpen, onConfirm }: { isOpen: boolean, onConfirm: () => void }) => {
         if (!isOpen) return null;
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const React = require('react');
-        return React.createElement('button', { onClick: onConfirm }, 'Confirm Delete');
+        return <button onClick={onConfirm}>Confirm Delete</button>;
     },
 }));
 
 // Mock ProfileIcon
 jest.mock('@/components/ui/ProfileIcon', () => ({
     ProfileIcon: () => {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const React = require('react');
-        return React.createElement('div', { 'data-testid': 'profile-icon' });
+        return <div data-testid="profile-icon" />;
     },
 }));
 
 // Mock Card
 jest.mock('@/components/ui/Card', () => ({
     Card: (props: any) => {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const React = require('react');
-        return React.createElement('div', { ...props, 'data-testid': 'card' }, props.children);
+        return <div {...props} data-testid="card">{props.children}</div>;
     },
 }));
 
 // Mock Icons
 jest.mock('@/components/icons', () => ({
     CheckCircle: () => {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const React = require('react');
-        return React.createElement('div', { 'data-testid': 'check-circle' });
+        return <div data-testid="check-circle" />;
     },
 }));
 

@@ -108,16 +108,16 @@ describe('Task Lists and Drag & Drop', () => {
 
         it('should drag task to another list', () => {
             // Drag task1 from "To Do" to "In Progress"
-            cy.contains(task1).drag('[data-testid="list-In Progress"], :contains("In Progress")').then(() => {
-                // Verify task is now in "In Progress" list
-                cy.contains('In Progress').parent().parent().within(() => {
-                    cy.contains(task1).should('be.visible');
-                });
+            cy.contains(task1).drag('[data-testid="list-In Progress"], :contains("In Progress")');
 
-                // Verify task is not in "To Do" list
-                cy.contains('To Do').parent().parent().within(() => {
-                    cy.contains(task1).should('not.exist');
-                });
+            // Verify task is now in "In Progress" list
+            cy.contains('In Progress').parent().parent().within(() => {
+                cy.contains(task1).should('be.visible');
+            });
+
+            // Verify task is not in "To Do" list
+            cy.contains('To Do').parent().parent().within(() => {
+                cy.contains(task1).should('not.exist');
             });
         });
 
@@ -131,7 +131,8 @@ describe('Task Lists and Drag & Drop', () => {
                     const initialOrder = $tasks.toArray().map(el => el.textContent);
 
                     // Drag task3 to the top
-                    cy.contains(task3).drag(cy.contains(task1));
+                    cy.contains(task1).as('targetTask');
+                    cy.contains(task3).drag('@targetTask');
 
                     // Verify order changed
                     cy.get('[data-testid="task-card"], .task').then(($newTasks) => {
@@ -184,7 +185,8 @@ describe('Task Lists and Drag & Drop', () => {
                 const initialOrder = $lists.toArray().map(el => el.textContent);
 
                 // Drag "Done" list to the beginning
-                cy.contains('Done').parent().parent().drag(cy.contains('To Do').parent().parent());
+                cy.contains('To Do').parent().parent().as('targetList');
+                cy.contains('Done').parent().parent().drag('@targetList');
 
                 // Verify order changed
                 cy.get('[data-testid="task-list"], .list').then(($newLists) => {
@@ -196,7 +198,8 @@ describe('Task Lists and Drag & Drop', () => {
 
         it('should persist list order after drag', () => {
             // Drag "Done" to the beginning
-            cy.contains('Done').parent().parent().drag(cy.contains('To Do').parent().parent());
+            cy.contains('To Do').parent().parent().as('targetList');
+            cy.contains('Done').parent().parent().drag('@targetList');
 
             // Reload page
             cy.reload();

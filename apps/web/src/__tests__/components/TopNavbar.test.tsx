@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { TopNavbar } from '../../components/TopNavbar';
+import { getCurrentUser } from '@/lib/auth';
 import '@testing-library/jest-dom';
 
 // Mock next/navigation
@@ -33,9 +34,7 @@ jest.mock('@/lib/auth', () => ({
 // Mock ProfileIcon
 jest.mock('@/components/ui/ProfileIcon', () => ({
     ProfileIcon: () => {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const React = require('react');
-        return React.createElement('div', { 'data-testid': 'profile-icon' });
+        return <div data-testid="profile-icon" />;
     },
 }));
 
@@ -75,7 +74,7 @@ describe('TopNavbar', () => {
     });
 
     it('opens user menu and logs out', async () => {
-        (require('@/lib/auth').getCurrentUser as jest.Mock).mockReturnValue({
+        (getCurrentUser as jest.Mock).mockReturnValue({
             _id: 'user1',
             fullName: 'Test User',
             initials: 'TU',

@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { ProtectedRoute } from '../../components/ProtectedRoute';
 import { getCurrentUser, validateToken } from '@/lib/auth';
+import { usePathname } from 'next/navigation';
 import '@testing-library/jest-dom';
 
 // Mock Auth
@@ -34,7 +35,7 @@ describe.skip('ProtectedRoute', () => {
     });
 
     it.skip('renders loading state initially', () => {
-        (require('next/navigation').usePathname as jest.Mock).mockReturnValue('/login');
+        (usePathname as jest.Mock).mockReturnValue('/login');
 
         render(
             <ProtectedRoute>
@@ -46,7 +47,7 @@ describe.skip('ProtectedRoute', () => {
     });
 
     it('redirects to login if no user found', async () => {
-        (require('next/navigation').usePathname as jest.Mock).mockReturnValue('/dashboard');
+        (usePathname as jest.Mock).mockReturnValue('/dashboard');
         (getCurrentUser as jest.Mock).mockReturnValue(null);
 
         render(
@@ -61,7 +62,7 @@ describe.skip('ProtectedRoute', () => {
     });
 
     it('redirects to login if token invalid', async () => {
-        (require('next/navigation').usePathname as jest.Mock).mockReturnValue('/dashboard');
+        (usePathname as jest.Mock).mockReturnValue('/dashboard');
         (getCurrentUser as jest.Mock).mockReturnValue({ _id: 'u1' });
         (validateToken as jest.Mock).mockResolvedValue(false);
 
@@ -78,7 +79,7 @@ describe.skip('ProtectedRoute', () => {
     });
 
     it('renders children if authenticated and token valid', async () => {
-        (require('next/navigation').usePathname as jest.Mock).mockReturnValue('/dashboard');
+        (usePathname as jest.Mock).mockReturnValue('/dashboard');
         (getCurrentUser as jest.Mock).mockReturnValue({ _id: 'u1' });
         (validateToken as jest.Mock).mockResolvedValue(true);
 

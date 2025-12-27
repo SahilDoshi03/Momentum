@@ -1,4 +1,5 @@
 import React from 'react';
+import { toast } from 'react-toastify';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { TeamDetails } from '../../components/TeamDetails';
 import { apiClient } from '@/lib/api';
@@ -126,7 +127,7 @@ describe('TeamDetails', () => {
         render(<TeamDetails team={mockTeam as any} />);
 
         await waitFor(() => {
-            expect(require('react-toastify').toast.error).toHaveBeenCalledWith('Failed to load team details');
+            expect(toast.error).toHaveBeenCalledWith('Failed to load team details');
         });
 
         consoleSpy.mockRestore();

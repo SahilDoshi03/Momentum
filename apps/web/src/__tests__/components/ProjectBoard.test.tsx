@@ -24,48 +24,48 @@ jest.mock('@/lib/api', () => ({
 // Mock child components
 jest.mock('../../components/SortableTaskList', () => ({
     SortableTaskList: ({ list, onTaskClick }: any) => {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const React = require('react');
-        return React.createElement('div', { 'data-testid': `list-${list._id}` }, [
-            list.name,
-            ...list.tasks.map((task: any) =>
-                React.createElement('div', {
-                    key: task._id,
-                    onClick: () => onTaskClick(task),
-                    'data-testid': `task-${task._id}`
-                }, task.name)
-            )
-        ]);
+        return (
+            <div data-testid={`list-${list._id}`}>
+                {list.name}
+                {list.tasks.map((task: any) => (
+                    <div
+                        key={task._id}
+                        onClick={() => onTaskClick(task)}
+                        data-testid={`task-${task._id}`}
+                    >
+                        {task.name}
+                    </div>
+                ))}
+            </div>
+        );
     },
 }));
 
 jest.mock('../../components/AddList', () => ({
     AddList: ({ onCreateList }: any) => {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const React = require('react');
-        return React.createElement('button', { onClick: () => onCreateList('New List') }, 'Add List');
+        return <button onClick={() => onCreateList('New List')}>Add List</button>;
     },
 }));
 
 jest.mock('../../components/TaskDetailModal', () => ({
     TaskDetailModal: ({ isOpen, onClose, task }: any) => {
         if (!isOpen) return null;
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const React = require('react');
-        return React.createElement('div', { 'data-testid': 'task-modal' }, [
-            task.name,
-            React.createElement('button', { key: 'close', onClick: onClose }, 'Close')
-        ]);
+        return (
+            <div data-testid="task-modal">
+                {task.name}
+                <button key="close" onClick={onClose}>Close</button>
+            </div>
+        );
     },
 }));
 
 jest.mock('../../components/ProjectSettingsModal', () => ({
     ProjectSettingsModal: ({ isOpen, onClose }: any) => {
         if (!isOpen) return null;
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const React = require('react');
-        return React.createElement('div', { 'data-testid': 'settings-modal' },
-            React.createElement('button', { onClick: onClose }, 'Close')
+        return (
+            <div data-testid="settings-modal">
+                <button onClick={onClose}>Close</button>
+            </div>
         );
     },
 }));
