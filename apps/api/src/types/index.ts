@@ -2,7 +2,7 @@ import { Request } from 'express';
 import { Document } from 'mongoose';
 
 // Base interfaces
-export interface IUser extends Document {
+export interface IUser extends Omit<Document, '_id'> {
   _id: string;
   email: string;
   username: string;
@@ -17,6 +17,7 @@ export interface IUser extends Document {
   };
   role: 'owner' | 'admin' | 'member' | 'observer';
   googleId?: string;
+  githubId?: string;
   active: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -24,20 +25,20 @@ export interface IUser extends Document {
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
-export interface IOrganization extends Document {
+export interface IOrganization extends Omit<Document, '_id'> {
   _id: string;
   name: string;
   createdAt: Date;
 }
 
-export interface ITeam extends Document {
+export interface ITeam extends Omit<Document, '_id'> {
   _id: string;
   name: string;
   organizationId: string;
   createdAt: Date;
 }
 
-export interface ITeamMember extends Document {
+export interface ITeamMember extends Omit<Document, '_id'> {
   _id: string;
   teamId: string;
   userId: string;
@@ -45,7 +46,7 @@ export interface ITeamMember extends Document {
   addedDate: Date;
 }
 
-export interface IProject extends Document {
+export interface IProject extends Omit<Document, '_id'> {
   _id: string;
   name: string;
   teamId?: string;
@@ -53,7 +54,7 @@ export interface IProject extends Document {
   publicOn?: Date;
 }
 
-export interface IProjectMember extends Document {
+export interface IProjectMember extends Omit<Document, '_id'> {
   _id: string;
   projectId: string;
   userId: string;
@@ -61,7 +62,7 @@ export interface IProjectMember extends Document {
   addedAt: Date;
 }
 
-export interface ITaskGroup extends Document {
+export interface ITaskGroup extends Omit<Document, '_id'> {
   _id: string;
   projectId: string;
   name: string;
@@ -70,7 +71,7 @@ export interface ITaskGroup extends Document {
   tasks?: ITask[];
 }
 
-export interface ITask extends Document {
+export interface ITask extends Omit<Document, '_id'> {
   _id: string;
   taskGroupId: string;
   name: string;
@@ -97,21 +98,21 @@ export interface ITask extends Document {
   updatedAt: Date;
 }
 
-export interface ITaskAssigned extends Document {
+export interface ITaskAssigned extends Omit<Document, '_id'> {
   _id: string;
   taskId: string;
   userId: string;
   assignedDate: Date;
 }
 
-export interface ITaskLabel extends Document {
+export interface ITaskLabel extends Omit<Document, '_id'> {
   _id: string;
   taskId: string;
   projectLabelId: string;
   assignedDate: Date;
 }
 
-export interface IProjectLabel extends Document {
+export interface IProjectLabel extends Omit<Document, '_id'> {
   _id: string;
   projectId: string;
   name: string;
@@ -119,14 +120,14 @@ export interface IProjectLabel extends Document {
   createdDate: Date;
 }
 
-export interface ILabelColor extends Document {
+export interface ILabelColor extends Omit<Document, '_id'> {
   _id: string;
   name: string;
   colorHex: string;
   position: number;
 }
 
-export interface ITaskChecklist extends Document {
+export interface ITaskChecklist extends Omit<Document, '_id'> {
   _id: string;
   taskId: string;
   name: string;
@@ -134,7 +135,7 @@ export interface ITaskChecklist extends Document {
   createdAt: Date;
 }
 
-export interface ITaskChecklistItem extends Document {
+export interface ITaskChecklistItem extends Omit<Document, '_id'> {
   _id: string;
   checklistId: string;
   name: string;
@@ -144,7 +145,7 @@ export interface ITaskChecklistItem extends Document {
   createdAt: Date;
 }
 
-export interface ITaskComment extends Document {
+export interface ITaskComment extends Omit<Document, '_id'> {
   _id: string;
   taskId: string;
   userId: string;
@@ -154,7 +155,7 @@ export interface ITaskComment extends Document {
   updatedAt?: Date;
 }
 
-export interface IAuthToken extends Document {
+export interface IAuthToken extends Omit<Document, '_id'> {
   _id: string;
   userId: string;
   token: string;
@@ -162,7 +163,7 @@ export interface IAuthToken extends Document {
   createdAt: Date;
 }
 
-export interface IPersonalProject extends Document {
+export interface IPersonalProject extends Omit<Document, '_id'> {
   _id: string;
   userId: string;
   projectId: string;

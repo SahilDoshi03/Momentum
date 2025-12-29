@@ -3,7 +3,13 @@
 import React, { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { TopNavbar } from '@/components/TopNavbar';
-import { apiClient, User } from '@/lib/api';
+import { apiClient, User, Team } from '@/lib/api';
+
+interface TeamMember {
+    _id: string;
+    userId: User;
+    role: string;
+}
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -12,17 +18,12 @@ import { Trash } from '@/components/icons';
 import { ProfileIcon } from '@/components/ui/ProfileIcon';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 
-interface TeamMember {
-    _id: string;
-    userId: User;
-    role: string;
-}
+
 
 export default function TeamMembersPage() {
     const params = useParams();
     const teamId = params.teamId as string;
     const queryClient = useQueryClient();
-
     const [inviteEmail, setInviteEmail] = useState('');
     const [generatingInvite, setGeneratingInvite] = useState(false);
     const [inviteLink, setInviteLink] = useState('');

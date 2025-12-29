@@ -1,8 +1,8 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { TopNavbar } from '../../components/TopNavbar';
-import '@testing-library/jest-dom';
 import { getCurrentUser } from '@/lib/auth';
+import '@testing-library/jest-dom';
 
 // Mock next/navigation
 const mockPush = jest.fn();
@@ -34,8 +34,7 @@ jest.mock('@/lib/auth', () => ({
 // Mock ProfileIcon
 jest.mock('@/components/ui/ProfileIcon', () => ({
     ProfileIcon: () => {
-        const React = jest.requireActual('react');
-        return React.createElement('div', { 'data-testid': 'profile-icon' });
+        return <div data-testid="profile-icon" />;
     },
 }));
 

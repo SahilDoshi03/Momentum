@@ -9,7 +9,6 @@ import {
   ProjectMember,
   TaskGroup,
   Task,
-  TaskAssigned,
   TaskLabel,
   ProjectLabel,
   LabelColor
@@ -30,7 +29,7 @@ const seedData = async (): Promise<void> => {
     await ProjectMember.deleteMany({});
     await TaskGroup.deleteMany({});
     await Task.deleteMany({});
-    await TaskAssigned.deleteMany({});
+    // await TaskAssigned.deleteMany({});
     await ProjectLabel.deleteMany({});
     await LabelColor.deleteMany({});
 
@@ -260,6 +259,12 @@ const seedData = async (): Promise<void> => {
         position: 0,
         dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
         hasTime: false,
+        assigned: [
+          {
+            userId: createdUsers[1]._id, // Jane Smith
+            assignedDate: new Date(),
+          }
+        ]
       },
       {
         taskGroupId: taskGroups[0]._id, // To Do
@@ -268,6 +273,12 @@ const seedData = async (): Promise<void> => {
         complete: false,
         position: 1,
         hasTime: false,
+        assigned: [
+          {
+            userId: createdUsers[0]._id, // John Doe
+            assignedDate: new Date(),
+          }
+        ]
       },
       {
         taskGroupId: taskGroups[1]._id, // In Progress
@@ -277,6 +288,12 @@ const seedData = async (): Promise<void> => {
         position: 0,
         dueDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000), // 10 days from now
         hasTime: false,
+        assigned: [
+          {
+            userId: createdUsers[1]._id, // Jane Smith
+            assignedDate: new Date(),
+          }
+        ]
       },
       {
         taskGroupId: taskGroups[2]._id, // Done
@@ -286,6 +303,12 @@ const seedData = async (): Promise<void> => {
         position: 0,
         completedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
         hasTime: false,
+        assigned: [
+          {
+            userId: createdUsers[0]._id, // John Doe
+            assignedDate: new Date(),
+          }
+        ]
       },
       // Mobile App project tasks
       {
@@ -295,6 +318,12 @@ const seedData = async (): Promise<void> => {
         complete: false,
         position: 0,
         hasTime: false,
+        assigned: [
+          {
+            userId: createdUsers[2]._id, // Bob Wilson
+            assignedDate: new Date(),
+          }
+        ]
       },
       // Personal Tasks project
       {
@@ -305,48 +334,45 @@ const seedData = async (): Promise<void> => {
         position: 0,
         dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days from now
         hasTime: false,
+        assigned: [
+          {
+            userId: createdUsers[0]._id, // John Doe
+            assignedDate: new Date(),
+          }
+        ]
       },
     ];
 
     const createdTasks = await Task.insertMany(tasks);
     console.log('Created tasks');
 
-    // Create task assignments
+    // Create task assignments - MOVED TO EMBEDDED
+    /*
     const taskAssignments = [
       {
         taskId: createdTasks[0]._id,
         userId: createdUsers[1]._id, // Jane Smith
         assignedDate: new Date(),
       },
+      ...
+    ];
+    // await TaskAssigned.insertMany(taskAssignments);
+    // console.log('Created task assignments');
+    */
+
+    // Create task assignments - MOVED TO EMBEDDED
+    /*
+    const taskAssignments = [
       {
-        taskId: createdTasks[1]._id,
-        userId: createdUsers[0]._id, // John Doe
-        assignedDate: new Date(),
-      },
-      {
-        taskId: createdTasks[2]._id,
+        taskId: createdTasks[0]._id,
         userId: createdUsers[1]._id, // Jane Smith
         assignedDate: new Date(),
       },
-      {
-        taskId: createdTasks[3]._id,
-        userId: createdUsers[0]._id, // John Doe
-        assignedDate: new Date(),
-      },
-      {
-        taskId: createdTasks[4]._id,
-        userId: createdUsers[2]._id, // Bob Wilson
-        assignedDate: new Date(),
-      },
-      {
-        taskId: createdTasks[5]._id,
-        userId: createdUsers[0]._id, // John Doe
-        assignedDate: new Date(),
-      },
+      ...
     ];
-
     await TaskAssigned.insertMany(taskAssignments);
     console.log('Created task assignments');
+    */
 
     // Create task labels
     const taskLabels = [
@@ -384,7 +410,7 @@ const seedData = async (): Promise<void> => {
     console.log(`- ${createdProjects.length} projects created`);
     console.log(`- ${taskGroups.length} task groups created`);
     console.log(`- ${createdTasks.length} tasks created`);
-    console.log(`- ${taskAssignments.length} task assignments created`);
+    // console.log(`- ${taskAssignments.length} task assignments created`);
     console.log(`- ${createdProjectLabels.length} project labels created`);
     console.log(`- ${taskLabels.length} task labels created`);
 

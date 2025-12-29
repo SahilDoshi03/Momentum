@@ -90,7 +90,7 @@ if (config.githubClientId && config.githubClientSecret) {
     callbackURL: config.githubCallbackUrl,
     scope: ['user:email'],
     userAgent: 'MomentumApp',
-  }, async (accessToken, refreshToken, profile, done) => {
+  }, async (accessToken: any, refreshToken: any, profile: any, done: any) => {
     try {
       // Check if user already exists with this GitHub ID
       let user = await User.findOne({ githubId: profile.id });
@@ -123,7 +123,7 @@ if (config.githubClientId && config.githubClientSecret) {
         return done(new Error('No email found from GitHub'), false);
       }
       const name = profile.displayName || profile.username || 'GitHub User';
-      const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+      const initials = name.split(' ').map((n: any) => n[0]).join('').toUpperCase().substring(0, 2);
 
       user = new User({
         email,
