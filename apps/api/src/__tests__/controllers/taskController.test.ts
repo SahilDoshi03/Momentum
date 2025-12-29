@@ -292,8 +292,7 @@ describe('Task Controller', () => {
 
             // Verify task and related data are deleted
             const deletedTask = await Task.findById(task._id);
-            const taskInDb = await Task.findById(task._id);
-            expect(taskInDb?.assigned).toHaveLength(0);
+
             expect(deletedTask).toBeNull();
         });
 
@@ -467,7 +466,7 @@ describe('Task Controller', () => {
             const req = mockRequest({
                 user: testUser,
                 params: { id: task._id },
-                body: { userId: testUser._id },
+                body: { userId: testUser._id.toString() },
             });
             const res = mockResponse();
             const next = mockNext();
