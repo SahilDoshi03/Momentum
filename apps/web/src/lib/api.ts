@@ -393,7 +393,7 @@ class ApiClient {
     });
   }
 
-  async getTeamMembers(teamId: string): Promise<ApiResponse<any[]>> {
+  async getTeamMembers(teamId: string): Promise<ApiResponse<unknown[]>> {
     return this.request(`/teams/${teamId}/members`);
   }
 

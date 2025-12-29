@@ -9,6 +9,7 @@ import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { Input } from '@/components/ui/Input';
 import { Plus, Trash } from '@/components/icons';
 import { apiClient, Project, Team } from '@/lib/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 export const ProjectsList: React.FC = () => {
   const [showNewProject, setShowNewProject] = useState(false);
@@ -16,128 +17,115 @@ export const ProjectsList: React.FC = () => {
   const [newProjectName, setNewProjectName] = useState('');
   const [newTeamName, setNewTeamName] = useState('');
 
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [teams, setTeams] = useState<Team[]>([]);
-  // const [isLoading, setIsLoading] = useState(true);
+  // UI State
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
 
-  // Fetch projects and teams on mount
-  React.useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [projectsResponse, teamsResponse] = await Promise.all([
-          apiClient.getProjects(),
-          apiClient.getTeams()
-        ]);
-
-        if (projectsResponse.success && projectsResponse.data) {
-          setProjects(projectsResponse.data);
-        }
-
-        if (teamsResponse.success && teamsResponse.data) {
-          setTeams(teamsResponse.data);
-        }
-      } catch (error) {
-        console.error('Failed to fetch data:', error);
-        toast.error('Failed to load data');
-      } finally {
-        // setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  // Separate personal and team projects
-  const personalProjects = projects.filter(p => !p.teamId);
-
-  // Group team projects by team
-  const teamProjectsMap = new Map<string, { id: string; name: string; projects: Project[] }>();
-
-  // Initialize all teams in the map (even if they have no projects)
-  teams.forEach(team => {
-    teamProjectsMap.set(team._id, {
-      id: team._id,
-      name: team.name,
-      projects: []
-    });
-  });
-
-  // Add projects to their respective teams
-  projects.forEach(p => {
-    if (p.teamId && typeof p.teamId === 'object') {
-      const team = p.teamId;
-      if (teamProjectsMap.has(team._id)) {
-        teamProjectsMap.get(team._id)!.projects.push(p);
-      }
+  // Fetch projects
+  const { data: projects = [] } = useQuery({
+    queryKey: ['projects'],
+    queryFn: async () => {
+      const response = await apiClient.getProjects();
+      return response.data || [];
     }
   });
 
-  const teamProjects = Array.from(teamProjectsMap.values());
+  // Fetch teams
+  const { data: teams = [] } = useQuery({
+    queryKey: ['teams'],
+    queryFn: async () => {
+      const response = await apiClient.getTeams();
+      return response.data || [];
+    }
+  });
+
+  // Derived state
+  const personalProjects = projects.filter((p: Project) => !p.teamId);
+  const teamProjects = teams.map((team: Team) => ({
+    ...team,
+    projects: projects.filter((p: Project) =>
+      (typeof p.teamId === 'string' ? p.teamId : p.teamId?._id) === team._id
+    )
+  }));
+
+  const queryClient = useQueryClient();
+
+  const createProjectMutation = useMutation({
+    mutationFn: (data: { name: string; teamId?: string }) =>
+      apiClient.createProject(data),
+    onSuccess: (response) => {
+      if (response.success) {
+        queryClient.invalidateQueries({ queryKey: ['projects'] });
+        toast.success(`Project "${response.data?.name}" created successfully!`);
+        setNewProjectName('');
+        setSelectedTeamId(null);
+        setShowNewProject(false);
+      }
+    },
+    onError: () => {
+      toast.error('Failed to create project');
+    }
+  });
+
+  const createTeamMutation = useMutation({
+    mutationFn: (data: { name: string }) =>
+      apiClient.createTeam(data),
+    onSuccess: (response) => {
+      if (response.success) {
+        queryClient.invalidateQueries({ queryKey: ['teams'] });
+        toast.success(`Team "${response.data?.name}" created successfully!`);
+        setNewTeamName('');
+        setShowNewTeam(false);
+      }
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : 'Failed to create team';
+      console.error('Failed to create team:', error);
+      toast.error(message);
+    }
+  });
+
+  const deleteProjectMutation = useMutation({
+    mutationFn: (id: string) => apiClient.deleteProject(id),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      // We can't easily get the project name here without passing it or looking it up, 
+      // but for now keeping it simple or just generic message if needed.
+      // Or we rely on the closure variable projectToDelete if we want name.
+      if (projectToDelete && projectToDelete._id === id) {
+        toast.success(`Project "${projectToDelete.name}" deleted successfully`);
+      } else {
+        toast.success(`Project deleted successfully`);
+      }
+      setShowDeleteConfirm(false);
+      setProjectToDelete(null);
+    },
+    onError: () => {
+      toast.error('Failed to delete project');
+    }
+  });
 
   const handleDeleteProject = async () => {
     if (projectToDelete) {
-      try {
-        const response = await apiClient.deleteProject(projectToDelete._id);
-        if (response.success) {
-          setProjects(projects.filter(p => p._id !== projectToDelete._id));
-          toast.success(`Project "${projectToDelete.name}" deleted successfully`);
-          setShowDeleteConfirm(false);
-          setProjectToDelete(null);
-        }
-      } catch (error) {
-        console.error('Failed to delete project:', error);
-        toast.error('Failed to delete project');
-      }
+      deleteProjectMutation.mutate(projectToDelete._id);
     }
   };
 
   const handleCreateProject = async () => {
     if (newProjectName.trim()) {
-      try {
-        const response = await apiClient.createProject({
-          name: newProjectName,
-          teamId: selectedTeamId || undefined
-        });
-
-        if (response.success && response.data) {
-          setProjects([...projects, response.data as Project]);
-          toast.success(`Project "${newProjectName}" created successfully!`);
-          setNewProjectName('');
-          setSelectedTeamId(null);
-          setShowNewProject(false);
-        }
-      } catch (error) {
-        console.error('Failed to create project:', error);
-        toast.error('Failed to create project');
-      }
+      createProjectMutation.mutate({
+        name: newProjectName,
+        teamId: selectedTeamId || undefined
+      });
     }
   };
 
   const handleCreateTeam = async () => {
     if (newTeamName.trim()) {
-      try {
-        const response = await apiClient.createTeam({
-          name: newTeamName,
-        });
-
-        if (response.success && response.data) {
-          toast.success(`Team "${newTeamName}" created successfully!`);
-          setNewTeamName('');
-          setShowNewTeam(false);
-          // Refresh teams to show the new team
-          const teamsResponse = await apiClient.getTeams();
-          if (teamsResponse.success && teamsResponse.data) {
-            setTeams(teamsResponse.data);
-          }
-        }
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to create team';
-        console.error('Failed to create team:', error);
-        toast.error(message);
-      }
+      createTeamMutation.mutate({
+        name: newTeamName,
+      });
     }
   };
 
@@ -219,7 +207,7 @@ export const ProjectsList: React.FC = () => {
 
       {/* Team Projects */}
       {teamProjects.map((team) => (
-        <div key={team.id} className="mb-12">
+        <div key={team._id} className="mb-12">
           <div className="flex items-start justify-between mb-4">
             <div className="flex-1">
               <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
@@ -227,13 +215,13 @@ export const ProjectsList: React.FC = () => {
               </h2>
             </div>
             <div className="flex flex-wrap gap-2 ml-4">
-              <Link href={`/teams/${team.id}`}>
+              <Link href={`/teams/${team._id}`}>
                 <Button variant="outline" size="sm">Projects</Button>
               </Link>
-              <Link href={`/teams/${team.id}/members`}>
+              <Link href={`/teams/${team._id}/members`}>
                 <Button variant="outline" size="sm">Members</Button>
               </Link>
-              <Link href={`/teams/${team.id}/settings`}>
+              <Link href={`/teams/${team._id}/settings`}>
                 <Button variant="outline" size="sm">Settings</Button>
               </Link>
             </div>
@@ -276,7 +264,7 @@ export const ProjectsList: React.FC = () => {
             {/* Create new project tile for team */}
             <button
               onClick={() => {
-                setSelectedTeamId(team.id);
+                setSelectedTeamId(team._id);
                 setShowNewProject(true);
               }}
               className="h-24 rounded-lg border-2 border-dashed border-[var(--border)] bg-[var(--bg-secondary)] hover:border-[var(--primary)] hover:bg-[var(--bg-primary)] transition-colors flex items-center justify-center group"

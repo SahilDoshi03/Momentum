@@ -1,60 +1,43 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { ProfileIcon } from '@/components/ui/ProfileIcon';
 import { Plus, Settings, UserPlus } from '@/components/icons';
 import { cn } from '@/lib/utils';
-import { apiClient, Team, Project, User } from '@/lib/api';
-import { toast } from 'react-toastify';
+import { apiClient, Team } from '@/lib/api';
+import { useQuery } from '@tanstack/react-query';
+
+const projectColors = ['#e362e3', '#7a6ff0', '#37c5ab', '#aa62e3', '#e8384f'];
 
 interface TeamDetailsProps {
   team: Team;
 }
 
-interface TeamMember {
-  _id: string;
-  userId: User;
-  role: string;
-  teamId: string;
-  joinedAt: string;
-}
+
 
 export const TeamDetails: React.FC<TeamDetailsProps> = ({ team }) => {
   const [activeTab, setActiveTab] = useState<'projects' | 'members'>('projects');
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [members, setMembers] = useState<TeamMember[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: projects = [] } = useQuery({
+    queryKey: ['team-projects', team._id],
+    queryFn: async () => {
+      const response = await apiClient.getProjects(team._id);
+      return response.data || [];
+    },
+    enabled: !!team._id
+  });
 
-  const projectColors = ['#e362e3', '#7a6ff0', '#37c5ab', '#aa62e3', '#e8384f'];
+  const { data: members = [] } = useQuery({
+    queryKey: ['team-members', team._id],
+    queryFn: async () => {
+      const response = await apiClient.getTeamMembers(team._id);
+      return response.data || [];
+    },
+    enabled: !!team._id
+  });
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [projectsRes, membersRes] = await Promise.all([
-          apiClient.getProjects(team._id),
-          apiClient.getTeamMembers(team._id)
-        ]);
 
-        if (projectsRes.success && projectsRes.data) {
-          setProjects(projectsRes.data);
-        }
-        if (membersRes.success && membersRes.data) {
-          setMembers(membersRes.data);
-        }
-      } catch (error) {
-        console.error('Failed to load team details:', error);
-        toast.error('Failed to load team details');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (team._id) {
-      fetchData();
-    }
-  }, [team._id]);
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
@@ -167,7 +150,8 @@ export const TeamDetails: React.FC<TeamDetailsProps> = ({ team }) => {
 
           <div className="bg-[var(--bg-secondary)] rounded-lg overflow-hidden">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-6">
-              {members.map((member) => (
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+              {members.map((member: any) => (
                 <div
                   key={member._id}
                   className="flex items-center space-x-3 p-4 bg-[var(--bg-primary)] rounded-lg hover:bg-[var(--bg-secondary)] transition-colors"

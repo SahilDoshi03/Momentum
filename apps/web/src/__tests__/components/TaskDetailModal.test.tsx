@@ -93,7 +93,7 @@ describe('TaskDetailModal', () => {
                 onClose={mockOnClose}
                 task={mockTask}
                 project={mockProject}
-                currentUser={mockUser}
+
                 onUpdateTask={mockOnUpdateTask}
                 onDeleteTask={mockOnDeleteTask}
             />
@@ -113,7 +113,7 @@ describe('TaskDetailModal', () => {
                 onClose={mockOnClose}
                 task={mockTask}
                 project={mockProject}
-                currentUser={mockUser}
+
                 onUpdateTask={mockOnUpdateTask}
                 onDeleteTask={mockOnDeleteTask}
             />
@@ -137,7 +137,7 @@ describe('TaskDetailModal', () => {
                 onClose={mockOnClose}
                 task={mockTask}
                 project={mockProject}
-                currentUser={mockUser}
+
                 onUpdateTask={mockOnUpdateTask}
                 onDeleteTask={mockOnDeleteTask}
             />
@@ -163,7 +163,7 @@ describe('TaskDetailModal', () => {
                 onClose={mockOnClose}
                 task={mockTask}
                 project={mockProject}
-                currentUser={mockUser}
+
                 onUpdateTask={mockOnUpdateTask}
                 onDeleteTask={mockOnDeleteTask}
             />

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { Button } from '@/components/ui/Button';
 import { Dropdown, DropdownItem, DropdownHeader } from '@/components/ui/Dropdown';
 import { ProfileIcon } from '@/components/ui/ProfileIcon';
-import { CheckCircle, Plus, Trash, X } from '@/components/icons';
-import { Task, User as UserType, Project, apiClient, LabelColor } from '@/lib/api';
+import { CheckCircle, Plus, Trash } from '@/components/icons';
+import { Task, Project, apiClient, LabelColor } from '@/lib/api';
 import { toast } from 'react-toastify';
 import dayjs from 'dayjs';
 
@@ -14,7 +15,6 @@ interface TaskDetailModalProps {
     onClose: () => void;
     task: Task;
     project: Project;
-    currentUser: UserType | null;
     onUpdateTask: (taskId: string, updates: Partial<Task>) => void;
     onDeleteTask: (taskId: string) => void;
     onUpdateProject?: (project: Project) => void;
@@ -25,7 +25,6 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     onClose,
     task,
     project,
-    currentUser,
     onUpdateTask,
     onDeleteTask,
     onUpdateProject,
@@ -55,18 +54,24 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     }, [task]);
 
     // Fetch label colors on mount
-    // useEffect(() => {
-    //     if (isOpen) {
-    //         apiClient.getLabelColors().then(response => {
-    //             if (response.success && response.data) {
-    //                 setLabelColors(response.data);
-    //                 if (response.data.length > 0) {
-    //                     setSelectedColorId(response.data[0]._id);
-    //                 }
-    //             }
-    //         });
-    //     }
-    // }, [isOpen]);
+    // Fetch label colors
+    const { data: fetchedLabelColors } = useQuery({
+        queryKey: ['label-colors'],
+        queryFn: async () => {
+            const response = await apiClient.getLabelColors();
+            return response.data || [];
+        },
+        enabled: isOpen && isCreatingLabel
+    });
+
+    useEffect(() => {
+        if (fetchedLabelColors) {
+            setLabelColors(fetchedLabelColors);
+            if (fetchedLabelColors.length > 0 && !selectedColorId) {
+                setSelectedColorId(fetchedLabelColors[0]._id);
+            }
+        }
+    }, [fetchedLabelColors, selectedColorId]);
 
     const handleSave = async () => {
         try {
@@ -85,7 +90,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
             if (dueDate !== task.dueDate) {
                 // If dueDate is empty string or null, send null to backend
                 // Otherwise send the date string
-                updates.dueDate = dueDate ? dueDate : null as any;
+                updates.dueDate = dueDate ? dueDate : undefined;
                 hasUpdates = true;
             }
             if (complete !== task.complete) {
@@ -258,7 +263,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     // Get list name
     const getListName = () => {
         if (typeof task.taskGroupId === 'object' && task.taskGroupId !== null) {
-            return (task.taskGroupId as any).name;
+            return (task.taskGroupId as { name: string }).name;
         }
         // Try to find in project task groups
         const group = project.taskGroups?.find(g => g._id === task.taskGroupId);

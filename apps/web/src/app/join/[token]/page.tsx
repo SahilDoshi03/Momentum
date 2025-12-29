@@ -1,59 +1,59 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
 import { Button } from '@/components/ui/Button';
-import { TopNavbar } from '@/components/TopNavbar';
 import { toast } from 'react-toastify';
+import { TopNavbar } from '@/components/TopNavbar';
+
 
 export default function JoinTeamPage() {
     const params = useParams();
     const router = useRouter();
     const token = params.token as string;
+    const queryClient = useQueryClient();
 
-    const [invite, setInvite] = useState<{ teamId: { _id: string; name: string }; creatorId: string } | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [joining, setJoining] = useState(false);
-    const [error, setError] = useState('');
-
-    useEffect(() => {
-        const fetchInvite = async () => {
-            try {
-                const response = await apiClient.getInviteDetails(token);
-                if (response.success && response.data) {
-                    setInvite(response.data);
-                }
-            } catch (err: any) {
-                console.error('Failed to load invite:', err);
-                setError(err.message || 'Invalid or expired invite link');
-            } finally {
-                setLoading(false);
+    const { data: invite, isLoading, error: queryError } = useQuery({
+        queryKey: ['invite', token],
+        queryFn: async () => {
+            const response = await apiClient.getInviteDetails(token);
+            if (!response.success || !response.data) {
+                throw new Error('Invalid or expired invite link');
             }
-        };
+            return response.data;
+        },
+        enabled: !!token,
+        retry: false
+    });
 
-        if (token) {
-            fetchInvite();
-        }
-    }, [token]);
-
-    const handleJoinTeam = async () => {
-        setJoining(true);
-        try {
-            const response = await apiClient.acceptTeamInvite(token);
+    const joinTeamMutation = useMutation({
+        mutationFn: () => apiClient.acceptTeamInvite(token),
+        onSuccess: (response) => {
             if (response.success) {
-                toast.success('Successfully joined the team!');
-                router.push(`/teams/${response.data?.teamId}`);
+                toast.success('Successfully joined team!');
+                // Invalidate projects and user queries to refresh UI
+                queryClient.invalidateQueries({ queryKey: ['projects'] });
+                queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+                router.push('/');
             }
-        } catch (err: any) {
-            console.error('Failed to join team:', err);
-            toast.error(err.message || 'Failed to join team');
-        } finally {
-            setJoining(false);
+        },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        onError: (error: any) => {
+            const message = error?.message || 'Failed to join team';
+            toast.error(message);
         }
+    });
+
+    const handleJoinTeam = () => {
+        joinTeamMutation.mutate();
     };
 
-    if (loading) {
+    const joining = joinTeamMutation.isPending;
+    const error = queryError ? (queryError as Error).message : '';
+
+    if (isLoading) {
         return (
             <div className="min-h-screen bg-[var(--bg-primary)]">
                 <TopNavbar />
