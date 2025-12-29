@@ -15,6 +15,10 @@ const nextConfig: NextConfig = {
     ],
   },
   outputFileTracingRoot: path.join(__dirname, '../../'),
+  experimental: {
+    // Disable automatic lockfile patching to avoid package manager conflicts
+    skipMiddlewareUrlNormalize: false,
+  },
 };
 
 export default nextConfig;

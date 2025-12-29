@@ -19,6 +19,7 @@ import taskRoutes from './routes/tasks';
 import labelColorRoutes from './routes/labelColors';
 import teamRoutes from './routes/teams';
 import inviteRoutes from './routes/invites';
+import chatbotRoutes from './routes/chatbot';
 
 // Import passport config
 import './config/passport';
@@ -100,6 +101,7 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/label-colors', labelColorRoutes);
 app.use('/api/teams', teamRoutes);
 app.use('/api/invites', inviteRoutes);
+app.use('/api/chatbot', chatbotRoutes);
 
 // 404 handler
 app.use(notFound);

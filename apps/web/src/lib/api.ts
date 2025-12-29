@@ -499,6 +499,17 @@ class ApiClient {
     });
   }
 
+  // Chatbot endpoints
+  async sendChatMessage(message: string, conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>): Promise<ApiResponse<{
+    response: string;
+    toolResults?: unknown[];
+  }>> {
+    return this.request('/chatbot/message', {
+      method: 'POST',
+      body: JSON.stringify({ message, conversationHistory }),
+    });
+  }
+
   // Label color endpoints
   async getLabelColors(): Promise<ApiResponse<LabelColor[]>> {
     return this.request('/label-colors');
