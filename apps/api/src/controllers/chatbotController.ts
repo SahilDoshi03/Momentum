@@ -20,10 +20,11 @@ export const sendMessage = asyncHandler(async (req: Request, res: Response) => {
     const { message, conversationHistory = [] }: ChatRequest = req.body;
 
     if (!message || typeof message !== 'string') {
-        return res.status(400).json({
+        res.status(400).json({
             success: false,
             message: 'Message is required',
         });
+        return;
     }
 
     const context = {

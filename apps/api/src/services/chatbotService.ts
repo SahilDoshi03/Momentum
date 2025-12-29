@@ -1,4 +1,5 @@
-import { generateText, tool } from 'ai';
+import { generateText, tool as aiTool } from 'ai';
+const tool = (args: any) => aiTool(args);
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { z } from 'zod';
 import {
@@ -51,7 +52,7 @@ const createChatbotTools = (context: ChatbotContext) => ({
             name: z.string().describe('The name of the project to create'),
             teamId: z.string().optional().describe('Optional team ID to associate the project with'),
         }),
-        execute: async ({ name, teamId }) => {
+        execute: async ({ name, teamId }: { name: string; teamId?: string }) => {
             const project = new Project({
                 name,
                 teamId: teamId || null,
@@ -92,7 +93,7 @@ const createChatbotTools = (context: ChatbotContext) => ({
         parameters: z.object({
             projectId: z.string().describe('The ID of the project to delete'),
         }),
-        execute: async ({ projectId }) => {
+        execute: async ({ projectId }: { projectId: string }) => {
             const projectMember = await ProjectMember.findOne({
                 projectId,
                 userId: context.userId,
@@ -124,7 +125,7 @@ const createChatbotTools = (context: ChatbotContext) => ({
         parameters: z.object({
             projectId: z.string().describe('The ID of the project'),
         }),
-        execute: async ({ projectId }) => {
+        execute: async ({ projectId }: { projectId: string }) => {
             const projectMember = await ProjectMember.findOne({
                 projectId,
                 userId: context.userId,
@@ -153,7 +154,7 @@ const createChatbotTools = (context: ChatbotContext) => ({
             name: z.string().describe('The name of the task group'),
             position: z.number().optional().describe('Optional position in the list'),
         }),
-        execute: async ({ projectId, name, position }) => {
+        execute: async ({ projectId, name, position }: { projectId: string; name: string; position?: number }) => {
             const projectMember = await ProjectMember.findOne({
                 projectId,
                 userId: context.userId,
@@ -194,7 +195,7 @@ const createChatbotTools = (context: ChatbotContext) => ({
             name: z.string().optional().describe('New name for the task group'),
             position: z.number().optional().describe('New position for the task group'),
         }),
-        execute: async ({ taskGroupId, name, position }) => {
+        execute: async ({ taskGroupId, name, position }: { taskGroupId: string; name?: string; position?: number }) => {
             const taskGroup = await TaskGroup.findById(taskGroupId);
             if (!taskGroup) {
                 throw new AppError('Task group not found', 404);
@@ -230,7 +231,7 @@ const createChatbotTools = (context: ChatbotContext) => ({
         parameters: z.object({
             taskGroupId: z.string().describe('The ID of the task group'),
         }),
-        execute: async ({ taskGroupId }) => {
+        execute: async ({ taskGroupId }: { taskGroupId: string }) => {
             const taskGroup = await TaskGroup.findById(taskGroupId);
             if (!taskGroup) {
                 throw new AppError('Task group not found', 404);
@@ -464,7 +465,7 @@ export async function processChatMessage(
     });
 
     const result = await generateText({
-        model: google('gemini-1.5-flash'),
+        model: google('gemini-flash-latest'),
         messages,
         tools,
         system: `You are a helpful assistant for the Momentum task management app. 
