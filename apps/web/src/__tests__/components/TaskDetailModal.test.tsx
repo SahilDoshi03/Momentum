@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TaskDetailModal } from '../../components/TaskDetailModal';
 import { Task, Project, User } from '@/lib/api';
 import '@testing-library/jest-dom';
@@ -82,21 +83,32 @@ describe('TaskDetailModal', () => {
     const mockOnUpdateTask = jest.fn();
     const mockOnDeleteTask = jest.fn();
 
+    const createTestQueryClient = () => new QueryClient({
+        defaultOptions: {
+            queries: {
+                retry: false,
+            },
+        },
+    });
+
     beforeEach(() => {
         jest.clearAllMocks();
     });
 
     it('renders correctly', () => {
+        const queryClient = createTestQueryClient();
         render(
-            <TaskDetailModal
-                isOpen={true}
-                onClose={mockOnClose}
-                task={mockTask}
-                project={mockProject}
+            <QueryClientProvider client={queryClient}>
+                <TaskDetailModal
+                    isOpen={true}
+                    onClose={mockOnClose}
+                    task={mockTask}
+                    project={mockProject}
 
-                onUpdateTask={mockOnUpdateTask}
-                onDeleteTask={mockOnDeleteTask}
-            />
+                    onUpdateTask={mockOnUpdateTask}
+                    onDeleteTask={mockOnDeleteTask}
+                />
+            </QueryClientProvider>
         );
 
         expect(screen.getByDisplayValue('Test Task')).toBeInTheDocument();
@@ -107,16 +119,19 @@ describe('TaskDetailModal', () => {
     });
 
     it('updates task name on save', async () => {
+        const queryClient = createTestQueryClient();
         render(
-            <TaskDetailModal
-                isOpen={true}
-                onClose={mockOnClose}
-                task={mockTask}
-                project={mockProject}
+            <QueryClientProvider client={queryClient}>
+                <TaskDetailModal
+                    isOpen={true}
+                    onClose={mockOnClose}
+                    task={mockTask}
+                    project={mockProject}
 
-                onUpdateTask={mockOnUpdateTask}
-                onDeleteTask={mockOnDeleteTask}
-            />
+                    onUpdateTask={mockOnUpdateTask}
+                    onDeleteTask={mockOnDeleteTask}
+                />
+            </QueryClientProvider>
         );
 
         const input = screen.getByDisplayValue('Test Task');
@@ -131,16 +146,19 @@ describe('TaskDetailModal', () => {
     });
 
     it('toggles completion status on save', async () => {
+        const queryClient = createTestQueryClient();
         render(
-            <TaskDetailModal
-                isOpen={true}
-                onClose={mockOnClose}
-                task={mockTask}
-                project={mockProject}
+            <QueryClientProvider client={queryClient}>
+                <TaskDetailModal
+                    isOpen={true}
+                    onClose={mockOnClose}
+                    task={mockTask}
+                    project={mockProject}
 
-                onUpdateTask={mockOnUpdateTask}
-                onDeleteTask={mockOnDeleteTask}
-            />
+                    onUpdateTask={mockOnUpdateTask}
+                    onDeleteTask={mockOnDeleteTask}
+                />
+            </QueryClientProvider>
         );
 
         const button = screen.getByText('Mark Complete');
@@ -157,16 +175,19 @@ describe('TaskDetailModal', () => {
 
 
     it('calls onDeleteTask when delete button is clicked and confirmed', () => {
+        const queryClient = createTestQueryClient();
         render(
-            <TaskDetailModal
-                isOpen={true}
-                onClose={mockOnClose}
-                task={mockTask}
-                project={mockProject}
+            <QueryClientProvider client={queryClient}>
+                <TaskDetailModal
+                    isOpen={true}
+                    onClose={mockOnClose}
+                    task={mockTask}
+                    project={mockProject}
 
-                onUpdateTask={mockOnUpdateTask}
-                onDeleteTask={mockOnDeleteTask}
-            />
+                    onUpdateTask={mockOnUpdateTask}
+                    onDeleteTask={mockOnDeleteTask}
+                />
+            </QueryClientProvider>
         );
 
         const deleteButton = screen.getByText('Delete Task');
