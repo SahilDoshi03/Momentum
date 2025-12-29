@@ -1,3 +1,4 @@
+import React from 'react';
 import { TopNavbar } from '@/components/TopNavbar';
 import { ProjectsList } from '@/components/ProjectsList';
 
