@@ -1,5 +1,5 @@
 import { generateText, tool } from 'ai';
-import { google } from '@ai-sdk/google';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { z } from 'zod';
 import {
     Project,
@@ -268,7 +268,7 @@ const createChatbotTools = (context: ChatbotContext) => ({
             description: z.string().optional().describe('Optional description'),
             dueDate: z.string().optional().describe('Optional due date in ISO format'),
         }),
-        execute: async ({ taskGroupId, name, description, dueDate }) => {
+        execute: async ({ taskGroupId, name, description, dueDate }: { taskGroupId: string; name: string; description?: string; dueDate?: string }) => {
             const taskGroup = await TaskGroup.findById(taskGroupId);
             if (!taskGroup) {
                 throw new AppError('Task group not found', 404);
@@ -328,7 +328,7 @@ const createChatbotTools = (context: ChatbotContext) => ({
             complete: z.boolean().optional().describe('Mark as complete or incomplete'),
             dueDate: z.string().optional().describe('New due date in ISO format'),
         }),
-        execute: async ({ taskId, name, description, complete, dueDate }) => {
+        execute: async ({ taskId, name, description, complete, dueDate }: { taskId: string; name?: string; description?: string; complete?: boolean; dueDate?: string }) => {
             const task = await Task.findById(taskId);
             if (!task) {
                 throw new AppError('Task not found', 404);
@@ -351,7 +351,7 @@ const createChatbotTools = (context: ChatbotContext) => ({
             if (name !== undefined) task.name = name;
             if (description !== undefined) task.description = description;
             if (complete !== undefined) task.complete = complete;
-            if (dueDate !== undefined) task.dueDate = dueDate ? new Date(dueDate) : null;
+            if (dueDate !== undefined) task.dueDate = dueDate ? new Date(dueDate) : undefined;
 
             (task as any).updatedBy = context.userId;
             await task.save();
@@ -372,7 +372,7 @@ const createChatbotTools = (context: ChatbotContext) => ({
         parameters: z.object({
             taskId: z.string().describe('The ID of the task to delete'),
         }),
-        execute: async ({ taskId }) => {
+        execute: async ({ taskId }: { taskId: string }) => {
             const task = await Task.findById(taskId);
             if (!task) {
                 throw new AppError('Task not found', 404);
@@ -406,7 +406,7 @@ const createChatbotTools = (context: ChatbotContext) => ({
         parameters: z.object({
             includeCompleted: z.boolean().optional().describe('Whether to include completed tasks'),
         }),
-        execute: async ({ includeCompleted = false }) => {
+        execute: async ({ includeCompleted = false }: { includeCompleted?: boolean }) => {
             const query: any = { 'assigned.userId': context.userId };
             if (!includeCompleted) {
                 query.complete = false;
@@ -459,10 +459,12 @@ export async function processChatMessage(
         },
     ];
 
+    const google = createGoogleGenerativeAI({
+        apiKey: config.geminiApiKey,
+    });
+
     const result = await generateText({
-        model: google('gemini-flash-latest', {
-            apiKey: config.geminiApiKey,
-        }),
+        model: google('gemini-1.5-flash'),
         messages,
         tools,
         system: `You are a helpful assistant for the Momentum task management app. 
@@ -473,7 +475,7 @@ Be conversational and friendly. When you perform actions, confirm what you did.
 If you need more information to complete a request, ask the user.
 
 Current user: ${context.userEmail}`,
-        maxSteps: 5, // Allow multiple tool calls in sequence
+        // maxSteps: 5, // Allow multiple tool calls in sequence
     });
 
     return {
