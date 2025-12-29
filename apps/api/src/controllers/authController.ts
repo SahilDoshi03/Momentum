@@ -7,7 +7,8 @@ import { AppError, asyncHandler } from '../middleware';
 
 // Generate JWT token
 const generateToken = (userId: string): string => {
-  return jwt.sign({ userId }, config.jwtSecret, { expiresIn: config.jwtExpiresIn as any });
+  // Add random nonce to ensure uniqueness even if generated within the same second
+  return jwt.sign({ userId, nonce: Math.random().toString(36).substring(7) }, config.jwtSecret, { expiresIn: config.jwtExpiresIn as any });
 };
 
 // Set HTTP-only cookie

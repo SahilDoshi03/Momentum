@@ -24,7 +24,7 @@ interface ChatbotContext {
 /**
  * Tool definitions for the chatbot
  */
-const createChatbotTools = (context: ChatbotContext) => ({
+export const createChatbotTools = (context: ChatbotContext) => ({
     list_projects: tool({
         description: 'Get all projects that the user has access to',
         parameters: z.object({}),

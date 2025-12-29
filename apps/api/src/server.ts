@@ -111,10 +111,12 @@ app.use(errorHandler);
 
 const PORT = config.port;
 
-app.listen(PORT, () => {
-  console.log(`Server running in ${config.nodeEnv} mode on port ${PORT}`);
-  console.log(`Health check: http://localhost:${PORT}/health`);
-  console.log(`API docs: http://localhost:${PORT}/api`);
-});
+if (config.nodeEnv !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`Server running in ${config.nodeEnv} mode on port ${PORT}`);
+    console.log(`Health check: http://localhost:${PORT}/health`);
+    console.log(`API docs: http://localhost:${PORT}/api`);
+  });
+}
 
 export default app;

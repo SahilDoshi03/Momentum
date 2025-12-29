@@ -10,4 +10,5 @@ build/
 
 # Test artifacts
 src/__tests__/mongo-config.json
+coverage/
 
