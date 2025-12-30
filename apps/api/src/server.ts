@@ -84,6 +84,15 @@ app.use(passport.session());
 
 
 
+// Root route
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Welcome to the Momentum API',
+    version: '1.0.0',
+    documentation: '/api'
+  });
+});
+
 // Health check
 app.get('/favicon.ico', (req, res) => res.status(204).end());
 
