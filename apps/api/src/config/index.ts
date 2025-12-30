@@ -9,7 +9,6 @@ export const config = {
 
   // Database
   mongodbUri: process.env.MONGODB_URI || 'mongodb://localhost:27017/momentum',
-  dbName: process.env.DB_NAME || 'momentum',
 
   // JWT
   jwtSecret: process.env.JWT_SECRET || 'your-super-secret-jwt-key-here',

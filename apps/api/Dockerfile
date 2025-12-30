@@ -1,21 +1,25 @@
 FROM node:18-slim AS base
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
 
 # Install dependencies only when needed
 FROM base AS deps
 WORKDIR /app
 
-# Install dependencies based on the preferred package manager
+# Copy root package files
 COPY package.json package-lock.json* ./
 COPY apps/api/package.json ./apps/api/
 
 # Install dependencies
 RUN npm ci
 
-# Development image, copy all the files and run next
+# Development image
 FROM base AS dev
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+CMD ["npm", "run", "dev", "--workspace=@momentum/api"]
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -26,7 +30,7 @@ COPY . .
 # Build the project
 RUN npm run build --workspace=@momentum/api
 
-# Production image, copy all the files and run next
+# Production image
 FROM base AS runner
 WORKDIR /app
 

@@ -7,6 +7,7 @@ build/
 
 # Environment variables
 .env
+.env.prod
 
 # Test artifacts
 src/__tests__/mongo-config.json
