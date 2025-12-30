@@ -1,0 +1,34 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: runner
+    container_name: momentum-backend-prod
+    restart: always
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./apps/api/.env.prod
+    networks:
+      - momentum-prod-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      target: runner
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    container_name: momentum-frontend-prod
+    restart: always
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./apps/web/.env.production.local
+    networks:
+      - momentum-prod-network
+
+networks:
+  momentum-prod-network:
+    driver: bridge
