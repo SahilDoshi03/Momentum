@@ -2,6 +2,23 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import RootLayout from '@/app/layout';
 
+// Suppress specific console errors that are expected when testing RootLayout
+const originalConsoleError = console.error;
+beforeAll(() => {
+    console.error = (...args) => {
+        const msg = args[0]?.toString() || '';
+        if (msg.includes('cannot be a child of')) {
+            return;
+        }
+        originalConsoleError(...args);
+    };
+});
+
+afterAll(() => {
+    console.error = originalConsoleError;
+});
+
+
 // Mock dependencies
 jest.mock('next/font/google', () => ({
     Geist: jest.fn().mockImplementation(() => ({

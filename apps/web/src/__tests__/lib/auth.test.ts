@@ -7,6 +7,7 @@ jest.mock('@/lib/api', () => ({
         login: jest.fn(),
         register: jest.fn(),
         validateToken: jest.fn(),
+        logout: jest.fn(),
     },
 }));
 
@@ -57,11 +58,11 @@ describe('auth', () => {
     });
 
     describe('logout', () => {
-        it('removes token and user from localStorage', () => {
+        it('removes token and user from localStorage', async () => {
             localStorage.setItem('authToken', 'token');
             localStorage.setItem('currentUser', '{}');
 
-            logout();
+            await logout();
 
             expect(localStorage.removeItem).toHaveBeenCalledWith('authToken');
             expect(localStorage.removeItem).toHaveBeenCalledWith('currentUser');
@@ -79,6 +80,8 @@ describe('auth', () => {
         });
 
         it('returns false if no token', async () => {
+            // @ts-ignore
+            apiClient.validateToken.mockResolvedValue({ success: false });
             const isValid = await validateToken();
             expect(isValid).toBe(false);
         });

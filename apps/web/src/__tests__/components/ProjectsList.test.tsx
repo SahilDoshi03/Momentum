@@ -6,6 +6,24 @@ import { renderWithClient } from '../utils';
 import { toast } from 'react-toastify';
 import '@testing-library/jest-dom';
 
+const originalConsoleError = console.error;
+beforeAll(() => {
+    console.error = (...args) => {
+        const msg = args[0]?.toString() || '';
+        if (msg.includes('Failed to create team') ||
+            msg.includes('Failed to create project') ||
+            msg.includes('Failed to delete project')) {
+            return;
+        }
+        originalConsoleError(...args);
+    };
+});
+
+afterAll(() => {
+    console.error = originalConsoleError;
+});
+
+
 // Mock next/link
 jest.mock('next/link', () => {
     return ({ children, href }: { children: React.ReactNode; href: string }) => {
