@@ -26,6 +26,9 @@ import './config/passport';
 
 const app = express();
 
+// Trust proxy for Render deployment
+app.set('trust proxy', 1);
+
 // Connect to database
 connectDB();
 
