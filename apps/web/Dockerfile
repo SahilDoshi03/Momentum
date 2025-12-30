@@ -1,21 +1,23 @@
-FROM node:18 AS base
+FROM node:18-slim AS base
+
 
 # Install dependencies only when needed
 FROM base AS deps
 WORKDIR /app
 
-# Install dependencies based on the preferred package manager
+# Copy root package files
 COPY package.json package-lock.json* ./
 COPY apps/web/package.json ./apps/web/
 
 # Install dependencies
 RUN npm ci
 
-# Development image, copy all the files and run next
+# Development image
 FROM base AS dev
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+CMD ["npm", "run", "dev", "--workspace=@momentum/web"]
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -23,10 +25,16 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Accept build arguments for Next.js
+ARG NEXT_PUBLIC_API_URL
+
+# Set them as environment variables during build
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
 # Build the project
 RUN npm run build --workspace=@momentum/web
 
-# Production image, copy all the files and run next
+# Production image
 FROM base AS runner
 WORKDIR /app
 

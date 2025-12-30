@@ -1,0 +1,24 @@
+services:
+  frontend:
+    build:
+      context: ../../
+      dockerfile: apps/web/Dockerfile
+      target: dev
+    container_name: momentum-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.local
+    volumes:
+      - ./src:/app/apps/web/src
+      - ./public:/app/apps/web/public
+      - ./package.json:/app/apps/web/package.json
+      - ./next.config.ts:/app/apps/web/next.config.ts
+      - ./tsconfig.json:/app/apps/web/tsconfig.json
+    networks:
+      - momentum-network
+
+networks:
+  momentum-network:
+    driver: bridge

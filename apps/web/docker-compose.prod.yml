@@ -1,0 +1,18 @@
+services:
+  frontend:
+    build:
+      context: ../../
+      dockerfile: apps/web/Dockerfile
+      target: runner
+    container_name: momentum-frontend-prod
+    restart: always
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.production.local
+    networks:
+      - momentum-prod-network
+
+networks:
+  momentum-prod-network:
+    driver: bridge
