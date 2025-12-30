@@ -22,7 +22,7 @@ const userSchema = new Schema<IUser>({
   password: {
     type: String,
     required: function (this: any): boolean {
-      return !this.googleId;
+      return !this.googleId && !this.githubId;
     },
     minlength: 6,
   },
@@ -67,6 +67,10 @@ const userSchema = new Schema<IUser>({
     type: String,
     sparse: true,
   },
+  githubId: {
+    type: String,
+    sparse: true,
+  },
   active: {
     type: Boolean,
     default: true,
@@ -80,7 +84,7 @@ const userSchema = new Schema<IUser>({
 
 // Hash password before saving
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+  if (!this.isModified('password') || !this.password) return next();
 
   try {
     const salt = await bcrypt.genSalt(12);
