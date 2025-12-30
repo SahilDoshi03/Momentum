@@ -85,6 +85,8 @@ app.use(passport.session());
 
 
 // Health check
+app.get('/favicon.ico', (req, res) => res.status(204).end());
+
 app.get('/health', (req, res) => {
   res.json({
     success: true,
