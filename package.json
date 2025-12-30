@@ -20,7 +20,7 @@
     "api:build": "turbo run build --filter=@momentum/api",
     "api:test": "turbo run test --filter=@momentum/api",
     "api:lint": "turbo run lint --filter=@momentum/api",
-    "prepare": "husky"
+    "prepare": "husky || true"
   },
   "packageManager": "npm@11.4.1",
   "devDependencies": {
