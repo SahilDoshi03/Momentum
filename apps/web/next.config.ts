@@ -3,6 +3,7 @@ import path from "path";
 
 const nextConfig: NextConfig = {
   images: {
+    unoptimized: true, // Disable image optimization for Render deployment
     remotePatterns: [
       {
         protocol: 'https',
