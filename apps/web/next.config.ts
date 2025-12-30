@@ -15,7 +15,7 @@ const nextConfig: NextConfig = {
     ],
   },
   outputFileTracingRoot: path.join(__dirname, '../../'),
-  skipMiddlewareUrlNormalize: false,
+  skipProxyUrlNormalize: false,
   experimental: {
     // Disable automatic lockfile patching to avoid package manager conflicts
   },
