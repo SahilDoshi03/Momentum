@@ -43,6 +43,10 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     const [labelColors, setLabelColors] = useState<LabelColor[]>([]);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+    // Inline selection state
+    const [isAssigning, setIsAssigning] = useState(false);
+    const [isSelectingLabel, setIsSelectingLabel] = useState(false);
+
     // Sync state with task prop when it changes
     useEffect(() => {
         setName(task.name);
@@ -289,9 +293,9 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
             footer={footer}
             showCloseButton={true}
         >
-            <div className="flex flex-1 overflow-hidden h-full">
+            <div className="flex flex-col md:flex-row flex-1 overflow-y-auto md:overflow-hidden h-full">
                 {/* Main Content */}
-                <div className="flex-1 p-8 overflow-y-auto border-r border-[var(--border)]">
+                <div className="flex-none md:flex-1 p-4 md:p-8 overflow-visible md:overflow-y-auto border-b md:border-b-0 md:border-r border-[var(--border)]">
                     {/* Title */}
                     <div className="mb-6">
                         <input
@@ -318,7 +322,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                     </div>
 
                     {/* Metadata (Created/Updated By) */}
-                    <div className="flex items-center space-x-6 text-sm text-[var(--text-tertiary)] border-t border-[var(--border)] pt-6">
+                    <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 space-x-6 text-sm text-[var(--text-tertiary)] border-t border-[var(--border)] pt-6">
                         <div className="flex items-center">
                             <span className="mr-2">Created by:</span>
                             {task.createdBy ? (
@@ -345,7 +349,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                 </div>
 
                 {/* Sidebar */}
-                <div className="w-80 pl-6 overflow-y-auto flex flex-col">
+                <div className="w-full md:w-80 p-4 md:pl-6 overflow-visible md:overflow-y-auto flex flex-col">
                     <div className="flex-1">
                         {/* Status */}
                         <div className="mb-6">
@@ -376,39 +380,46 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                                         </button>
                                     </div>
                                 ))}
-                                <Dropdown
-                                    trigger={
-                                        <button className="flex items-center justify-center w-8 h-8 rounded-full bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-tertiary)] hover:text-[var(--primary)] hover:border-[var(--primary)] transition-colors">
-                                            <Plus width={16} height={16} />
-                                        </button>
-                                    }
+                                <button
+                                    className={`flex items-center justify-center w-8 h-8 rounded-full bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-tertiary)] hover:text-[var(--primary)] hover:border-[var(--primary)] transition-colors ${isAssigning ? 'border-[var(--primary)] text-[var(--primary)]' : ''}`}
+                                    onClick={() => setIsAssigning(!isAssigning)}
                                 >
-                                    <DropdownHeader>Assign Member</DropdownHeader>
-                                    {(() => {
-                                        const availableUsers = projectUsers.filter(user => !assigned.some(a => a.userId._id === user._id));
+                                    <Plus width={16} height={16} />
+                                </button>
+                            </div>
 
-                                        if (availableUsers.length === 0) {
-                                            return (
-                                                <div className="px-4 py-2 text-sm text-[var(--text-tertiary)]">
-                                                    No members to assign
-                                                </div>
-                                            );
-                                        }
+                            {isAssigning && (
+                                <div className="mt-2 p-2 border border-[var(--border)] rounded-md bg-[var(--bg-primary)] shadow-sm animate-in fade-in zoom-in-95 duration-100">
+                                    <div className="text-xs font-semibold text-[var(--text-secondary)] mb-2 px-2 uppercase tracking-wider">Assign Member</div>
+                                    <div className="max-h-48 overflow-y-auto space-y-1">
+                                        {(() => {
+                                            const availableUsers = projectUsers.filter(user => !assigned.some(a => a.userId._id === user._id));
 
-                                        return availableUsers.map(user => (
-                                            <DropdownItem
-                                                key={user._id}
-                                                onClick={() => handleAssignUser(user._id)}
-                                            >
-                                                <div className="flex items-center">
+                                            if (availableUsers.length === 0) {
+                                                return (
+                                                    <div className="px-2 py-2 text-sm text-[var(--text-tertiary)]">
+                                                        No members to assign
+                                                    </div>
+                                                );
+                                            }
+
+                                            return availableUsers.map(user => (
+                                                <button
+                                                    key={user._id}
+                                                    onClick={() => {
+                                                        handleAssignUser(user._id);
+                                                        setIsAssigning(false);
+                                                    }}
+                                                    className="w-full text-left flex items-center px-2 py-1.5 rounded-md hover:bg-[var(--hover)] text-sm text-[var(--text-primary)]"
+                                                >
                                                     <ProfileIcon user={user} size="xs" className="mr-2" />
                                                     {user.fullName}
-                                                </div>
-                                            </DropdownItem>
-                                        ));
-                                    })()}
-                                </Dropdown>
-                            </div>
+                                                </button>
+                                            ));
+                                        })()}
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Labels */}
@@ -430,54 +441,62 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                                     ))}
 
                                 {!isCreatingLabel && (
-                                    <Dropdown
-                                        trigger={
-                                            <button className="flex items-center justify-center w-8 h-8 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-tertiary)] hover:text-[var(--primary)] hover:border-[var(--primary)] transition-colors">
-                                                <Plus width={16} height={16} />
-                                            </button>
-                                        }
+                                    <button
+                                        className={`flex items-center justify-center w-8 h-8 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-tertiary)] hover:text-[var(--primary)] hover:border-[var(--primary)] transition-colors ${isSelectingLabel ? 'border-[var(--primary)] text-[var(--primary)]' : ''}`}
+                                        onClick={() => setIsSelectingLabel(!isSelectingLabel)}
                                     >
-                                        <DropdownHeader>Add Label</DropdownHeader>
+                                        <Plus width={16} height={16} />
+                                    </button>
+                                )}
+                            </div>
+
+                            {isSelectingLabel && !isCreatingLabel && (
+                                <div className="mt-2 p-2 border border-[var(--border)] rounded-md bg-[var(--bg-primary)] shadow-sm animate-in fade-in zoom-in-95 duration-100">
+                                    <div className="text-xs font-semibold text-[var(--text-secondary)] mb-2 px-2 uppercase tracking-wider">Add Label</div>
+                                    <div className="max-h-48 overflow-y-auto space-y-1">
                                         {project.labels && project.labels.length > 0 ? (
                                             project.labels.map(label => {
                                                 const isAssigned = labels.some(l => l.projectLabelId && l.projectLabelId._id === label._id);
                                                 return (
-                                                    <DropdownItem
+                                                    <button
                                                         key={label._id}
-                                                        onClick={() => !isAssigned && handleAddLabel(label._id)}
-                                                        className={isAssigned ? 'opacity-50 cursor-default' : ''}
+                                                        onClick={() => {
+                                                            if (!isAssigned) {
+                                                                handleAddLabel(label._id);
+                                                                setIsSelectingLabel(false);
+                                                            }
+                                                        }}
+                                                        className={`w-full text-left flex items-center px-2 py-1.5 rounded-md text-sm ${isAssigned ? 'opacity-50 cursor-default' : 'hover:bg-[var(--hover)] cursor-pointer'}`}
                                                     >
-                                                        <div className="flex items-center">
-                                                            <div
-                                                                className="w-3 h-3 rounded-full mr-2"
-                                                                style={{ backgroundColor: label.labelColorId.colorHex }}
-                                                            />
-                                                            {label.name}
-                                                            {isAssigned && <CheckCircle width={12} height={12} className="ml-auto text-[var(--success)]" />}
-                                                        </div>
-                                                    </DropdownItem>
+                                                        <div
+                                                            className="w-3 h-3 rounded-full mr-2"
+                                                            style={{ backgroundColor: label.labelColorId.colorHex }}
+                                                        />
+                                                        <span className="text-[var(--text-primary)]">{label.name}</span>
+                                                        {isAssigned && <CheckCircle width={12} height={12} className="ml-auto text-[var(--success)]" />}
+                                                    </button>
                                                 );
                                             })
                                         ) : (
-                                            <div className="px-4 py-2 text-sm text-[var(--text-tertiary)]">
+                                            <div className="px-2 py-2 text-sm text-[var(--text-tertiary)]">
                                                 No labels in project
                                             </div>
                                         )}
-                                        <div className="border-t border-[var(--border)] mt-1 pt-1">
-                                            <DropdownItem onClick={() => {
-                                                // Close dropdown logic is handled by Dropdown component on click
-                                                // We just need to set state
+                                    </div>
+                                    <div className="border-t border-[var(--border)] mt-2 pt-2">
+                                        <button
+                                            onClick={() => {
                                                 setIsCreatingLabel(true);
-                                            }}>
-                                                <div className="flex items-center text-[var(--primary)]">
-                                                    <Plus width={14} height={14} className="mr-2" />
-                                                    Create New Label
-                                                </div>
-                                            </DropdownItem>
-                                        </div>
-                                    </Dropdown>
-                                )}
-                            </div>
+                                                setIsSelectingLabel(false);
+                                            }}
+                                            className="w-full text-left flex items-center px-2 py-1.5 rounded-md hover:bg-[var(--hover)] text-sm text-[var(--primary)]"
+                                        >
+                                            <Plus width={14} height={14} className="mr-2" />
+                                            Create New Label
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
 
                             {isCreatingLabel && (
                                 <div className="mt-3 p-3 border border-[var(--border)] rounded-md bg-[var(--bg-primary)]">
