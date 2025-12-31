@@ -604,8 +604,8 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
           </Button>
         </div>
 
-        {/* Bottom Row: Controls Toolbar (Scrollable on mobile) */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-6 px-6 md:pb-0 md:mx-0 md:px-0 scrollbar-hide">
+        {/* Bottom Row: Controls Toolbar */}
+        <div className="flex flex-wrap items-center gap-2">
           {/* All Tasks / Filter View */}
           <Dropdown
             trigger={
