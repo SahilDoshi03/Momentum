@@ -240,28 +240,6 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
             </div>
 
             <div className="space-y-4">
-              {/* Mobile Breadcrumbs */}
-              {displayBreadcrumbs.length > 0 && (
-                <div className="flex flex-wrap items-center gap-1 text-sm pb-2 border-b border-[var(--border)]">
-                  {displayBreadcrumbs.map((item, index) => (
-                    <React.Fragment key={index}>
-                      {index > 0 && <span className="text-[var(--text-primary)]">/</span>}
-                      {item.href ? (
-                        <Link
-                          href={item.href}
-                          className="text-[var(--text-primary)] hover:text-[var(--text-secondary)] font-medium"
-                          onClick={() => setIsMobileMenuOpen(false)}
-                        >
-                          {item.label}
-                        </Link>
-                      ) : (
-                        <span className="text-[var(--text-primary)] font-medium">{item.label}</span>
-                      )}
-                    </React.Fragment>
-                  ))}
-                </div>
-              )}
-
               <div className="pt-2 space-y-2">
                 <div className="flex items-center justify-start space-x-3 px-3 py-2 text-[var(--text-primary)]">
                   {user && (
