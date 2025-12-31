@@ -605,11 +605,11 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
         </div>
 
         {/* Bottom Row: Controls Toolbar */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide md:pb-0 md:flex-wrap md:overflow-visible">
           {/* All Tasks / Filter View */}
           <Dropdown
             trigger={
-              <Button variant="ghost" size="sm" className="whitespace-nowrap">
+              <Button variant="ghost" size="sm" className="whitespace-nowrap flex-shrink-0">
                 <CheckCircle width={16} height={16} className="mr-2" />
                 {filterBy === 'all' ? 'All Tasks' :
                   filterBy === 'mine' ? 'My Tasks' :
@@ -636,7 +636,7 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
           {/* Sort */}
           <Dropdown
             trigger={
-              <Button variant="ghost" size="sm" className="whitespace-nowrap">
+              <Button variant="ghost" size="sm" className="whitespace-nowrap flex-shrink-0">
                 <Sort width={16} height={16} className="mr-2" />
                 Sort
               </Button>
@@ -663,7 +663,7 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
           {/* Filter */}
           <Dropdown
             trigger={
-              <Button variant="ghost" size="sm" className="whitespace-nowrap">
+              <Button variant="ghost" size="sm" className="whitespace-nowrap flex-shrink-0">
                 <Filter width={16} height={16} className="mr-2" />
                 Filter
               </Button>
@@ -688,7 +688,7 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
           <Dropdown
             align="left"
             trigger={
-              <Button variant="ghost" size="sm" className="whitespace-nowrap">
+              <Button variant="ghost" size="sm" className="whitespace-nowrap flex-shrink-0">
                 <Tags width={16} height={16} className="mr-2" />
                 Labels
               </Button>
