@@ -590,96 +590,106 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
   return (
     <div className="flex-1 p-6">
       {/* Board Header */}
-      <div className="flex flex-col md:flex-row items-center justify-between mb-4 md:mb-6 gap-4">
-        <div className="flex flex-col md:flex-row items-start md:items-center gap-4 w-full md:w-auto">
-          <h1 className="text-xl md:text-2xl font-bold text-[var(--text-secondary)] truncate max-w-[200px] md:max-w-none">{project.name}</h1>
-
-          {/* All Tasks / Filter View */}
-          <div className="flex flex-wrap gap-2 w-full md:w-auto">
-            <Dropdown
-              trigger={
-                <Button variant="ghost" size="sm" className="h-8 text-xs md:text-sm px-2 md:px-3">
-                  <CheckCircle width={14} height={14} className="mr-1.5 md:mr-2" />
-                  {filterBy === 'all' ? 'All Tasks' :
-                    filterBy === 'mine' ? 'My Tasks' :
-                      filterBy === 'completed' ? 'Completed' : 'Incomplete'}
-                </Button>
-              }
-            >
-              <DropdownItem active={filterBy === 'all'} onClick={() => setFilterBy('all')}>
-                All Tasks
-              </DropdownItem>
-              <DropdownItem active={filterBy === 'mine'} onClick={() => setFilterBy('mine')}>
-                My Tasks
-              </DropdownItem>
-              <DropdownItem active={filterBy === 'completed'} onClick={() => setFilterBy('completed')}>
-                Completed Tasks
-              </DropdownItem>
-              <DropdownItem active={filterBy === 'incomplete'} onClick={() => setFilterBy('incomplete')}>
-                Incomplete Tasks
-              </DropdownItem>
-            </Dropdown>
-
-            {/* Sort */}
-            <Dropdown
-              trigger={
-                <Button variant="ghost" size="sm" className="h-8 text-xs md:text-sm px-2 md:px-3">
-                  <Sort width={14} height={14} className="mr-1.5 md:mr-2" />
-                  Sort
-                </Button>
-              }
-            >
-              <DropdownHeader>Sort By</DropdownHeader>
-              <DropdownItem active={sortBy === 'none'} onClick={() => setSortBy('none')}>
-                None
-              </DropdownItem>
-              <DropdownItem active={sortBy === 'name-asc'} onClick={() => setSortBy('name-asc')}>
-                Name (A-Z)
-              </DropdownItem>
-              <DropdownItem active={sortBy === 'name-desc'} onClick={() => setSortBy('name-desc')}>
-                Name (Z-A)
-              </DropdownItem>
-              <DropdownItem active={sortBy === 'date-asc'} onClick={() => setSortBy('date-asc')}>
-                Due Date (Earliest)
-              </DropdownItem>
-              <DropdownItem active={sortBy === 'date-desc'} onClick={() => setSortBy('date-desc')}>
-                Due Date (Latest)
-              </DropdownItem>
-            </Dropdown>
-
-            {/* Filter */}
-            <Dropdown
-              trigger={
-                <Button variant="ghost" size="sm" className="h-8 text-xs md:text-sm px-2 md:px-3">
-                  <Filter width={14} height={14} className="mr-1.5 md:mr-2" />
-                  Filter
-                </Button>
-              }
-            >
-              <DropdownHeader>Filter By</DropdownHeader>
-              <DropdownItem
-                active={otherFilters.includes('overdue')}
-                onClick={() => toggleOtherFilter('overdue')}
-              >
-                Overdue
-              </DropdownItem>
-              <DropdownItem
-                active={otherFilters.includes('no-date')}
-                onClick={() => toggleOtherFilter('no-date')}
-              >
-                No Due Date
-              </DropdownItem>
-            </Dropdown>
-          </div>
+      <div className="flex flex-col gap-4 mb-6">
+        {/* Top Row: Title and Settings */}
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-[var(--text-secondary)] truncate">{project.name}</h1>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsSettingsOpen(true)}
+            className="text-[var(--text-primary)] hover:text-[var(--text-secondary)]"
+          >
+            <Settings width={20} height={20} />
+          </Button>
         </div>
 
-        <div className="flex items-center justify-end gap-2 w-full md:w-auto">
+        {/* Bottom Row: Controls Toolbar (Scrollable on mobile) */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-6 px-6 md:pb-0 md:mx-0 md:px-0 scrollbar-hide">
+          {/* All Tasks / Filter View */}
+          <Dropdown
+            trigger={
+              <Button variant="ghost" size="sm" className="whitespace-nowrap">
+                <CheckCircle width={16} height={16} className="mr-2" />
+                {filterBy === 'all' ? 'All Tasks' :
+                  filterBy === 'mine' ? 'My Tasks' :
+                    filterBy === 'completed' ? 'Completed' : 'Incomplete'}
+              </Button>
+            }
+          >
+            <DropdownItem active={filterBy === 'all'} onClick={() => setFilterBy('all')}>
+              All Tasks
+            </DropdownItem>
+            <DropdownItem active={filterBy === 'mine'} onClick={() => setFilterBy('mine')}>
+              My Tasks
+            </DropdownItem>
+            <DropdownItem active={filterBy === 'completed'} onClick={() => setFilterBy('completed')}>
+              Completed Tasks
+            </DropdownItem>
+            <DropdownItem active={filterBy === 'incomplete'} onClick={() => setFilterBy('incomplete')}>
+              Incomplete Tasks
+            </DropdownItem>
+          </Dropdown>
+
+          <div className="w-px h-6 bg-[var(--border)] mx-1 flex-shrink-0" />
+
+          {/* Sort */}
+          <Dropdown
+            trigger={
+              <Button variant="ghost" size="sm" className="whitespace-nowrap">
+                <Sort width={16} height={16} className="mr-2" />
+                Sort
+              </Button>
+            }
+          >
+            <DropdownHeader>Sort By</DropdownHeader>
+            <DropdownItem active={sortBy === 'none'} onClick={() => setSortBy('none')}>
+              None
+            </DropdownItem>
+            <DropdownItem active={sortBy === 'name-asc'} onClick={() => setSortBy('name-asc')}>
+              Name (A-Z)
+            </DropdownItem>
+            <DropdownItem active={sortBy === 'name-desc'} onClick={() => setSortBy('name-desc')}>
+              Name (Z-A)
+            </DropdownItem>
+            <DropdownItem active={sortBy === 'date-asc'} onClick={() => setSortBy('date-asc')}>
+              Due Date (Earliest)
+            </DropdownItem>
+            <DropdownItem active={sortBy === 'date-desc'} onClick={() => setSortBy('date-desc')}>
+              Due Date (Latest)
+            </DropdownItem>
+          </Dropdown>
+
+          {/* Filter */}
+          <Dropdown
+            trigger={
+              <Button variant="ghost" size="sm" className="whitespace-nowrap">
+                <Filter width={16} height={16} className="mr-2" />
+                Filter
+              </Button>
+            }
+          >
+            <DropdownHeader>Filter By</DropdownHeader>
+            <DropdownItem
+              active={otherFilters.includes('overdue')}
+              onClick={() => toggleOtherFilter('overdue')}
+            >
+              Overdue
+            </DropdownItem>
+            <DropdownItem
+              active={otherFilters.includes('no-date')}
+              onClick={() => toggleOtherFilter('no-date')}
+            >
+              No Due Date
+            </DropdownItem>
+          </Dropdown>
+
           {/* Labels */}
           <Dropdown
-            align="right"
+            align="left"
             trigger={
-              <Button variant="ghost" size="sm" className="h-8 text-xs md:text-sm px-2 md:px-3">
-                <Tags width={14} height={14} className="mr-1.5 md:mr-2" />
+              <Button variant="ghost" size="sm" className="whitespace-nowrap">
+                <Tags width={16} height={16} className="mr-2" />
                 Labels
               </Button>
             }
@@ -705,17 +715,6 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
               <div className="px-4 py-2 text-sm text-[var(--text-tertiary)]">No labels found</div>
             )}
           </Dropdown>
-
-          {/* Settings */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 text-xs md:text-sm px-2 md:px-3"
-            onClick={() => setIsSettingsOpen(true)}
-          >
-            <Settings width={14} height={14} className="mr-1.5 md:mr-2" />
-            Settings
-          </Button>
         </div>
       </div>
 
