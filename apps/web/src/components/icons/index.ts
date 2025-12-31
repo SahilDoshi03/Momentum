@@ -11,4 +11,6 @@ export * from './Trash';
 export * from './User';
 export * from './UserPlus';
 export * from './X';
+export * from './Menu';
+
 export * from './Search';

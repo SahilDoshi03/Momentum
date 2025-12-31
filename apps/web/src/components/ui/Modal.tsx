@@ -62,7 +62,7 @@ export const Modal: React.FC<ModalProps> = ({
       {/* Modal */}
       <div
         className={cn(
-          'relative z-10 w-full max-w-md rounded-lg bg-[var(--bg-primary)] border border-[var(--border)] shadow-lg flex flex-col max-h-[90vh]',
+          'relative m-2 z-10 w-full max-w-md rounded-lg bg-[var(--bg-primary)] border border-[var(--border)] shadow-lg flex flex-col max-h-[90vh]',
           className
         )}
       >
