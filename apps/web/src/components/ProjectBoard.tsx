@@ -457,6 +457,19 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
     }
   };
 
+  const handleDeleteList = async (listId: string) => {
+    try {
+      const response = await apiClient.deleteTaskGroup(listId);
+      if (response.success) {
+        setTaskGroups(prev => prev.filter(list => list._id !== listId));
+        toast.success('List deleted successfully!');
+      }
+    } catch (error) {
+      console.error('Failed to delete list:', error);
+      toast.error('Failed to delete list');
+    }
+  };
+
   const toggleLabelFilter = (labelId: string) => {
     setLabelFilter(prev =>
       prev.includes(labelId)
@@ -751,6 +764,7 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
                 onUpdateTask={handleUpdateTask}
                 onDeleteTask={handleDeleteTask}
                 onCreateTask={handleCreateTask}
+                onDeleteList={handleDeleteList}
                 onTaskClick={handleTaskClick} // Pass this down
                 isDragOverlay={!!(activeId && (list.tasks || []).some((t: Task) => t._id === activeId))}
               />

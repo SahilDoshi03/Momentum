@@ -456,6 +456,12 @@ class ApiClient {
     });
   }
 
+  async deleteTaskGroup(id: string): Promise<ApiResponse> {
+    return this.request(`/tasks/groups/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
   async getTaskById(id: string): Promise<ApiResponse<Task>> {
     return this.request(`/tasks/${id}`);
   }

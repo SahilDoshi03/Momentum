@@ -627,3 +627,41 @@ export const updateTaskGroup = asyncHandler(async (req: Request, res: Response) 
     data: taskGroup,
   });
 });
+
+// Delete task group
+export const deleteTaskGroup = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const user = (req as any).user;
+
+  const taskGroup = await TaskGroup.findById(id);
+  if (!taskGroup) {
+    throw new AppError('Task group not found', 404);
+  }
+
+  // Check if user has access to this task group's project
+  const projectMember = await ProjectMember.findOne({
+    projectId: taskGroup.projectId,
+    userId: user._id
+  });
+
+  if (!projectMember || !['owner', 'admin', 'member'].includes(projectMember.role)) {
+    throw new AppError('Not authorized to delete this task group', 403);
+  }
+
+  // Delete all tasks in the group
+  // First delete task labels
+  const tasks = await Task.find({ taskGroupId: id });
+  const taskIds = tasks.map(t => t._id);
+  await TaskLabel.deleteMany({ taskId: { $in: taskIds } });
+
+  // Delete tasks
+  await Task.deleteMany({ taskGroupId: id });
+
+  // Delete the group
+  await TaskGroup.findByIdAndDelete(id);
+
+  res.json({
+    success: true,
+    message: 'Task group deleted successfully',
+  });
+});

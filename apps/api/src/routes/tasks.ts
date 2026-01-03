@@ -10,7 +10,8 @@ import {
   addLabelToTask,
   removeLabelFromTask,
   createTaskGroup,
-  updateTaskGroup
+  updateTaskGroup,
+  deleteTaskGroup
 } from '../controllers/taskController';
 import { authenticateToken, validateCreateTask, validateTaskId, validateUpdateTask, validateMyTasksQuery } from '../middleware';
 
@@ -27,6 +28,9 @@ router.post('/groups', createTaskGroup);
 
 // Update task group
 router.put('/groups/:id', updateTaskGroup);
+
+// Delete task group
+router.delete('/groups/:id', deleteTaskGroup);
 
 // Create task
 router.post('/', validateCreateTask, createTask);

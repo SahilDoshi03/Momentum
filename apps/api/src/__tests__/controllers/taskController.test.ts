@@ -8,6 +8,7 @@ import {
     getMyTasks,
     assignUserToTask,
     unassignUserFromTask,
+    deleteTaskGroup,
 } from '../../controllers/taskController';
 import {
     createTestUser,
@@ -506,6 +507,79 @@ describe('Task Controller', () => {
             // Verify assignment removed
             const taskInDb = await Task.findById(task._id);
             expect(taskInDb?.assigned).toHaveLength(0);
+        });
+    });
+
+    describe('deleteTaskGroup', () => {
+        it('should delete task group and all its tasks', async () => {
+            // Create some tasks in the group
+            await createTestTask(testTaskGroup._id);
+            await createTestTask(testTaskGroup._id);
+
+            const req = mockRequest({
+                user: testUser,
+                params: { id: testTaskGroup._id.toString() },
+            });
+            const res = mockResponse();
+            const next = mockNext();
+
+            await deleteTaskGroup(req, res, next);
+
+            expect(res.json).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    success: true,
+                    message: 'Task group deleted successfully',
+                })
+            );
+
+            // Verify group is deleted
+            const group = await TaskGroup.findById(testTaskGroup._id);
+            expect(group).toBeNull();
+
+            // Verify tasks are deleted
+            const tasks = await Task.find({ taskGroupId: testTaskGroup._id });
+            expect(tasks).toHaveLength(0);
+        });
+
+        it('should return 404 if task group not found', async () => {
+            const req = mockRequest({
+                user: testUser,
+                params: { id: '507f1f77bcf86cd799439011' },
+            });
+            const res = mockResponse();
+            const next = mockNext();
+
+            await deleteTaskGroup(req, res, next);
+
+            expect(next).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    statusCode: 404,
+                    message: 'Task group not found',
+                })
+            );
+        });
+
+        it('should return 403 if user not authorized', async () => {
+            const unauthorizedUser = await createTestUser({
+                email: 'unauthorized@example.com',
+                username: 'unauthorized',
+            });
+
+            const req = mockRequest({
+                user: unauthorizedUser,
+                params: { id: testTaskGroup._id.toString() },
+            });
+            const res = mockResponse();
+            const next = mockNext();
+
+            await deleteTaskGroup(req, res, next);
+
+            expect(next).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    statusCode: 403,
+                    message: 'Not authorized to delete this task group',
+                })
+            );
         });
     });
 });
