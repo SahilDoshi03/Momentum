@@ -113,7 +113,7 @@ export const ProjectsList: React.FC = () => {
       // No need to invalidate immediately if we trust the optimistic update, 
       // but good practice to eventually sync. 
       // We already closed the modal in onMutate.
-      // toast.success(`Project deleted successfully`); // Optional: could be too noisy if optimistic
+      toast.success('Project deleted successfully');
     },
     onError: (err, newTodo, context) => {
       // If the mutation fails, use the context returned from onMutate to roll back

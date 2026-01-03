@@ -61,7 +61,6 @@ if (config.googleClientId && config.googleClientSecret) {
 
       user = new User({
         email,
-        username: email.split('@')[0] + '_' + Date.now(),
         fullName: name,
         initials,
         googleId: profile.id,
@@ -127,7 +126,6 @@ if (config.githubClientId && config.githubClientSecret) {
 
       user = new User({
         email,
-        username: profile.username || `github_${profile.id}`,
         fullName: name,
         initials,
         githubId: profile.id,

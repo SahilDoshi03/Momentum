@@ -66,7 +66,7 @@ export const getProjectById = asyncHandler(async (req: Request, res: Response) =
     .populate({
       path: 'tasks',
       populate: [
-        { path: 'assigned.userId', select: 'username fullName initials profileIcon' },
+        { path: 'assigned.userId', select: 'fullName initials profileIcon' },
         {
           path: 'labels',
           populate: {
@@ -74,8 +74,8 @@ export const getProjectById = asyncHandler(async (req: Request, res: Response) =
             populate: { path: 'labelColorId', select: 'name colorHex position' }
           }
         },
-        { path: 'createdBy', select: 'username fullName initials profileIcon' },
-        { path: 'updatedBy', select: 'username fullName initials profileIcon' }
+        { path: 'createdBy', select: 'fullName initials profileIcon' },
+        { path: 'updatedBy', select: 'fullName initials profileIcon' }
       ]
     });
 
@@ -98,7 +98,7 @@ export const getProjectById = asyncHandler(async (req: Request, res: Response) =
 
   // Fetch project members
   const members = await ProjectMember.find({ projectId: id })
-    .populate('userId', 'fullName email username initials profileIcon');
+    .populate('userId', 'fullName email initials profileIcon');
 
   // Fetch project labels
   const labels = await ProjectLabel.find({ projectId: id })

@@ -11,7 +11,7 @@ describe('User Controller', () => {
 
     describe('getUsers', () => {
         it('should return all users', async () => {
-            await createTestUser({ email: 'other@example.com', username: 'other' });
+            await createTestUser({ email: 'other@example.com' });
 
             const req = mockRequest();
             const res = mockResponse();
@@ -93,7 +93,7 @@ describe('User Controller', () => {
         });
 
         it('should fail if updating another user without admin role', async () => {
-            const otherUser = await createTestUser({ email: 'other@example.com', username: 'other' });
+            const otherUser = await createTestUser({ email: 'other@example.com' });
             const req = mockRequest({
                 params: { id: otherUser._id.toString() },
                 body: { fullName: 'Updated Name' },
@@ -114,6 +114,7 @@ describe('User Controller', () => {
         it('should soft delete user', async () => {
             const req = mockRequest({
                 params: { id: testUser._id.toString() },
+                user: testUser,
             });
             const res = mockResponse();
             const next = mockNext();
@@ -174,7 +175,7 @@ describe('User Controller', () => {
 
     describe('searchUsers', () => {
         it('should search users by name', async () => {
-            await createTestUser({ email: 'search@example.com', fullName: 'Search Me', username: 'search' });
+            await createTestUser({ email: 'search@example.com', fullName: 'Search Me' });
 
             const req = mockRequest({
                 query: { query: 'Search' },

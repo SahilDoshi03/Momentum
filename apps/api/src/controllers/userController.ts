@@ -213,13 +213,12 @@ export const searchUsers = asyncHandler(async (req: Request, res: Response) => {
       {
         $or: [
           { fullName: { $regex: query, $options: 'i' } },
-          { username: { $regex: query, $options: 'i' } },
           { email: { $regex: query, $options: 'i' } },
         ],
       },
     ],
   })
-    .select('username fullName email initials profileIcon')
+    .select('fullName email initials profileIcon')
     .limit(10);
 
   res.json({

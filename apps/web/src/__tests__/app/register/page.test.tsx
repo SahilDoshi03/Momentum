@@ -17,7 +17,12 @@ jest.mock('@/lib/auth', () => ({
 }));
 
 jest.mock('@/components/ui/Input', () => ({
-    Input: (props: any) => <input data-testid="mock-input" {...props} />,
+    Input: (props: any) => (
+        <div>
+            <input data-testid="mock-input" {...props} />
+            {props.error && <span>{props.error}</span>}
+        </div>
+    ),
 }));
 
 jest.mock('@/components/ui/Button', () => ({
@@ -37,8 +42,8 @@ describe('RegisterPage', () => {
         render(<RegisterPage />);
 
         expect(screen.getByRole('heading', { name: 'Create account' })).toBeInTheDocument();
-        expect(screen.getByPlaceholderText('Enter your first name')).toBeInTheDocument();
-        expect(screen.getByPlaceholderText('Enter your last name')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('First name')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('Last name')).toBeInTheDocument();
         expect(screen.getByPlaceholderText('Enter your email')).toBeInTheDocument();
         expect(screen.getByPlaceholderText('Create a password')).toBeInTheDocument();
         expect(screen.getByPlaceholderText('Confirm your password')).toBeInTheDocument();
@@ -48,8 +53,8 @@ describe('RegisterPage', () => {
         const user = userEvent.setup();
         render(<RegisterPage />);
 
-        await user.type(screen.getByPlaceholderText('Enter your first name'), 'John');
-        await user.type(screen.getByPlaceholderText('Enter your last name'), 'Doe');
+        await user.type(screen.getByPlaceholderText('First name'), 'John');
+        await user.type(screen.getByPlaceholderText('Last name'), 'Doe');
         await user.type(screen.getByPlaceholderText('Enter your email'), 'test@example.com');
         await user.type(screen.getByPlaceholderText('Create a password'), 'password');
         await user.type(screen.getByPlaceholderText('Confirm your password'), 'mismatch');
@@ -68,11 +73,11 @@ describe('RegisterPage', () => {
 
         render(<RegisterPage />);
 
-        await user.type(screen.getByPlaceholderText('Enter your first name'), 'John');
-        await user.type(screen.getByPlaceholderText('Enter your last name'), 'Doe');
+        await user.type(screen.getByPlaceholderText('First name'), 'John');
+        await user.type(screen.getByPlaceholderText('Last name'), 'Doe');
         await user.type(screen.getByPlaceholderText('Enter your email'), 'test@example.com');
-        await user.type(screen.getByPlaceholderText('Create a password'), 'password123');
-        await user.type(screen.getByPlaceholderText('Confirm your password'), 'password123');
+        await user.type(screen.getByPlaceholderText('Create a password'), 'Password123!');
+        await user.type(screen.getByPlaceholderText('Confirm your password'), 'Password123!');
 
         await user.click(screen.getByRole('button', { name: 'Create account' }));
 
@@ -81,7 +86,7 @@ describe('RegisterPage', () => {
                 firstName: 'John',
                 lastName: 'Doe',
                 email: 'test@example.com',
-                password: 'password123'
+                password: 'Password123!'
             });
             expect(mockRouter.push).toHaveBeenCalledWith('/');
         });
@@ -93,11 +98,11 @@ describe('RegisterPage', () => {
 
         render(<RegisterPage />);
 
-        await user.type(screen.getByPlaceholderText('Enter your first name'), 'John');
-        await user.type(screen.getByPlaceholderText('Enter your last name'), 'Doe');
+        await user.type(screen.getByPlaceholderText('First name'), 'John');
+        await user.type(screen.getByPlaceholderText('Last name'), 'Doe');
         await user.type(screen.getByPlaceholderText('Enter your email'), 'test@example.com');
-        await user.type(screen.getByPlaceholderText('Create a password'), 'password123');
-        await user.type(screen.getByPlaceholderText('Confirm your password'), 'password123');
+        await user.type(screen.getByPlaceholderText('Create a password'), 'Password123!');
+        await user.type(screen.getByPlaceholderText('Confirm your password'), 'Password123!');
 
         await user.click(screen.getByRole('button', { name: 'Create account' }));
 

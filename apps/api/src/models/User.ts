@@ -10,15 +10,6 @@ const userSchema = new Schema<IUser>({
     lowercase: true,
     trim: true,
   },
-  username: {
-    type: String,
-    required: false,
-    unique: true,
-    sparse: true,
-    trim: true,
-    minlength: 3,
-    maxlength: 30,
-  },
   password: {
     type: String,
     required: function (this: any): boolean {

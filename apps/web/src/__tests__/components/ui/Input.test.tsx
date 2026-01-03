@@ -10,8 +10,8 @@ describe('Input', () => {
     });
 
     it('renders with label', () => {
-        render(<Input label="Username" id="username" />);
-        expect(screen.getByLabelText('Username')).toBeInTheDocument();
+        render(<Input label="Email" id="email" />);
+        expect(screen.getByLabelText('Email')).toBeInTheDocument();
     });
 
     it('renders with error message', () => {
