@@ -1,8 +1,17 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ProjectBoard } from '@/components/ProjectBoard';
 import { apiClient } from '@/lib/api';
+
+// Create a test query client
+const createTestQueryClient = () => new QueryClient({
+    defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+    },
+});
 
 // Mocks
 jest.mock('@/lib/api', () => ({
@@ -41,12 +50,18 @@ describe('ProjectBoard', () => {
     });
 
     it('renders loading state initially', () => {
+        const queryClient = createTestQueryClient();
         (apiClient.getProjectById as jest.Mock).mockReturnValue(new Promise(() => { }));
-        render(<ProjectBoard projectId="1" />);
+        render(
+            <QueryClientProvider client={queryClient}>
+                <ProjectBoard projectId="1" />
+            </QueryClientProvider>
+        );
         expect(screen.getByText('Loading project...')).toBeInTheDocument();
     });
 
     it('renders project board with lists', async () => {
+        const queryClient = createTestQueryClient();
         (apiClient.getProjectById as jest.Mock).mockResolvedValue({
             success: true,
             data: mockProject
@@ -56,7 +71,11 @@ describe('ProjectBoard', () => {
             data: { _id: 'u1' }
         });
 
-        render(<ProjectBoard projectId="1" />);
+        render(
+            <QueryClientProvider client={queryClient}>
+                <ProjectBoard projectId="1" />
+            </QueryClientProvider>
+        );
 
         await waitFor(() => {
             expect(screen.getByText('Test Project')).toBeInTheDocument();
@@ -66,6 +85,7 @@ describe('ProjectBoard', () => {
     });
 
     it('renders empty state if project not found', async () => {
+        const queryClient = createTestQueryClient();
         (apiClient.getProjectById as jest.Mock).mockResolvedValue({
             success: false,
             data: null
@@ -75,7 +95,11 @@ describe('ProjectBoard', () => {
             data: { _id: 'u1' }
         });
 
-        render(<ProjectBoard projectId="1" />);
+        render(
+            <QueryClientProvider client={queryClient}>
+                <ProjectBoard projectId="1" />
+            </QueryClientProvider>
+        );
 
         await waitFor(() => {
             expect(screen.getByText('Project not found')).toBeInTheDocument();
