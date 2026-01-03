@@ -20,13 +20,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Taskcafe",
+  title: "Momentum",
   description: "Project management and task tracking",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Taskcafe",
+    title: "Momentum",
   },
   formatDetection: {
     telephone: false,
