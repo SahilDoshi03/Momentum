@@ -4,7 +4,7 @@ import { User, AuthToken } from '../models';
 import { config } from '../config';
 import { RegisterRequest, LoginRequest, AuthResponse, JWTPayload, IUser } from '../types';
 import { AppError, asyncHandler } from '../middleware';
-import { validatePassword, PASSWORD_CONFIG } from '../utils/passwordValidation';
+import { validatePassword, VALIDATION_CONFIG } from '../utils/passwordValidation';
 
 // Generate JWT token
 const generateToken = (userId: string): string => {
@@ -43,7 +43,7 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
 
   // Password validation
   if (!validatePassword(password)) {
-    throw new AppError(PASSWORD_CONFIG.errorMessage, 400);
+    throw new AppError(VALIDATION_CONFIG.password.errorMessage, 400);
   }
 
   // Create user

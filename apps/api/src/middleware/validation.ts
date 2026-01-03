@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { body, param, query, validationResult } from 'express-validator';
-import { PASSWORD_CONFIG } from '../utils/passwordValidation';
+import { VALIDATION_CONFIG } from '../utils/passwordValidation';
 
 export const handleValidationErrors = (
   req: Request,
@@ -25,21 +25,21 @@ export const handleValidationErrors = (
 export const validateRegister = [
   body('firstName')
     .trim()
-    .isLength({ min: 1, max: 50 })
-    .withMessage('First name must be between 1 and 50 characters'),
+    .isLength({ min: VALIDATION_CONFIG.firstName.minLength, max: VALIDATION_CONFIG.firstName.maxLength })
+    .withMessage(VALIDATION_CONFIG.firstName.errorMessage),
   body('lastName')
     .trim()
-    .isLength({ min: 1, max: 50 })
-    .withMessage('Last name must be between 1 and 50 characters'),
+    .isLength({ min: VALIDATION_CONFIG.lastName.minLength, max: VALIDATION_CONFIG.lastName.maxLength })
+    .withMessage(VALIDATION_CONFIG.lastName.errorMessage),
   body('email')
     .isEmail()
     .normalizeEmail()
-    .withMessage('Please provide a valid email'),
+    .withMessage(VALIDATION_CONFIG.email.errorMessage),
   body('password')
-    .isLength({ min: PASSWORD_CONFIG.minLength })
-    .withMessage(PASSWORD_CONFIG.errorMessage)
-    .matches(PASSWORD_CONFIG.regex)
-    .withMessage(PASSWORD_CONFIG.errorMessage),
+    .isLength({ min: VALIDATION_CONFIG.password.minLength })
+    .withMessage(VALIDATION_CONFIG.password.errorMessage)
+    .matches(VALIDATION_CONFIG.password.regex)
+    .withMessage(VALIDATION_CONFIG.password.errorMessage),
   handleValidationErrors,
 ];
 
@@ -59,13 +59,13 @@ export const validateUserUpdate = [
   body('fullName')
     .optional()
     .trim()
-    .isLength({ min: 2, max: 100 })
-    .withMessage('Full name must be between 2 and 100 characters'),
+    .isLength({ min: VALIDATION_CONFIG.fullName.minLength, max: VALIDATION_CONFIG.fullName.maxLength })
+    .withMessage(VALIDATION_CONFIG.fullName.errorMessage),
   body('bio')
     .optional()
     .trim()
-    .isLength({ max: 500 })
-    .withMessage('Bio must be less than 500 characters'),
+    .isLength({ max: VALIDATION_CONFIG.bio.maxLength })
+    .withMessage(VALIDATION_CONFIG.bio.errorMessage),
   handleValidationErrors,
 ];
 

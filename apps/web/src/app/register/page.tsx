@@ -56,6 +56,22 @@ export default function RegisterPage() {
     setIsLoading(true);
     setError('');
 
+    // Validate first name
+    if (formData.firstName.trim().length < 1 || formData.firstName.trim().length > 50) {
+      setError('First name must be between 1 and 50 characters');
+      triggerShake();
+      setIsLoading(false);
+      return;
+    }
+
+    // Validate last name
+    if (formData.lastName.trim().length < 1 || formData.lastName.trim().length > 50) {
+      setError('Last name must be between 1 and 50 characters');
+      triggerShake();
+      setIsLoading(false);
+      return;
+    }
+
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       triggerShake();
