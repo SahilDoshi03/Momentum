@@ -32,8 +32,6 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
   const router = useRouter();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  // Mobile menu toggle
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Prevent hydration mismatch by only rendering theme-dependent content after mount
   useEffect(() => {
@@ -64,8 +62,6 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
   if (projectName && displayBreadcrumbs.length === 0) {
     displayBreadcrumbs.push({ label: projectName });
   }
-
-  // Mobile menu toggle
 
 
   return (
@@ -111,8 +107,8 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
           </div>
         )}
 
-        {/* Right side - Desktop */}
-        <div className="hidden md:flex items-center space-x-2">
+        {/* Right side - Unified */}
+        <div className="flex items-center space-x-2">
           {/* Theme Toggle */}
           <Button
             variant="ghost"
@@ -138,89 +134,13 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
             {user && (
               <>
                 <ProfileIcon user={user} size="sm" />
-                <span className="text-sm text-[var(--text-primary)]">{user.fullName}</span>
+                <span className="text-sm text-[var(--text-primary)] hidden md:inline">{user.fullName}</span>
               </>
             )}
           </Link>
 
         </div>
-
-        {/* Mobile Menu Button */}
-        <div className="flex md:hidden items-center">
-          {/* Theme Toggle Mobile - keeping it accessible outside menu for ease */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={toggleTheme}
-            className="w-8 h-8 p-0 mr-2"
-          >
-            {!mounted ? (
-              <div className="w-4 h-4" />
-            ) : theme === 'dark' ? (
-              <Sun width={16} height={16} />
-            ) : (
-              <Moon width={16} height={16} />
-            )}
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="p-1"
-          >
-            {/* Need to import Menu and X icons. Assuming X exists based on previous file list. */}
-            {isMobileMenuOpen ? (
-              // Use a simple X SVG if not imported yet or just text
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            ) : (
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-            )}
-          </Button>
-        </div>
       </div>
-
-      {/* Mobile Menu Overlay/Drawer */}
-      {isMobileMenuOpen && (
-        <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 bg-black/50 z-40 md:hidden"
-            onClick={() => setIsMobileMenuOpen(false)}
-          />
-
-          {/* Drawer */}
-          <div className="fixed top-0 right-0 h-full w-64 bg-[var(--bg-secondary)] border-l border-[var(--border)] shadow-xl z-50 p-4 transform transition-transform md:hidden flex flex-col">
-            <div className="flex justify-end mb-4">
-              <Button variant="ghost" size="sm" onClick={() => setIsMobileMenuOpen(false)}>
-                <X width={24} height={24} />
-              </Button>
-            </div>
-
-            <div className="space-y-4">
-              <div className="pt-2 space-y-2">
-                <div className="flex items-center justify-start space-x-3 px-3 py-2 text-[var(--text-primary)]">
-                  {user && (
-                    <>
-                      <ProfileIcon user={user} size="sm" />
-                      <span className="font-medium">{user.fullName}</span>
-                    </>
-                  )}
-                </div>
-
-                <Link
-                  href="/profile"
-                  className="block px-3 py-2 text-sm text-start text-[var(--text-primary)] hover:bg-[var(--bg-primary)] rounded"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Profile
-                </Link>
-                {/* Settings and Logout removed from mobile menu as per requirements */}
-              </div>
-            </div>
-          </div>
-        </>
-      )}
     </nav >
   );
 };
