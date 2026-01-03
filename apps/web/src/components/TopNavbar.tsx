@@ -71,9 +71,9 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
         <div className="flex items-center space-x-2">
           <Link href="/" className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-[var(--primary)] rounded-md flex items-center justify-center">
-              <span className="text-white font-bold text-sm">T</span>
+              <span className="text-white font-bold text-sm">M</span>
             </div>
-            <span className="font-semibold text-[var(--text-secondary)] hidden sm:inline">Taskcafe</span>
+            <span className="font-semibold text-[var(--text-secondary)] hidden sm:inline">Momentum</span>
           </Link>
 
           {/* Desktop Breadcrumbs */}

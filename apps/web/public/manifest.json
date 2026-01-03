@@ -1,6 +1,6 @@
 {
-    "name": "Taskcafe",
-    "short_name": "Taskcafe",
+    "name": "Momentum",
+    "short_name": "Momentum",
     "description": "Project management and task tracking application",
     "start_url": "/",
     "display": "standalone",

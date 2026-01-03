@@ -53,7 +53,7 @@ describe('TopNavbar', () => {
 
     it('renders navbar correctly', () => {
         render(<TopNavbar />);
-        expect(screen.getByText('Taskcafe')).toBeInTheDocument();
+        expect(screen.getByText('Momentum')).toBeInTheDocument();
     });
 
     it('renders breadcrumbs', () => {
@@ -73,7 +73,7 @@ describe('TopNavbar', () => {
         expect(mockSetTheme).toHaveBeenCalledWith('dark');
     });
 
-    it('opens user menu and logs out', async () => {
+    it('navigates to profile page on click', async () => {
         (getCurrentUser as jest.Mock).mockReturnValue({
             _id: 'user1',
             fullName: 'Test User',
@@ -84,22 +84,7 @@ describe('TopNavbar', () => {
             render(<TopNavbar />);
         });
 
-        // Wait for user to load
-        // Open menu
-        await waitFor(() => {
-            expect(screen.getByTestId('profile-icon')).toBeInTheDocument();
-        });
-        const profileIcon = screen.getByTestId('profile-icon');
-        fireEvent.click(profileIcon);
-
-        await waitFor(() => {
-            expect(screen.getByRole('button', { name: /logout/i })).toBeInTheDocument();
-        });
-
-        // Logout
-        fireEvent.click(screen.getByRole('button', { name: /logout/i }));
-        await waitFor(() => {
-            expect(mockPush).toHaveBeenCalledWith('/login');
-        });
+        const profileLink = screen.getByTestId('user-profile-link');
+        expect(profileLink).toHaveAttribute('href', '/profile');
     });
 });
