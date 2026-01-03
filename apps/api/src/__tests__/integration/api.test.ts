@@ -16,7 +16,7 @@ describe('API Integration Tests', () => {
         // Create user and get token
         const userData = {
             email: 'integration@example.com',
-            password: 'password123',
+            password: 'Password123!',
             username: 'integration',
             firstName: 'Integration',
             lastName: 'User'

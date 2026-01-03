@@ -13,15 +13,13 @@ describe('Auth Controller', () => {
                     firstName: 'John',
                     lastName: 'Doe',
                     email: 'john@example.com',
-                    password: 'password123',
+                    password: 'Password123!',
                 },
             });
             const res = mockResponse();
             const next = mockNext();
 
             await register(req, res, next);
-
-
             expect(isSuccessResponse(res)).toBe(true);
             expect(res.status).toHaveBeenCalledWith(201);
 
@@ -35,7 +33,7 @@ describe('Auth Controller', () => {
             await User.create({
                 fullName: 'Existing User',
                 email: 'existing@example.com',
-                password: 'password123',
+                password: 'Password123!',
                 initials: 'EU',
                 profileIcon: { initials: 'EU', bgColor: '#000000' },
             });
@@ -45,7 +43,7 @@ describe('Auth Controller', () => {
                     firstName: 'Existing',
                     lastName: 'User',
                     email: 'existing@example.com',
-                    password: 'password123',
+                    password: 'Password123!',
                 },
             });
             const res = mockResponse();
@@ -64,7 +62,7 @@ describe('Auth Controller', () => {
             await User.create({
                 fullName: 'Test User',
                 email: 'test@example.com',
-                password: 'password123',
+                password: 'Password123!',
                 initials: 'TU',
                 profileIcon: { initials: 'TU', bgColor: '#000000' },
             });
@@ -74,7 +72,7 @@ describe('Auth Controller', () => {
             const req = mockRequest({
                 body: {
                     email: 'test@example.com',
-                    password: 'password123',
+                    password: 'Password123!',
                 },
             });
             const res = mockResponse();
@@ -108,7 +106,7 @@ describe('Auth Controller', () => {
             const req = mockRequest({
                 body: {
                     email: 'nonexistent@example.com',
-                    password: 'password123',
+                    password: 'Password123!',
                 },
             });
             const res = mockResponse();
@@ -153,7 +151,7 @@ describe('Auth Controller', () => {
             const user = await User.create({
                 fullName: 'Test User',
                 email: 'test@example.com',
-                password: 'password123',
+                password: 'Password123!',
                 initials: 'TU',
                 profileIcon: { initials: 'TU', bgColor: '#000000' },
             });
@@ -208,7 +206,7 @@ describe('Auth Controller', () => {
             const user = await User.create({
                 fullName: 'Test User',
                 email: 'test@example.com',
-                password: 'password123',
+                password: 'Password123!',
                 initials: 'TU',
                 profileIcon: { initials: 'TU', bgColor: '#000000' },
             });

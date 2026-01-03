@@ -61,7 +61,7 @@ const seedData = async (): Promise<void> => {
     const users = [
       {
         fullName: 'John Doe',
-        username: 'john_doe',
+
         email: 'john@example.com',
         password: 'password123',
         initials: 'JD',
@@ -74,7 +74,7 @@ const seedData = async (): Promise<void> => {
       },
       {
         fullName: 'Jane Smith',
-        username: 'jane_smith',
+
         email: 'jane@example.com',
         password: 'password123',
         initials: 'JS',
@@ -87,7 +87,7 @@ const seedData = async (): Promise<void> => {
       },
       {
         fullName: 'Bob Wilson',
-        username: 'bob_wilson',
+
         email: 'bob@example.com',
         password: 'password123',
         initials: 'BW',
@@ -415,9 +415,9 @@ const seedData = async (): Promise<void> => {
     console.log(`- ${taskLabels.length} task labels created`);
 
     console.log('\n🔑 Test credentials:');
-    console.log('Username: john_doe, Password: password123');
-    console.log('Username: jane_smith, Password: password123');
-    console.log('Username: bob_wilson, Password: password123');
+    console.log('Email: john@example.com, Password: password123');
+    console.log('Email: jane@example.com, Password: password123');
+    console.log('Email: bob@example.com, Password: password123');
 
   } catch (error) {
     console.error('Error seeding database:', error);

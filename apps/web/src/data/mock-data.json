@@ -2,7 +2,6 @@
   "users": [
     {
       "id": "user-1",
-      "username": "john_doe",
       "fullName": "John Doe",
       "email": "john@example.com",
       "initials": "JD",
@@ -10,8 +9,7 @@
       "bio": "Product Manager"
     },
     {
-      "id": "user-2", 
-      "username": "jane_smith",
+      "id": "user-2",
       "fullName": "Jane Smith",
       "email": "jane@example.com",
       "initials": "JS",
@@ -20,8 +18,7 @@
     },
     {
       "id": "user-3",
-      "username": "bob_wilson",
-      "fullName": "Bob Wilson", 
+      "fullName": "Bob Wilson",
       "email": "bob@example.com",
       "initials": "BW",
       "avatar": null,
@@ -36,7 +33,6 @@
       "members": [
         {
           "id": "user-1",
-          "username": "john_doe",
           "fullName": "John Doe",
           "email": "john@example.com",
           "initials": "JD",
@@ -44,7 +40,6 @@
         },
         {
           "id": "user-2",
-          "username": "jane_smith", 
           "fullName": "Jane Smith",
           "email": "jane@example.com",
           "initials": "JS",
@@ -52,9 +47,8 @@
         },
         {
           "id": "user-3",
-          "username": "bob_wilson",
           "fullName": "Bob Wilson",
-          "email": "bob@example.com", 
+          "email": "bob@example.com",
           "initials": "BW",
           "role": "MEMBER"
         }
@@ -63,11 +57,10 @@
     {
       "id": "team-2",
       "name": "Design",
-      "organizationID": "org-1", 
+      "organizationID": "org-1",
       "members": [
         {
           "id": "user-1",
-          "username": "john_doe",
           "fullName": "John Doe",
           "email": "john@example.com",
           "initials": "JD",
@@ -87,7 +80,6 @@
       "members": [
         {
           "id": "user-1",
-          "username": "john_doe",
           "fullName": "John Doe",
           "email": "john@example.com",
           "initials": "JD",
@@ -95,8 +87,7 @@
         },
         {
           "id": "user-2",
-          "username": "jane_smith",
-          "fullName": "Jane Smith", 
+          "fullName": "Jane Smith",
           "email": "jane@example.com",
           "initials": "JS",
           "role": "MEMBER"
@@ -121,7 +112,6 @@
               "assigned": [
                 {
                   "id": "user-2",
-                  "username": "jane_smith",
                   "fullName": "Jane Smith",
                   "email": "jane@example.com",
                   "initials": "JS"
@@ -136,7 +126,7 @@
               ]
             },
             {
-              "id": "task-2", 
+              "id": "task-2",
               "name": "Research competitor websites",
               "description": "Analyze top 10 competitor websites for inspiration",
               "complete": false,
@@ -146,7 +136,6 @@
               "assigned": [
                 {
                   "id": "user-1",
-                  "username": "john_doe",
                   "fullName": "John Doe",
                   "email": "john@example.com",
                   "initials": "JD"
@@ -180,7 +169,6 @@
               "assigned": [
                 {
                   "id": "user-2",
-                  "username": "jane_smith",
                   "fullName": "Jane Smith",
                   "email": "jane@example.com",
                   "initials": "JS"
@@ -212,7 +200,6 @@
               "assigned": [
                 {
                   "id": "user-1",
-                  "username": "john_doe",
                   "fullName": "John Doe",
                   "email": "john@example.com",
                   "initials": "JD"
@@ -230,7 +217,7 @@
           "color": "#e362e3"
         },
         {
-          "id": "label-2", 
+          "id": "label-2",
           "name": "Research",
           "color": "#7a6ff0"
         },
@@ -250,13 +237,12 @@
       "id": "project-2",
       "name": "Mobile App",
       "team": {
-        "id": "team-1", 
+        "id": "team-1",
         "name": "Engineering"
       },
       "members": [
         {
           "id": "user-1",
-          "username": "john_doe",
           "fullName": "John Doe",
           "email": "john@example.com",
           "initials": "JD",
@@ -264,10 +250,9 @@
         },
         {
           "id": "user-3",
-          "username": "bob_wilson",
           "fullName": "Bob Wilson",
           "email": "bob@example.com",
-          "initials": "BW", 
+          "initials": "BW",
           "role": "MEMBER"
         }
       ],
@@ -288,7 +273,6 @@
               "assigned": [
                 {
                   "id": "user-3",
-                  "username": "bob_wilson",
                   "fullName": "Bob Wilson",
                   "email": "bob@example.com",
                   "initials": "BW"
@@ -308,7 +292,7 @@
       "labels": [
         {
           "id": "label-3",
-          "name": "Development", 
+          "name": "Development",
           "color": "#37c5ab"
         },
         {
@@ -325,7 +309,6 @@
       "members": [
         {
           "id": "user-1",
-          "username": "john_doe",
           "fullName": "John Doe",
           "email": "john@example.com",
           "initials": "JD",
@@ -351,7 +334,6 @@
               "assigned": [
                 {
                   "id": "user-1",
-                  "username": "john_doe",
                   "fullName": "John Doe",
                   "email": "john@example.com",
                   "initials": "JD"
@@ -372,7 +354,7 @@
       "color": "#e362e3"
     },
     {
-      "id": "color-2", 
+      "id": "color-2",
       "name": "Blue",
       "color": "#7a6ff0"
     },
@@ -399,4 +381,3 @@
     }
   ]
 }
-

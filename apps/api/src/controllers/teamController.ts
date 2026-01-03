@@ -276,7 +276,7 @@ export const getTeamMembers = asyncHandler(async (req: Request, res: Response) =
   }
 
   const members = await TeamMember.find({ teamId: id })
-    .populate('userId', 'fullName email username initials profileIcon');
+    .populate('userId', 'fullName email initials profileIcon');
 
   res.json({
     success: true,

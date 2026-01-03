@@ -14,14 +14,14 @@ export const getMyTasks = asyncHandler(async (req: Request, res: Response) => {
     .populate('taskGroupId', 'name projectId')
     .populate({
       path: 'assigned',
-      populate: { path: 'userId', select: 'username fullName initials profileIcon' }
+      populate: { path: 'userId', select: 'fullName initials profileIcon' }
     })
     .populate({
       path: 'labels',
       populate: { path: 'projectLabelId', populate: { path: 'labelColorId' } }
     })
-    .populate('createdBy', 'username fullName initials profileIcon')
-    .populate('updatedBy', 'username fullName initials profileIcon') as unknown as ITask[];
+    .populate('createdBy', 'fullName initials profileIcon')
+    .populate('updatedBy', 'fullName initials profileIcon') as unknown as ITask[];
 
   // Apply status filter
   if (status !== 'ALL') {
@@ -171,14 +171,14 @@ export const createTask = asyncHandler(async (req: Request, res: Response) => {
     .populate('taskGroupId', 'name projectId')
     .populate({
       path: 'assigned',
-      populate: { path: 'userId', select: 'username fullName initials profileIcon' }
+      populate: { path: 'userId', select: 'fullName initials profileIcon' }
     })
     .populate({
       path: 'labels',
       populate: { path: 'projectLabelId', populate: { path: 'labelColorId' } }
     })
-    .populate('createdBy', 'username fullName initials profileIcon')
-    .populate('updatedBy', 'username fullName initials profileIcon');
+    .populate('createdBy', 'fullName initials profileIcon')
+    .populate('updatedBy', 'fullName initials profileIcon');
 
   res.status(201).json({
     success: true,
@@ -201,14 +201,14 @@ export const getTaskById = asyncHandler(async (req: Request, res: Response) => {
     .populate('taskGroupId', 'name projectId')
     .populate({
       path: 'assigned',
-      populate: { path: 'userId', select: 'username fullName initials profileIcon' }
+      populate: { path: 'userId', select: 'fullName initials profileIcon' }
     })
     .populate({
       path: 'labels',
       populate: { path: 'projectLabelId', populate: { path: 'labelColorId' } }
     })
-    .populate('createdBy', 'username fullName initials profileIcon')
-    .populate('updatedBy', 'username fullName initials profileIcon');
+    .populate('createdBy', 'fullName initials profileIcon')
+    .populate('updatedBy', 'fullName initials profileIcon');
 
   if (!task) {
     throw new AppError('Task not found', 404);
@@ -291,14 +291,14 @@ export const updateTask = asyncHandler(async (req: Request, res: Response) => {
     .populate('taskGroupId', 'name projectId')
     .populate({
       path: 'assigned',
-      populate: { path: 'userId', select: 'username fullName initials profileIcon' }
+      populate: { path: 'userId', select: 'fullName initials profileIcon' }
     })
     .populate({
       path: 'labels',
       populate: { path: 'projectLabelId', populate: { path: 'labelColorId' } }
     })
-    .populate('createdBy', 'username fullName initials profileIcon')
-    .populate('updatedBy', 'username fullName initials profileIcon');
+    .populate('createdBy', 'fullName initials profileIcon')
+    .populate('updatedBy', 'fullName initials profileIcon');
 
   res.json({
     success: true,

@@ -12,7 +12,7 @@ export const createTestUser = async (overrides: Partial<any> = {}) => {
     const timestamp = Date.now();
     const userData = {
         email: overrides.email || `test${timestamp}@example.com`,
-        username: overrides.username || `testuser${timestamp}`,
+
         password: 'password123',
         fullName: overrides.fullName || 'Test User',
         initials: overrides.initials || 'TU',

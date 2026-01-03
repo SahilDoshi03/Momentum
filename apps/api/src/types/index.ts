@@ -5,7 +5,6 @@ import { Document } from 'mongoose';
 export interface IUser extends Omit<Document, '_id'> {
   _id: string;
   email: string;
-  username: string;
   password: string;
   fullName: string;
   initials: string;
@@ -273,7 +272,6 @@ export interface ITaskWithDetails extends ITask {
 export interface JWTPayload {
   userId: string;
   email: string;
-  username: string;
   role: string;
   iat: number;
   exp: number;

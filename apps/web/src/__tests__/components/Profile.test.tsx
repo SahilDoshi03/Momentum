@@ -28,7 +28,10 @@ jest.mock('next-themes', () => ({
 
 jest.mock('@tanstack/react-query', () => ({
     useQuery: jest.fn(),
-    useMutation: jest.fn(),
+    useMutation: jest.fn(() => ({
+        mutate: jest.fn(),
+        isPending: false,
+    })),
     useQueryClient: () => ({
         setQueryData: jest.fn(),
     }),
@@ -53,6 +56,11 @@ describe('Profile', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         (useRouter as jest.Mock).mockReturnValue(mockRouter);
+        const { useMutation } = require('@tanstack/react-query');
+        useMutation.mockImplementation(() => ({
+            mutate: jest.fn(),
+            isPending: false,
+        }));
     });
 
     it('renders loading state', () => {
@@ -98,7 +106,7 @@ describe('Profile', () => {
         const { useQuery, useMutation } = require('@tanstack/react-query');
         useQuery.mockReturnValue({ isLoading: false, data: mockUser });
         const mockMutate = jest.fn();
-        useMutation.mockReturnValue({ mutate: mockMutate });
+        useMutation.mockReturnValue({ mutate: mockMutate, isPending: false });
 
         render(<Profile />);
 

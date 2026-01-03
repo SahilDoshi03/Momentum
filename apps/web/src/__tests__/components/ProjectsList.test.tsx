@@ -633,7 +633,7 @@ describe('ProjectsList - Main Dashboard', () => {
 
             await waitFor(() => {
                 expect(apiClient.deleteProject).toHaveBeenCalledWith('project1');
-                expect(toast.success).toHaveBeenCalledWith('Project "Personal Project 1" deleted successfully');
+                expect(toast.success).toHaveBeenCalledWith('Project deleted successfully');
             });
         });
 
