@@ -15,9 +15,20 @@ export default function RegisterPage() {
     password: '',
     confirmPassword: '',
   });
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [shake, setShake] = useState(false);
   const router = useRouter();
+
+  // Password requirements
+  const requirements = [
+    { label: 'At least 8 characters', valid: formData.password.length >= 8 },
+    { label: 'One uppercase letter', valid: /[A-Z]/.test(formData.password) },
+    { label: 'One lowercase letter', valid: /[a-z]/.test(formData.password) },
+    { label: 'One number', valid: /\d/.test(formData.password) },
+    { label: 'One special character', valid: /[@$!%*?&]/.test(formData.password) },
+  ];
 
   useEffect(() => {
     // Redirect if already logged in
@@ -28,13 +39,17 @@ export default function RegisterPage() {
         if (isValid) {
           router.push('/');
         } else {
-          // Clear invalid user data
           localStorage.removeItem('currentUser');
         }
       }
     };
     checkAuth();
   }, [router]);
+
+  const triggerShake = () => {
+    setShake(true);
+    setTimeout(() => setShake(false), 500);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,6 +58,15 @@ export default function RegisterPage() {
 
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
+      triggerShake();
+      setIsLoading(false);
+      return;
+    }
+
+    const allRequirementsMet = requirements.every(req => req.valid);
+    if (!allRequirementsMet) {
+      setError('Please meet all password requirements');
+      triggerShake();
       setIsLoading(false);
       return;
     }
@@ -61,6 +85,7 @@ export default function RegisterPage() {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Registration failed. Please try again.';
       setError(message);
+      triggerShake();
     } finally {
       setIsLoading(false);
     }
@@ -78,23 +103,24 @@ export default function RegisterPage() {
         </div>
 
         <form className="space-y-6" onSubmit={handleSubmit}>
-          <Input
-            label="First Name"
-            type="text"
-            value={formData.firstName}
-            onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-            placeholder="Enter your first name"
-            required
-          />
-
-          <Input
-            label="Last Name"
-            type="text"
-            value={formData.lastName}
-            onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-            placeholder="Enter your last name"
-            required
-          />
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="First Name"
+              type="text"
+              value={formData.firstName}
+              onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+              placeholder="First name"
+              required
+            />
+            <Input
+              label="Last Name"
+              type="text"
+              value={formData.lastName}
+              onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+              placeholder="Last name"
+              required
+            />
+          </div>
 
           <Input
             label="Email"
@@ -105,26 +131,83 @@ export default function RegisterPage() {
             required
           />
 
-          <Input
-            label="Password"
-            type="password"
-            value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            placeholder="Create a password"
-            required
-          />
+          <div className={shake ? 'animate-shake' : ''}>
+            <Input
+              label="Password"
+              type={showPassword ? 'text' : 'password'}
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              placeholder="Create a password"
+              required
+              error={error && !requirements.every(r => r.valid) ? 'Password requirements not met' : undefined}
+              suffix={
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="focus:outline-none hover:text-[var(--text-secondary)] transition-colors"
+                >
+                  {showPassword ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                  )}
+                </button>
+              }
+            />
+            {/* Password Strength Meter */}
+            {formData.password && (
+              <div className="mt-3 space-y-2">
+                <div className="flex justify-between text-xs">
+                  <span className="font-medium text-[var(--text-secondary)]">Password strength:</span>
+                  <span className="text-[var(--text-secondary)]">
+                    {Math.round((requirements.filter(r => r.valid).length / requirements.length) * 100)}%
+                  </span>
+                </div>
+                <div className="h-1.5 w-full bg-[var(--bg-secondary)] rounded-full overflow-hidden">
+                  <div
+                    className={`h-full transition-all duration-300 ${(requirements.filter(r => r.valid).length / requirements.length) * 100 <= 33
+                      ? 'bg-[var(--danger)]'
+                      : (requirements.filter(r => r.valid).length / requirements.length) * 100 <= 66
+                        ? 'bg-[var(--warning)]'
+                        : 'bg-[var(--success)]'
+                      }`}
+                    style={{ width: `${(requirements.filter(r => r.valid).length / requirements.length) * 100}%` }}
+                  />
+                </div>
+              </div>
+            )}
 
-          <Input
-            label="Confirm Password"
-            type="password"
-            value={formData.confirmPassword}
-            onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-            placeholder="Confirm your password"
-            required
-          />
+            {/* Password Requirements Checklist */}
+            <div className="mt-3 grid grid-cols-2 gap-y-1.5 gap-x-4">
+              {requirements.map((req, index) => (
+                <div key={index} className="flex items-center text-sm">
+                  {req.valid ? (
+                    <svg className="w-4 h-4 mr-2 text-[var(--success)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                  ) : (
+                    <svg className="w-4 h-4 mr-2 text-[var(--text-tertiary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                  )}
+                  <span className={`${req.valid ? 'text-[var(--text-secondary)] font-medium' : 'text-[var(--text-tertiary)]'}`}>
+                    {req.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
 
-          {error && (
-            <div className="text-[var(--danger)] text-sm text-center">{error}</div>
+          <div className={shake && formData.password !== formData.confirmPassword ? 'animate-shake' : ''}>
+            <Input
+              label="Confirm Password"
+              type="password"
+              value={formData.confirmPassword}
+              onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+              placeholder="Confirm your password"
+              required
+              error={error === 'Passwords do not match' ? error : undefined}
+            />
+          </div>
+
+          {error && error !== 'Passwords do not match' && !error.includes('requirements') && (
+            <div className="text-[var(--danger)] text-sm text-center animate-shake">{error}</div>
           )}
 
           <Button
