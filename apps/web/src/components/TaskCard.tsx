@@ -165,7 +165,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             )}
           </div>
 
-          <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex items-center space-x-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity md:pointer-events-none md:group-hover:pointer-events-auto">
             {/* Delete Button */}
             <button
               onClick={(e) => {

@@ -201,7 +201,7 @@ export const ProjectsList: React.FC = () => {
                     setProjectToDelete(project);
                     setShowDeleteConfirm(true);
                   }}
-                  className="absolute top-2 right-2 p-1.5 rounded-full bg-black/20 text-white opacity-0 group-hover:opacity-100 hover:bg-black/40 transition-all z-20"
+                  className="absolute top-2 right-2 p-1.5 rounded-full bg-black/20 text-white opacity-100 md:opacity-0 md:group-hover:opacity-100 md:pointer-events-none md:group-hover:pointer-events-auto hover:bg-black/40 transition-all z-20"
                   title="Delete project"
                 >
                   <Trash width={14} height={14} />
@@ -275,7 +275,7 @@ export const ProjectsList: React.FC = () => {
                       setProjectToDelete(project);
                       setShowDeleteConfirm(true);
                     }}
-                    className="absolute top-2 right-2 p-1.5 rounded-full bg-black/20 text-white opacity-0 group-hover:opacity-100 hover:bg-black/40 transition-all z-20"
+                    className="absolute top-2 right-2 p-1.5 rounded-full bg-black/20 text-white opacity-100 md:opacity-0 md:group-hover:opacity-100 md:pointer-events-none md:group-hover:pointer-events-auto hover:bg-black/40 transition-all z-20"
                     title="Delete project"
                   >
                     <Trash width={14} height={14} />
