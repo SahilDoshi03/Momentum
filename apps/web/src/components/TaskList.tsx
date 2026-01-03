@@ -111,7 +111,7 @@ export const TaskList: React.FC<TaskListProps> = ({
             {list.tasks.length}
           </span>
         </div>
-        <div className="group/header opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="group/header opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity md:pointer-events-none md:group-hover:pointer-events-auto">
           <Button
             variant="ghost"
             size="sm"
