@@ -210,6 +210,12 @@ export const googleCallback = asyncHandler(async (req: Request, res: Response) =
     throw new AppError('Google authentication failed', 401);
   }
 
+  // Reactivate user if they were soft deleted
+  if (!user.active) {
+    user.active = true;
+    await user.save();
+  }
+
   // Generate token
   const token = generateToken(user._id);
 
@@ -234,6 +240,12 @@ export const githubCallback = asyncHandler(async (req: Request, res: Response) =
 
   if (!user) {
     throw new AppError('GitHub authentication failed', 401);
+  }
+
+  // Reactivate user if they were soft deleted
+  if (!user.active) {
+    user.active = true;
+    await user.save();
   }
 
   // Generate token

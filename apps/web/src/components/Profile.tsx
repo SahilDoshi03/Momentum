@@ -5,6 +5,7 @@ import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ProfileIcon } from '@/components/ui/ProfileIcon';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { getCurrentUser, AuthUser, logout } from '@/lib/auth';
 import { Sun, Moon } from '@/components/icons';
 import { apiClient } from '@/lib/api';
@@ -54,6 +55,25 @@ export const Profile: React.FC = () => {
       toast.error('Failed to update profile');
     }
   });
+
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    if (!currentUser?.id) return;
+
+    try {
+      const response = await apiClient.deleteUser(currentUser.id);
+      if (response.success) {
+        toast.success('Account deleted successfully');
+        await logout();
+        router.push('/login');
+      }
+    } catch (error) {
+      console.error('Failed to delete account', error);
+      toast.error('Failed to delete account');
+      setIsDeleteModalOpen(false);
+    }
+  };
 
   const { data: currentUser, isLoading } = useQuery({
     queryKey: ['currentUser'],
@@ -326,7 +346,7 @@ export const Profile: React.FC = () => {
               </div>
             </div>
 
-            <div className="mt-6 pt-6 border-t border-[var(--border)]">
+            <div className="mt-6 pt-6 border-t border-[var(--border)] space-y-3">
               <Button
                 variant="danger"
                 className="w-full"
@@ -342,10 +362,28 @@ export const Profile: React.FC = () => {
               >
                 Sign Out
               </Button>
+
+              <Button
+                variant="outline"
+                className="w-full border-red-500 text-red-500 hover:bg-red-600 hover:text-white hover:border-red-600"
+                onClick={() => setIsDeleteModalOpen(true)}
+              >
+                Delete Account
+              </Button>
             </div>
           </div>
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDeleteAccount}
+        title="Delete Account"
+        message="Are you sure you want to delete your account? This action cannot be undone."
+        confirmText="Delete Account"
+        variant="danger"
+      />
     </div>
   );
 };
