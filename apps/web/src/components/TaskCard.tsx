@@ -88,7 +88,8 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       <Card
         className={cn(
           'p-3 hover:shadow-md transition-all group',
-          task.complete && 'opacity-60'
+          task.complete && 'opacity-60',
+          task._id.startsWith('temp-') && 'opacity-70 border-dashed border-2'
         )}
         onClick={onClick}
       >
