@@ -17,6 +17,7 @@ interface SortableTaskListProps {
     onDeleteTask: (taskId: string) => void;
     onCreateTask: (listId: string, name: string) => void;
     onDeleteList: (listId: string) => void;
+    onUpdateList: (listId: string, updates: { name: string }) => void;
     onTaskClick: (task: Task) => void;
     isDragOverlay: boolean;
 }
@@ -27,6 +28,7 @@ export const SortableTaskList: React.FC<SortableTaskListProps> = ({
     onDeleteTask,
     onCreateTask,
     onDeleteList,
+    onUpdateList,
     onTaskClick,
     isDragOverlay,
 }) => {
@@ -58,6 +60,7 @@ export const SortableTaskList: React.FC<SortableTaskListProps> = ({
                     onDeleteTask={onDeleteTask}
                     onCreateTask={onCreateTask}
                     onDeleteList={onDeleteList}
+                    onUpdateList={onUpdateList}
                     onTaskClick={onTaskClick}
                     isDragOverlay={isDragOverlay}
                 />

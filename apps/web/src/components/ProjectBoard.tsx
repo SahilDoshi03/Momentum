@@ -470,6 +470,20 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
     }
   };
 
+  const handleUpdateList = async (listId: string, updates: { name: string }) => {
+    try {
+      const response = await apiClient.updateTaskGroup(listId, updates);
+      if (response.success) {
+        setTaskGroups(prev => prev.map(list =>
+          list._id === listId ? { ...list, ...updates } : list
+        ));
+      }
+    } catch (error) {
+      console.error('Failed to update list:', error);
+      toast.error('Failed to update list');
+    }
+  };
+
   const toggleLabelFilter = (labelId: string) => {
     setLabelFilter(prev =>
       prev.includes(labelId)
@@ -765,6 +779,7 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
                 onDeleteTask={handleDeleteTask}
                 onCreateTask={handleCreateTask}
                 onDeleteList={handleDeleteList}
+                onUpdateList={handleUpdateList}
                 onTaskClick={handleTaskClick} // Pass this down
                 isDragOverlay={!!(activeId && (list.tasks || []).some((t: Task) => t._id === activeId))}
               />

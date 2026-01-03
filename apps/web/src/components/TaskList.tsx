@@ -28,6 +28,7 @@ interface TaskListProps {
   onDeleteTask: (taskId: string) => void;
   onCreateTask: (listId: string, name: string) => void;
   onDeleteList: (listId: string) => void;
+  onUpdateList: (listId: string, updates: { name: string }) => void;
   onTaskClick: (task: Task) => void;
   isDragOverlay?: boolean;
 }
@@ -38,11 +39,14 @@ export const TaskList: React.FC<TaskListProps> = ({
   onDeleteTask,
   onCreateTask,
   onDeleteList,
+  onUpdateList,
   onTaskClick,
   isDragOverlay = false,
 }) => {
   const [isAddingCard, setIsAddingCard] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [title, setTitle] = useState(list.name);
   const { setNodeRef, isOver } = useDroppable({
     id: list._id,
   });
@@ -52,6 +56,15 @@ export const TaskList: React.FC<TaskListProps> = ({
       onCreateTask(list._id, name.trim());
       setIsAddingCard(false);
     }
+  };
+
+  const handleTitleSubmit = () => {
+    if (title.trim() && title !== list.name) {
+      onUpdateList(list._id, { name: title.trim() });
+    } else {
+      setTitle(list.name);
+    }
+    setIsEditingTitle(false);
   };
 
   return (
@@ -65,8 +78,35 @@ export const TaskList: React.FC<TaskListProps> = ({
     >
       {/* List Header */}
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <h3 className="font-semibold text-[var(--text-secondary)]">{list.name}</h3>
+        <div className="flex items-center gap-2 flex-1">
+          {isEditingTitle ? (
+            <input
+              autoFocus
+              className="font-semibold text-[var(--text-secondary)] bg-transparent border-b border-[var(--primary)] focus:outline-none w-full"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => setTitle(e.target.value)}
+              onBlur={handleTitleSubmit}
+              onPointerDown={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleTitleSubmit();
+                if (e.key === 'Escape') {
+                  setTitle(list.name);
+                  setIsEditingTitle(false);
+                }
+              }}
+            />
+          ) : (
+            <h3
+              className="font-semibold text-[var(--text-secondary)] cursor-pointer hover:bg-[var(--bg-primary)] px-2 -ml-2 rounded"
+              onClick={() => setIsEditingTitle(true)}
+              onPointerDown={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              {list.name}
+            </h3>
+          )}
           <span className="text-sm text-[var(--text-primary)] bg-[var(--bg-primary)] px-2 py-1 rounded">
             {list.tasks.length}
           </span>
