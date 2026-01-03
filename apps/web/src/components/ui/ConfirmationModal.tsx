@@ -11,6 +11,7 @@ interface ConfirmationModalProps {
     confirmText?: string;
     cancelText?: string;
     variant?: 'danger' | 'primary';
+    isLoading?: boolean;
 }
 
 export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
@@ -22,6 +23,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     confirmText = 'Confirm',
     cancelText = 'Cancel',
     variant = 'primary',
+    isLoading = false,
 }) => {
     return (
         <Modal
@@ -37,14 +39,16 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                     <Button
                         variant="outline"
                         onClick={onClose}
+                        disabled={isLoading}
                     >
                         {cancelText}
                     </Button>
                     <Button
                         onClick={onConfirm}
                         className={variant === 'danger' ? 'bg-red-600 hover:bg-red-700 text-white' : ''}
+                        disabled={isLoading}
                     >
-                        {confirmText}
+                        {isLoading ? 'Processing...' : confirmText}
                     </Button>
                 </div>
             </div>

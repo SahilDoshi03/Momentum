@@ -19,6 +19,7 @@ interface ProjectSettingsModalProps {
     onAddMember: (userId: string) => Promise<void>;
     onRemoveMember: (userId: string) => Promise<void>;
     onUpdateMemberRole: (userId: string, role: string) => Promise<void>;
+    isDeleting?: boolean;
 }
 
 export const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
@@ -31,6 +32,7 @@ export const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
     onAddMember,
     onRemoveMember,
     onUpdateMemberRole,
+    isDeleting = false,
 }) => {
     const [activeTab, setActiveTab] = useState<'general' | 'members'>('general');
     const [projectName, setProjectName] = useState(project.name);
@@ -131,8 +133,9 @@ export const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
                                         value={projectName}
                                         onChange={(e) => setProjectName(e.target.value)}
                                         placeholder="Project Name"
+                                        disabled={isDeleting}
                                     />
-                                    <Button onClick={handleSaveGeneral} disabled={projectName === project.name}>
+                                    <Button onClick={handleSaveGeneral} disabled={projectName === project.name || isDeleting}>
                                         Save
                                     </Button>
                                 </div>
@@ -149,6 +152,7 @@ export const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
                                             variant="outline"
                                             className="text-red-500 border-red-500 hover:bg-red-50"
                                             onClick={() => setShowDeleteConfirm(true)}
+                                            disabled={isDeleting}
                                         >
                                             Delete Project
                                         </Button>
@@ -161,8 +165,9 @@ export const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
                                                 <Button
                                                     className="bg-red-600 hover:bg-red-700 text-white"
                                                     onClick={onDeleteProject}
+                                                    disabled={isDeleting}
                                                 >
-                                                    Yes, Delete Project
+                                                    {isDeleting ? 'Deleting...' : 'Yes, Delete Project'}
                                                 </Button>
                                                 <Button
                                                     variant="ghost"

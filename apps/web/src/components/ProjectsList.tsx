@@ -88,22 +88,45 @@ export const ProjectsList: React.FC = () => {
 
   const deleteProjectMutation = useMutation({
     mutationFn: (id: string) => apiClient.deleteProject(id),
-    onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
-      // We can't easily get the project name here without passing it or looking it up, 
-      // but for now keeping it simple or just generic message if needed.
-      // Or we rely on the closure variable projectToDelete if we want name.
-      if (projectToDelete && projectToDelete._id === id) {
-        toast.success(`Project "${projectToDelete.name}" deleted successfully`);
-      } else {
-        toast.success(`Project deleted successfully`);
+    onMutate: async (deletedProjectId) => {
+      // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
+      await queryClient.cancelQueries({ queryKey: ['projects'] });
+
+      // Snapshot the previous value
+      const previousProjects = queryClient.getQueryData<Project[]>(['projects']);
+
+      // Optimistically update to remove the project
+      if (previousProjects) {
+        queryClient.setQueryData<Project[]>(['projects'], (old) =>
+          old ? old.filter((p) => p._id !== deletedProjectId) : []
+        );
       }
+
+      // Close modal immediately for better UX
       setShowDeleteConfirm(false);
       setProjectToDelete(null);
+
+      // Return a context object with the snapshotted value
+      return { previousProjects };
     },
-    onError: () => {
+    onSuccess: (_, id) => {
+      // No need to invalidate immediately if we trust the optimistic update, 
+      // but good practice to eventually sync. 
+      // We already closed the modal in onMutate.
+      // toast.success(`Project deleted successfully`); // Optional: could be too noisy if optimistic
+    },
+    onError: (err, newTodo, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousProjects) {
+        queryClient.setQueryData(['projects'], context.previousProjects);
+      }
       toast.error('Failed to delete project');
-    }
+      // Re-open modal or show error state if needed, but simple rollback is often enough or just toast
+    },
+    onSettled: () => {
+      // Always refetch after error or success:
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+    },
   });
 
   const handleDeleteProject = async () => {
@@ -297,11 +320,15 @@ export const ProjectsList: React.FC = () => {
             <Button
               variant="outline"
               onClick={() => setShowNewProject(false)}
+              disabled={createProjectMutation.isPending}
             >
               Cancel
             </Button>
-            <Button onClick={handleCreateProject}>
-              Create Project
+            <Button
+              onClick={handleCreateProject}
+              disabled={createProjectMutation.isPending}
+            >
+              {createProjectMutation.isPending ? 'Creating...' : 'Create Project'}
             </Button>
           </div>
         </div>
@@ -324,11 +351,15 @@ export const ProjectsList: React.FC = () => {
             <Button
               variant="outline"
               onClick={() => setShowNewTeam(false)}
+              disabled={createTeamMutation.isPending}
             >
               Cancel
             </Button>
-            <Button onClick={handleCreateTeam}>
-              Create Team
+            <Button
+              onClick={handleCreateTeam}
+              disabled={createTeamMutation.isPending}
+            >
+              {createTeamMutation.isPending ? 'Creating...' : 'Create Team'}
             </Button>
           </div>
         </div>
@@ -350,6 +381,7 @@ export const ProjectsList: React.FC = () => {
         }
         confirmText="Delete Project"
         variant="danger"
+        isLoading={deleteProjectMutation.isPending}
       />
     </div>
   );

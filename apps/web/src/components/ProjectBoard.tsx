@@ -18,13 +18,13 @@ import { Button } from '@/components/ui/Button';
 import { CheckCircle, Sort, Filter, Tags, Settings } from '@/components/icons';
 import { SortableTaskList } from './SortableTaskList';
 import { AddList } from './AddList';
+
 import { apiClient, Project, Task, User } from '@/lib/api';
 import { Dropdown, DropdownItem, DropdownHeader } from '@/components/ui/Dropdown';
 import { TaskDetailModal } from './TaskDetailModal';
 import { ProjectSettingsModal } from './ProjectSettingsModal';
 import { useRouter } from 'next/navigation';
-
-// Project interface is now imported from api.ts
+import { useMutation } from '@tanstack/react-query';
 
 interface ProjectBoardProps {
   projectId: string;
@@ -525,18 +525,21 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
     }
   };
 
-  const handleDeleteProject = async () => {
-    if (!project) return;
-    try {
-      const response = await apiClient.deleteProject(project._id);
-      if (response.success) {
-        toast.success('Project deleted successfully');
-        router.push('/');
-      }
-    } catch (error) {
-      console.error('Failed to delete project:', error);
+  /* Deleted simple async function, moved to useMutation below */
+  const deleteProjectMutation = useMutation({
+    mutationFn: (projectId: string) => apiClient.deleteProject(projectId),
+    onSuccess: () => {
+      toast.success('Project deleted successfully');
+      router.push('/');
+    },
+    onError: () => {
       toast.error('Failed to delete project');
     }
+  });
+
+  const handleDeleteProject = async () => {
+    if (!project) return;
+    deleteProjectMutation.mutate(project._id);
   };
 
   const handleAddMember = async (userId: string) => {
@@ -757,6 +760,7 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
           onAddMember={handleAddMember}
           onRemoveMember={handleRemoveMember}
           onUpdateMemberRole={handleUpdateMemberRole}
+          isDeleting={deleteProjectMutation.isPending}
         />
       )}
 
