@@ -6,7 +6,9 @@ import {
   DndContext,
   DragEndEvent,
   DragStartEvent,
-  PointerSensor,
+  KeyboardSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
@@ -53,11 +55,18 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
   const [otherFilters, setOtherFilters] = useState<string[]>([]); // 'overdue', 'no-date'
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
+    useSensor(MouseSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 10,
       },
-    })
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor)
   );
 
   // Load project data and current user
