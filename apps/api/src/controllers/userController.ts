@@ -109,9 +109,15 @@ export const updateUser = asyncHandler(async (req: Request, res: Response) => {
   });
 });
 
-// Delete user (admin only)
+// Delete user (admin or self)
 export const deleteUser = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
+  const currentUser = (req as any).user;
+
+  // Users can only delete their own account unless they're admin
+  if (id !== currentUser._id.toString() && !['admin', 'owner'].includes(currentUser.role)) {
+    throw new AppError('Not authorized to delete this user', 403);
+  }
 
   const user = await User.findById(id);
   if (!user) {

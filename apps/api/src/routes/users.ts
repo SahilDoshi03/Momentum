@@ -31,8 +31,8 @@ router.get('/:id', getUserById);
 // Update user profile
 router.put('/:id', validateUserUpdate, updateUser);
 
-// Delete user (admin only)
-router.delete('/:id', requireAdmin, deleteUser);
+// Delete user (admin or self)
+router.delete('/:id', deleteUser);
 
 // Get user's teams
 router.get('/:id/teams', getUserTeams);
