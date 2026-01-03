@@ -7,7 +7,7 @@ import { logout, getCurrentUser, AuthUser } from '@/lib/auth';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/Button';
 import { ProfileIcon } from '@/components/ui/ProfileIcon';
-import { Sun, Moon, User, Settings, X } from '@/components/icons';
+import { Sun, Moon, X } from '@/components/icons';
 
 
 interface BreadcrumbItem {
@@ -129,62 +129,20 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
             )}
           </Button>
 
-          {/* User Menu */}
-          <div className="relative">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-              className="flex items-center space-x-2"
-              data-testid="user-menu"
-            >
-              {user && (
-                <>
-                  <ProfileIcon user={user} size="sm" />
-                  <span className="text-sm text-[var(--text-primary)]">{user.fullName}</span>
-                </>
-              )}
-            </Button>
-
-            {/* Dropdown Menu */}
-            {isUserMenuOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-[var(--bg-primary)] border border-[var(--border)] rounded-md shadow-lg z-50">
-                <div className="py-1">
-                  <Link
-                    href="/profile"
-                    className="flex items-center px-4 py-2 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]"
-                    onClick={() => setIsUserMenuOpen(false)}
-                  >
-                    <User width={16} height={16} className="mr-3" />
-                    Profile
-                  </Link>
-                  <Link
-                    href="/settings"
-                    className="flex items-center px-4 py-2 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]"
-                    onClick={() => setIsUserMenuOpen(false)}
-                  >
-                    <Settings width={16} height={16} className="mr-3" />
-                    Settings
-                  </Link>
-                  <div className="border-t border-[var(--border)] my-1" />
-                  <button
-                    className="flex items-center w-full px-4 py-2 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]"
-                    onClick={async () => {
-                      try {
-                        await logout();
-                        router.push('/login');
-                      } catch (error) {
-                        console.error('Logout failed', error);
-                      }
-                      setIsUserMenuOpen(false);
-                    }}
-                  >
-                    Logout
-                  </button>
-                </div>
-              </div>
+          {/* User Profile Link */}
+          <Link
+            href="/profile"
+            className="flex items-center space-x-2 p-1 hover:bg-[var(--bg-primary)] rounded"
+            data-testid="user-profile-link"
+          >
+            {user && (
+              <>
+                <ProfileIcon user={user} size="sm" />
+                <span className="text-sm text-[var(--text-primary)]">{user.fullName}</span>
+              </>
             )}
-          </div>
+          </Link>
+
         </div>
 
         {/* Mobile Menu Button */}
@@ -257,40 +215,12 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
                 >
                   Profile
                 </Link>
-                <Link
-                  href="/settings"
-                  className="block px-3 py-2 text-sm text-start text-[var(--text-primary)] hover:bg-[var(--bg-primary)] rounded"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Settings
-                </Link>
-                <button
-                  className="block w-full text-start px-3 py-2 text-sm text-red-500 hover:bg-[var(--bg-primary)] rounded"
-                  onClick={async () => {
-                    try {
-                      await logout();
-                      router.push('/login');
-                    } catch (error) {
-                      console.error('Logout failed', error);
-                    }
-                    setIsMobileMenuOpen(false);
-                  }}
-                >
-                  Logout
-                </button>
+                {/* Settings and Logout removed from mobile menu as per requirements */}
               </div>
             </div>
           </div>
         </>
       )}
-
-      {/* Click outside to close user menu (desktop) */}
-      {isUserMenuOpen && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setIsUserMenuOpen(false)}
-        />
-      )}
-    </nav>
+    </nav >
   );
 };

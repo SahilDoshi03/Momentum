@@ -5,7 +5,7 @@ import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ProfileIcon } from '@/components/ui/ProfileIcon';
-import { getCurrentUser, AuthUser } from '@/lib/auth';
+import { getCurrentUser, AuthUser, logout } from '@/lib/auth';
 import { Sun, Moon } from '@/components/icons';
 import { apiClient } from '@/lib/api';
 import { toast } from 'react-toastify';
@@ -324,6 +324,24 @@ export const Profile: React.FC = () => {
                 <span className="text-[var(--text-primary)]">Projects</span>
                 <span className="text-[var(--text-secondary)]">3</span>
               </div>
+            </div>
+
+            <div className="mt-6 pt-6 border-t border-[var(--border)]">
+              <Button
+                variant="danger"
+                className="w-full"
+                onClick={async () => {
+                  try {
+                    await logout();
+                    router.push('/login');
+                  } catch (error) {
+                    console.error('Logout failed', error);
+                    toast.error('Failed to logout');
+                  }
+                }}
+              >
+                Sign Out
+              </Button>
             </div>
           </div>
         </div>
