@@ -55,24 +55,24 @@ export const Profile: React.FC = () => {
       toast.error('Failed to update profile');
     }
   });
-
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-
-  const handleDeleteAccount = async () => {
-    if (!currentUser?.id) return;
-
-    try {
-      const response = await apiClient.deleteUser(currentUser.id);
-      if (response.success) {
-        toast.success('Account deleted successfully');
-        await logout();
-        router.push('/login');
-      }
-    } catch (error) {
+  const deleteUserMutation = useMutation({
+    mutationFn: (userId: string) => apiClient.deleteUser(userId),
+    onSuccess: async () => {
+      toast.success('Account deleted successfully');
+      await logout();
+      router.push('/login');
+    },
+    onError: (error) => {
       console.error('Failed to delete account', error);
       toast.error('Failed to delete account');
       setIsDeleteModalOpen(false);
     }
+  });
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    if (!currentUser?.id) return;
+    deleteUserMutation.mutate(currentUser.id);
   };
 
   const { data: currentUser, isLoading } = useQuery({
@@ -232,8 +232,8 @@ export const Profile: React.FC = () => {
                   <Button variant="outline" onClick={handleCancel}>
                     Cancel
                   </Button>
-                  <Button onClick={handleSave}>
-                    Save Changes
+                  <Button onClick={handleSave} disabled={updateUserMutation.isPending}>
+                    {updateUserMutation.isPending ? 'Saving...' : 'Save Changes'}
                   </Button>
                 </>
               ) : (
@@ -383,6 +383,7 @@ export const Profile: React.FC = () => {
         message="Are you sure you want to delete your account? This action cannot be undone."
         confirmText="Delete Account"
         variant="danger"
+        isLoading={deleteUserMutation.isPending}
       />
     </div>
   );
