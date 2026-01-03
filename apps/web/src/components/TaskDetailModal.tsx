@@ -42,6 +42,8 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     const [selectedColorId, setSelectedColorId] = useState<string>('');
     const [labelColors, setLabelColors] = useState<LabelColor[]>([]);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [isSubmittingLabel, setIsSubmittingLabel] = useState(false);
 
     // Inline selection state
     const [isAssigning, setIsAssigning] = useState(false);
@@ -78,6 +80,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     }, [fetchedLabelColors, selectedColorId]);
 
     const handleSave = async () => {
+        setIsSaving(true);
         try {
             const updates: Partial<Task> = {};
             let hasUpdates = false;
@@ -158,6 +161,8 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
         } catch (error) {
             console.error('Failed to save task:', error);
             toast.error('Failed to save task');
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -204,6 +209,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     const handleCreateLabel = async () => {
         if (!newLabelName.trim() || !selectedColorId) return;
 
+        setIsSubmittingLabel(true);
         try {
             const response = await apiClient.createProjectLabel(project._id, {
                 name: newLabelName.trim(),
@@ -248,6 +254,8 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
         } catch (error) {
             console.error('Failed to create label:', error);
             toast.error('Failed to create label');
+        } finally {
+            setIsSubmittingLabel(false);
         }
     };
 
@@ -276,11 +284,11 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
 
     const footer = (
         <div className="flex justify-end space-x-3">
-            <Button variant="ghost" onClick={onClose}>
+            <Button variant="ghost" onClick={onClose} disabled={isSaving}>
                 Cancel
             </Button>
-            <Button onClick={handleSave}>
-                Save Changes
+            <Button onClick={handleSave} disabled={isSaving}>
+                {isSaving ? 'Saving...' : 'Save Changes'}
             </Button>
         </div>
     );
@@ -533,9 +541,9 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                                         <Button
                                             size="sm"
                                             onClick={handleCreateLabel}
-                                            disabled={!newLabelName.trim() || !selectedColorId}
+                                            disabled={!newLabelName.trim() || !selectedColorId || isSubmittingLabel}
                                         >
-                                            Create
+                                            {isSubmittingLabel ? 'Creating...' : 'Create'}
                                         </Button>
                                     </div>
                                 </div>

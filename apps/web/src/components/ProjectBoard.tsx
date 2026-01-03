@@ -445,25 +445,48 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
     createTaskMutation.mutate({ listId, name });
   };
 
-  const handleCreateList = async (name: string) => {
-    try {
-      if (!project) return;
-
-      const response = await apiClient.createTaskGroup({
+  const createListMutation = useMutation({
+    mutationFn: (name: string) => {
+      if (!project) throw new Error('Project not found');
+      return apiClient.createTaskGroup({
         projectId: project._id,
         name,
         position: taskGroups.length,
       });
+    },
+    onMutate: async (name) => {
+      const previousTaskGroups = [...taskGroups];
+      const tempId = `temp-list-${Date.now()}`;
+      const tempGroup: TaskGroup = {
+        _id: tempId,
+        name: name,
+        position: taskGroups.length,
+        tasks: []
+      };
 
+      setTaskGroups(prev => [...prev, tempGroup]);
+      return { previousTaskGroups, tempId };
+    },
+    onSuccess: (response, variables, context) => {
       if (response.success && response.data) {
         const newGroup = response.data;
-        setTaskGroups(prev => [...prev, newGroup]);
-        toast.success(`List "${name}" created successfully!`);
+        setTaskGroups(prev => prev.map(group =>
+          group._id === context?.tempId ? newGroup : group
+        ));
+        toast.success(`List "${newGroup.name}" created successfully!`);
       }
-    } catch (error) {
-      console.error('Failed to create task group:', error);
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousTaskGroups) {
+        setTaskGroups(context.previousTaskGroups);
+      }
+      console.error('Failed to create task group:', err);
       toast.error('Failed to create task group');
     }
+  });
+
+  const handleCreateList = async (name: string) => {
+    createListMutation.mutate(name);
   };
 
   const handleUpdateTask = async (taskId: string, updates: Partial<Task>) => {
