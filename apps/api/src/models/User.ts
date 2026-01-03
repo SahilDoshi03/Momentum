@@ -15,7 +15,7 @@ const userSchema = new Schema<IUser>({
     required: function (this: any): boolean {
       return !this.googleId && !this.githubId;
     },
-    minlength: 6,
+    minlength: 8,
   },
   fullName: {
     type: String,
