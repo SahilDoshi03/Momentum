@@ -379,28 +379,70 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
     }
   };
 
-  const handleCreateTask = async (listId: string, name: string) => {
-    try {
-      const response = await apiClient.createTask({
-        taskGroupId: listId,
-        name,
+  const createTaskMutation = useMutation({
+    mutationFn: (data: { listId: string; name: string }) =>
+      apiClient.createTask({
+        taskGroupId: data.listId,
+        name: data.name,
         description: '',
         hasTime: false,
-      });
+      }),
+    onMutate: async (newData) => {
+      // Snapshot previous state
+      const previousTaskGroups = [...taskGroups];
 
+      // Optimistic update
+      const tempId = `temp-${Date.now()}`;
+      const tempTask: Task = {
+        _id: tempId,
+        name: newData.name,
+        taskGroupId: newData.listId,
+        description: '',
+        complete: false,
+        position: 0, // Will be appended, so position logic might need check, but mostly okay for display
+        createdAt: new Date().toISOString(),
+        labels: [],
+        assigned: [],
+        hasTime: false,
+      };
+
+      setTaskGroups(prev => prev.map(list =>
+        list._id === newData.listId
+          ? { ...list, tasks: [...(list.tasks || []), tempTask] }
+          : list
+      ));
+
+      // Return context
+      return { previousTaskGroups, tempId, listId: newData.listId };
+    },
+    onSuccess: (response, variables, context) => {
       if (response.success && response.data) {
         const newTask = response.data;
-        setTaskGroups(prev => prev.map(list =>
-          list._id === listId
-            ? { ...list, tasks: [...(list.tasks || []), newTask] }
-            : list
-        ));
-        toast.success(`Task "${name}" created successfully!`);
+        // Replace temp task with real task
+        setTaskGroups(prev => prev.map(list => {
+          if (list._id === context?.listId) {
+            return {
+              ...list,
+              tasks: list.tasks.map(t => t._id === context.tempId ? newTask : t)
+            };
+          }
+          return list;
+        }));
+        toast.success(`Task "${newTask.name}" created successfully!`);
       }
-    } catch (error) {
-      console.error('Failed to create task:', error);
+    },
+    onError: (err, variables, context) => {
+      // Rollback
+      if (context?.previousTaskGroups) {
+        setTaskGroups(context.previousTaskGroups);
+      }
+      console.error('Failed to create task:', err);
       toast.error('Failed to create task');
     }
+  });
+
+  const handleCreateTask = async (listId: string, name: string) => {
+    createTaskMutation.mutate({ listId, name });
   };
 
   const handleCreateList = async (name: string) => {
