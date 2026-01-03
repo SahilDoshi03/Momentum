@@ -85,7 +85,7 @@ export const TaskList: React.FC<TaskListProps> = ({
               className="font-semibold text-[var(--text-secondary)] bg-transparent border-b border-[var(--primary)] focus:outline-none w-full"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              onChange={(e) => setTitle(e.target.value)}
+
               onBlur={handleTitleSubmit}
               onPointerDown={(e) => e.stopPropagation()}
               onMouseDown={(e) => e.stopPropagation()}

@@ -22,6 +22,19 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Taskcafe",
   description: "Project management and task tracking",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Taskcafe",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+};
+
+export const viewport = {
+  themeColor: "#121212",
 };
 
 export default function RootLayout({
