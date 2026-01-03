@@ -4,6 +4,7 @@ import { User, AuthToken } from '../models';
 import { config } from '../config';
 import { RegisterRequest, LoginRequest, AuthResponse, JWTPayload, IUser } from '../types';
 import { AppError, asyncHandler } from '../middleware';
+import { validatePassword, PASSWORD_CONFIG } from '../utils/passwordValidation';
 
 // Generate JWT token
 const generateToken = (userId: string): string => {
@@ -41,12 +42,8 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
   }
 
   // Password validation
-  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-  if (!passwordRegex.test(password)) {
-    throw new AppError(
-      'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character',
-      400
-    );
+  if (!validatePassword(password)) {
+    throw new AppError(PASSWORD_CONFIG.errorMessage, 400);
   }
 
   // Create user

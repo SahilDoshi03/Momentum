@@ -21,13 +21,13 @@ export default function RegisterPage() {
   const [shake, setShake] = useState(false);
   const router = useRouter();
 
-  // Password requirements
+  // Password requirements - MUST match backend validation exactly
   const requirements = [
     { label: 'At least 8 characters', valid: formData.password.length >= 8 },
     { label: 'One uppercase letter', valid: /[A-Z]/.test(formData.password) },
     { label: 'One lowercase letter', valid: /[a-z]/.test(formData.password) },
     { label: 'One number', valid: /\d/.test(formData.password) },
-    { label: 'One special character', valid: /[@$!%*?&]/.test(formData.password) },
+    { label: 'One special character', valid: /[@$!%*?&_]/.test(formData.password) },
   ];
 
   useEffect(() => {
@@ -191,6 +191,9 @@ export default function RegisterPage() {
                   </span>
                 </div>
               ))}
+            </div>
+            <div className="mt-2 text-xs text-[var(--text-tertiary)]">
+              Allowed special characters: @ $ ! % * ? & _
             </div>
           </div>
 
