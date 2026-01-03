@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { body, param, query, validationResult } from 'express-validator';
+import { PASSWORD_CONFIG } from '../utils/passwordValidation';
 
 export const handleValidationErrors = (
   req: Request,
@@ -35,8 +36,10 @@ export const validateRegister = [
     .normalizeEmail()
     .withMessage('Please provide a valid email'),
   body('password')
-    .isLength({ min: 6 })
-    .withMessage('Password must be at least 6 characters long'),
+    .isLength({ min: PASSWORD_CONFIG.minLength })
+    .withMessage(PASSWORD_CONFIG.errorMessage)
+    .matches(PASSWORD_CONFIG.regex)
+    .withMessage(PASSWORD_CONFIG.errorMessage),
   handleValidationErrors,
 ];
 
