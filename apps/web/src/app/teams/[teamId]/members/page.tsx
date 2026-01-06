@@ -178,21 +178,25 @@ export default function TeamMembersPage() {
                         </p>
 
                         <div className="space-y-4">
-                            <div className="flex space-x-3">
+                            <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
                                 <Input
                                     placeholder="Enter email address..."
                                     value={inviteEmail}
                                     onChange={(e) => setInviteEmail(e.target.value)}
                                     className="flex-1"
                                 />
-                                <Button onClick={handleGenerateInvite} disabled={generatingInvite}>
+                                <Button
+                                    onClick={handleGenerateInvite}
+                                    disabled={generatingInvite}
+                                    className="w-full sm:w-auto"
+                                >
                                     {generatingInvite ? 'Generating...' : 'Generate Link'}
                                 </Button>
                             </div>
 
                             {inviteLink && (
-                                <div className="flex items-center space-x-2 p-3 bg-[var(--bg-primary)] rounded border border-[var(--border)]">
-                                    <p className="flex-1 text-sm text-[var(--text-secondary)] truncate">{inviteLink}</p>
+                                <div className="grid grid-cols-[1fr_auto] items-center gap-2 p-3 bg-[var(--bg-primary)] rounded border border-[var(--border)]">
+                                    <p className="min-w-0 text-sm text-[var(--text-secondary)] truncate">{inviteLink}</p>
                                     <Button
                                         variant="ghost"
                                         size="sm"
@@ -215,7 +219,7 @@ export default function TeamMembersPage() {
                         </div>
                         <div className="divide-y divide-[var(--border)]">
                             {members.map((member) => (
-                                <div key={member._id} className="flex items-center justify-between p-4">
+                                <div key={member._id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-4 sm:gap-0">
                                     <div className="flex items-center space-x-3">
                                         <ProfileIcon user={member.userId} size="md" />
                                         <div>

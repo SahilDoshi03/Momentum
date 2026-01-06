@@ -31,6 +31,9 @@ export const CardComposer: React.FC<CardComposerProps> = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Stop propagation to prevent dnd-kit from picking up the event (e.g. Space key)
+    e.stopPropagation();
+
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
