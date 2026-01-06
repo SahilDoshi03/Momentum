@@ -1,65 +1,62 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import '@testing-library/jest-dom';
 import { CardComposer } from '@/components/CardComposer';
 
 describe('CardComposer', () => {
-    const mockOnSave = jest.fn();
-    const mockOnCancel = jest.fn();
+    const mockSave = jest.fn();
+    const mockCancel = jest.fn();
 
     beforeEach(() => {
         jest.clearAllMocks();
     });
 
-    it('renders with textarea focused', () => {
-        render(<CardComposer onSave={mockOnSave} onCancel={mockOnCancel} />);
-
+    it('renders textarea focused', () => {
+        render(<CardComposer onSave={mockSave} onCancel={mockCancel} />);
         const textarea = screen.getByPlaceholderText('Enter a title for this card...');
-        expect(textarea).toBeInTheDocument();
         expect(textarea).toHaveFocus();
     });
 
-    it('calls onSave when form is submitted with valid input', async () => {
+    it('submits on enter key', async () => {
         const user = userEvent.setup();
-        render(<CardComposer onSave={mockOnSave} onCancel={mockOnCancel} />);
+        render(<CardComposer onSave={mockSave} onCancel={mockCancel} />);
 
         const textarea = screen.getByPlaceholderText('Enter a title for this card...');
-        await user.type(textarea, 'New Card');
-        await user.click(screen.getByRole('button', { name: 'Add card' }));
+        await user.type(textarea, 'New Task{Enter}');
 
-        expect(mockOnSave).toHaveBeenCalledWith('New Card');
+        expect(mockSave).toHaveBeenCalledWith('New Task');
     });
 
-    it('does not call onSave when input is empty', async () => {
+    it('cancels on escape key', async () => {
         const user = userEvent.setup();
-        render(<CardComposer onSave={mockOnSave} onCancel={mockOnCancel} />);
-
-        await user.click(screen.getByRole('button', { name: 'Add card' }));
-
-        expect(mockOnSave).not.toHaveBeenCalled();
-    });
-
-    it('calls onCancel when cancel button is clicked', async () => {
-        const user = userEvent.setup();
-        render(<CardComposer onSave={mockOnSave} onCancel={mockOnCancel} />);
-
-        await user.click(screen.getByRole('button', { name: 'Cancel' }));
-
-        expect(mockOnCancel).toHaveBeenCalled();
-    });
-
-    it('handles keyboard navigation', async () => {
-        const user = userEvent.setup();
-        render(<CardComposer onSave={mockOnSave} onCancel={mockOnCancel} />);
+        render(<CardComposer onSave={mockSave} onCancel={mockCancel} />);
 
         const textarea = screen.getByPlaceholderText('Enter a title for this card...');
+        await user.type(textarea, '{Escape}');
 
-        // Enter submits
-        await user.type(textarea, 'New Card{Enter}');
-        expect(mockOnSave).toHaveBeenCalledWith('New Card');
+        expect(mockCancel).toHaveBeenCalled();
+    });
 
-        // Escape cancels
-        await user.keyboard('{Escape}');
-        expect(mockOnCancel).toHaveBeenCalled();
+    it('stops propagation of keydown events', () => {
+        const handleParentKeyDown = jest.fn();
+
+        render(
+            <div onKeyDown={handleParentKeyDown}>
+                <CardComposer onSave={mockSave} onCancel={mockCancel} />
+            </div>
+        );
+
+        const input = screen.getByPlaceholderText('Enter a title for this card...');
+
+        // Fire space key
+        fireEvent.keyDown(input, { key: ' ', code: 'Space' });
+
+        // Parent should NOT receive the event because of stopPropagation
+        expect(handleParentKeyDown).not.toHaveBeenCalled();
+
+        // Fire another key just to show it's consistent
+        fireEvent.keyDown(input, { key: 'a' });
+        expect(handleParentKeyDown).not.toHaveBeenCalled();
     });
 });

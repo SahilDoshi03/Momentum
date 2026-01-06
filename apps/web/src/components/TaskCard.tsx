@@ -63,6 +63,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    e.stopPropagation();
     if (e.key === 'Enter') {
       handleSaveEdit();
     } else if (e.key === 'Escape') {
