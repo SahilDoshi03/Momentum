@@ -53,6 +53,45 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
   const [sortBy, setSortBy] = useState<'none' | 'name-asc' | 'name-desc' | 'date-asc' | 'date-desc'>('none');
   const [labelFilter, setLabelFilter] = useState<string[]>([]);
   const [otherFilters, setOtherFilters] = useState<string[]>([]); // 'overdue', 'no-date'
+  const [filtersLoaded, setFiltersLoaded] = useState(false);
+
+  // Load filters from localStorage
+  useEffect(() => {
+    const savedFilters = localStorage.getItem(`momentum_board_filters_${projectId}`);
+    if (savedFilters) {
+      try {
+        const parsed = JSON.parse(savedFilters);
+        if (parsed.filterBy) setFilterBy(parsed.filterBy);
+        if (parsed.sortBy) setSortBy(parsed.sortBy);
+        if (parsed.labelFilter) setLabelFilter(parsed.labelFilter);
+        if (parsed.otherFilters) setOtherFilters(parsed.otherFilters);
+      } catch (e) {
+        console.error('Failed to parse saved filters', e);
+      }
+    }
+    setFiltersLoaded(true);
+  }, [projectId]);
+
+  // Save filters to localStorage
+  useEffect(() => {
+    if (filtersLoaded) {
+      localStorage.setItem(`momentum_board_filters_${projectId}`, JSON.stringify({
+        filterBy,
+        sortBy,
+        labelFilter,
+        otherFilters
+      }));
+    }
+  }, [filterBy, sortBy, labelFilter, otherFilters, projectId, filtersLoaded]);
+
+  const clearFilters = () => {
+    setFilterBy('all');
+    setSortBy('none');
+    setLabelFilter([]);
+    setOtherFilters([]);
+  };
+
+  const hasActiveFilters = filterBy !== 'all' || sortBy !== 'none' || labelFilter.length > 0 || otherFilters.length > 0;
 
   const sensors = useSensors(
     useSensor(MouseSensor, {
@@ -710,6 +749,18 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
 
         {/* Bottom Row: Controls Toolbar */}
         <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide md:pb-0 md:flex-wrap md:overflow-visible">
+          {/* Clear Filters Button */}
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearFilters}
+              className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 whitespace-nowrap flex-shrink-0"
+            >
+              <Filter width={14} height={14} className="mr-2" />
+              Clear Filters
+            </Button>
+          )}
           {/* All Tasks / Filter View */}
           <Dropdown
             trigger={
