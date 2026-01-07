@@ -17,7 +17,40 @@ export const MyTasks: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<TaskStatus>('all');
   const [sortBy, setSortBy] = useState<TaskSort>('none');
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['recently-assigned']));
+  const [filtersLoaded, setFiltersLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Load filters from localStorage
+  useEffect(() => {
+    const savedFilters = localStorage.getItem('momentum_my_tasks_filters');
+    if (savedFilters) {
+      try {
+        const parsed = JSON.parse(savedFilters);
+        if (parsed.statusFilter) setStatusFilter(parsed.statusFilter);
+        if (parsed.sortBy) setSortBy(parsed.sortBy);
+      } catch (e) {
+        console.error('Failed to parse saved filters', e);
+      }
+    }
+    setFiltersLoaded(true);
+  }, []);
+
+  // Save filters to localStorage
+  useEffect(() => {
+    if (filtersLoaded) {
+      localStorage.setItem('momentum_my_tasks_filters', JSON.stringify({
+        statusFilter,
+        sortBy
+      }));
+    }
+  }, [statusFilter, sortBy, filtersLoaded]);
+
+  const clearFilters = () => {
+    setStatusFilter('all');
+    setSortBy('none');
+  };
+
+  const hasActiveFilters = statusFilter !== 'all' || sortBy !== 'none';
 
   // Load tasks on component mount
   useEffect(() => {
@@ -144,6 +177,16 @@ export const MyTasks: React.FC = () => {
 
       {/* Filters */}
       <div className="flex items-center space-x-4 mb-6">
+        {hasActiveFilters && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={clearFilters}
+            className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10"
+          >
+            Clear Filters
+          </Button>
+        )}
         <div className="flex items-center space-x-2">
           <Button
             variant={statusFilter === 'all' ? 'primary' : 'ghost'}
