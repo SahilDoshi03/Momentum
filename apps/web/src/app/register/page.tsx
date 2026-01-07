@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { register, getCurrentUser, validateToken } from '@/lib/auth';
+import { apiClient } from '@/lib/api';
+import { toast } from 'react-toastify';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -20,6 +22,8 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [shake, setShake] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const inviteToken = searchParams.get('invite');
 
   // Password requirements - MUST match backend validation exactly
   const requirements = [
@@ -96,6 +100,17 @@ export default function RegisterPage() {
       });
 
       if (user) {
+        if (inviteToken) {
+          try {
+            const response = await apiClient.acceptTeamInvite(inviteToken);
+            if (response.success) {
+              toast.success('Account created and joined team successfully!');
+            }
+          } catch (inviteError) {
+            console.error('Failed to auto-join team:', inviteError);
+            toast.warning('Account created, but failed to join team automatically. Please try the invite link again.');
+          }
+        }
         router.push('/');
       }
     } catch (err: unknown) {
@@ -165,7 +180,7 @@ export default function RegisterPage() {
                   {showPassword ? (
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
                   ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                   )}
                 </button>
               }
@@ -276,7 +291,7 @@ export default function RegisterPage() {
           <div className="text-center">
             <span className="text-[var(--text-primary)]">Already have an account? </span>
             <Link
-              href="/login"
+              href={inviteToken ? `/login?invite=${inviteToken}` : '/login'}
               className="text-[var(--primary)] hover:underline"
             >
               Sign in

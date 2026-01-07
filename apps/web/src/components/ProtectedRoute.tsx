@@ -28,7 +28,12 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
             const user = getCurrentUser();
 
             if (!user) {
-                router.push('/login');
+                if (pathname.startsWith('/join/')) {
+                    const token = pathname.split('/').pop();
+                    router.push(`/login?invite=${token}`);
+                } else {
+                    router.push('/login');
+                }
                 return;
             }
 
