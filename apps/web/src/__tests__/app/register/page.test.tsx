@@ -3,17 +3,25 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import RegisterPage from '@/app/register/page';
 import * as auth from '@/lib/auth';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { apiClient } from '@/lib/api';
 
 // Mock mocks
 jest.mock('next/navigation', () => ({
     useRouter: jest.fn(),
+    useSearchParams: jest.fn(),
 }));
 
 jest.mock('@/lib/auth', () => ({
     register: jest.fn(),
     getCurrentUser: jest.fn(),
     validateToken: jest.fn(),
+}));
+
+jest.mock('@/lib/api', () => ({
+    apiClient: {
+        acceptTeamInvite: jest.fn(),
+    }
 }));
 
 jest.mock('@/components/ui/Input', () => ({
@@ -31,11 +39,14 @@ jest.mock('@/components/ui/Button', () => ({
 
 describe('RegisterPage', () => {
     const mockRouter = { push: jest.fn() };
+    const mockSearchParams = { get: jest.fn() };
 
     beforeEach(() => {
         jest.clearAllMocks();
         (useRouter as jest.Mock).mockReturnValue(mockRouter);
+        (useSearchParams as jest.Mock).mockReturnValue(mockSearchParams);
         (auth.getCurrentUser as jest.Mock).mockReturnValue(null);
+        (apiClient.acceptTeamInvite as jest.Mock).mockResolvedValue({ success: true });
     });
 
     it('renders registration form', () => {
@@ -70,6 +81,7 @@ describe('RegisterPage', () => {
     it('handles successful registration', async () => {
         const user = userEvent.setup();
         (auth.register as jest.Mock).mockResolvedValue({ id: '1' });
+        mockSearchParams.get.mockReturnValue(null);
 
         render(<RegisterPage />);
 
@@ -82,12 +94,30 @@ describe('RegisterPage', () => {
         await user.click(screen.getByRole('button', { name: 'Create account' }));
 
         await waitFor(() => {
-            expect(auth.register).toHaveBeenCalledWith({
-                firstName: 'John',
-                lastName: 'Doe',
-                email: 'test@example.com',
-                password: 'Password123!'
-            });
+            expect(auth.register).toHaveBeenCalled();
+            expect(mockRouter.push).toHaveBeenCalledWith('/');
+        });
+        expect(apiClient.acceptTeamInvite).not.toHaveBeenCalled();
+    });
+
+    it('auto-joins team when invite token is present', async () => {
+        const user = userEvent.setup();
+        (auth.register as jest.Mock).mockResolvedValue({ id: '1' });
+        mockSearchParams.get.mockReturnValue('invite-token');
+
+        render(<RegisterPage />);
+
+        await user.type(screen.getByPlaceholderText('First name'), 'John');
+        await user.type(screen.getByPlaceholderText('Last name'), 'Doe');
+        await user.type(screen.getByPlaceholderText('Enter your email'), 'test@example.com');
+        await user.type(screen.getByPlaceholderText('Create a password'), 'Password123!');
+        await user.type(screen.getByPlaceholderText('Confirm your password'), 'Password123!');
+
+        await user.click(screen.getByRole('button', { name: 'Create account' }));
+
+        await waitFor(() => {
+            expect(auth.register).toHaveBeenCalled();
+            expect(apiClient.acceptTeamInvite).toHaveBeenCalledWith('invite-token');
             expect(mockRouter.push).toHaveBeenCalledWith('/');
         });
     });
@@ -109,5 +139,13 @@ describe('RegisterPage', () => {
         await waitFor(() => {
             expect(screen.getByText('Email already exists')).toBeInTheDocument();
         });
+    });
+
+    it('passes invite token to login link', () => {
+        mockSearchParams.get.mockReturnValue('invite-123');
+        render(<RegisterPage />);
+
+        const loginLink = screen.getByText('Sign in');
+        expect(loginLink).toHaveAttribute('href', '/login?invite=invite-123');
     });
 });

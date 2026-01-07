@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -15,6 +15,8 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const inviteToken = searchParams.get('invite');
 
   useEffect(() => {
     // Redirect if already logged in
@@ -23,7 +25,7 @@ export default function LoginPage() {
       if (user) {
         const isValid = await validateToken();
         if (isValid) {
-          router.push('/');
+          router.push(inviteToken ? `/join/${inviteToken}` : '/');
         } else {
           // Clear invalid user data
           localStorage.removeItem('currentUser');
@@ -31,7 +33,7 @@ export default function LoginPage() {
       }
     };
     checkAuth();
-  }, [router]);
+  }, [router, inviteToken]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +43,7 @@ export default function LoginPage() {
     try {
       const user = await login(formData.email, formData.password);
       if (user) {
-        router.push('/');
+        router.push(inviteToken ? `/join/${inviteToken}` : '/');
       } else {
         setError('Invalid email or password');
       }
@@ -134,7 +136,7 @@ export default function LoginPage() {
           <div className="text-center">
             <span className="text-[var(--text-primary)]">Don&apos;t have an account? </span>
             <Link
-              href="/register"
+              href={inviteToken ? `/register?invite=${inviteToken}` : '/register'}
               className="text-[var(--primary)] hover:underline"
             >
               Sign up
