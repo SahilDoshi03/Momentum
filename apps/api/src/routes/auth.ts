@@ -21,7 +21,15 @@ router.post('/validate', validateToken);
 router.get('/me', authenticateToken, getMe);
 
 // Google OAuth routes
-router.get('/google', authLimiter, passport.authenticate('google', { scope: ['profile', 'email'] }));
+router.get('/google', authLimiter, (req, res, next) => {
+  const inviteToken = req.query.invite as string;
+  const state = inviteToken ? JSON.stringify({ invite: inviteToken }) : undefined;
+
+  passport.authenticate('google', {
+    scope: ['profile', 'email'],
+    state
+  })(req, res, next);
+});
 
 router.get('/google/callback',
   passport.authenticate('google', { failureRedirect: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=google_auth_failed` }),
@@ -29,7 +37,15 @@ router.get('/google/callback',
 );
 
 // GitHub OAuth routes
-router.get('/github', authLimiter, passport.authenticate('github', { scope: ['user:email'] }));
+router.get('/github', authLimiter, (req, res, next) => {
+  const inviteToken = req.query.invite as string;
+  const state = inviteToken ? JSON.stringify({ invite: inviteToken }) : undefined;
+
+  passport.authenticate('github', {
+    scope: ['user:email'],
+    state
+  })(req, res, next);
+});
 
 router.get('/github/callback',
   passport.authenticate('github', { failureRedirect: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=github_auth_failed` }),

@@ -4,7 +4,6 @@ import userEvent from '@testing-library/user-event';
 import RegisterPage from '@/app/register/page';
 import * as auth from '@/lib/auth';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { apiClient } from '@/lib/api';
 
 // Mock mocks
 jest.mock('next/navigation', () => ({
@@ -16,12 +15,6 @@ jest.mock('@/lib/auth', () => ({
     register: jest.fn(),
     getCurrentUser: jest.fn(),
     validateToken: jest.fn(),
-}));
-
-jest.mock('@/lib/api', () => ({
-    apiClient: {
-        acceptTeamInvite: jest.fn(),
-    }
 }));
 
 jest.mock('@/components/ui/Input', () => ({
@@ -46,7 +39,6 @@ describe('RegisterPage', () => {
         (useRouter as jest.Mock).mockReturnValue(mockRouter);
         (useSearchParams as jest.Mock).mockReturnValue(mockSearchParams);
         (auth.getCurrentUser as jest.Mock).mockReturnValue(null);
-        (apiClient.acceptTeamInvite as jest.Mock).mockResolvedValue({ success: true });
     });
 
     it('renders registration form', () => {
@@ -97,10 +89,9 @@ describe('RegisterPage', () => {
             expect(auth.register).toHaveBeenCalled();
             expect(mockRouter.push).toHaveBeenCalledWith('/');
         });
-        expect(apiClient.acceptTeamInvite).not.toHaveBeenCalled();
     });
 
-    it('auto-joins team when invite token is present', async () => {
+    it('redirects to join page when invite token is present', async () => {
         const user = userEvent.setup();
         (auth.register as jest.Mock).mockResolvedValue({ id: '1' });
         mockSearchParams.get.mockReturnValue('invite-token');
@@ -117,8 +108,7 @@ describe('RegisterPage', () => {
 
         await waitFor(() => {
             expect(auth.register).toHaveBeenCalled();
-            expect(apiClient.acceptTeamInvite).toHaveBeenCalledWith('invite-token');
-            expect(mockRouter.push).toHaveBeenCalledWith('/');
+            expect(mockRouter.push).toHaveBeenCalledWith('/join/invite-token');
         });
     });
 

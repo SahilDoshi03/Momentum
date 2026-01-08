@@ -11,6 +11,7 @@ function AuthCallbackContent() {
     useEffect(() => {
         const handleCallback = async () => {
             const token = searchParams.get('token');
+            const inviteToken = searchParams.get('invite');
 
             if (token) {
                 try {
@@ -22,7 +23,13 @@ function AuthCallbackContent() {
 
                     if (response.success && response.data) {
                         localStorage.setItem('currentUser', JSON.stringify(response.data));
-                        router.push('/');
+
+                        // Redirect to join page if invite token is present
+                        if (inviteToken) {
+                            router.push(`/join/${inviteToken}`);
+                        } else {
+                            router.push('/');
+                        }
                     } else {
                         router.push('/login?error=auth_failed');
                     }

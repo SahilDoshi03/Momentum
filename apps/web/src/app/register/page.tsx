@@ -6,8 +6,6 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { register, getCurrentUser, validateToken } from '@/lib/auth';
-import { apiClient } from '@/lib/api';
-import { toast } from 'react-toastify';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -100,18 +98,12 @@ export default function RegisterPage() {
       });
 
       if (user) {
+        // Redirect to join page if invite token is present
         if (inviteToken) {
-          try {
-            const response = await apiClient.acceptTeamInvite(inviteToken);
-            if (response.success) {
-              toast.success('Account created and joined team successfully!');
-            }
-          } catch (inviteError) {
-            console.error('Failed to auto-join team:', inviteError);
-            toast.warning('Account created, but failed to join team automatically. Please try the invite link again.');
-          }
+          router.push(`/join/${inviteToken}`);
+        } else {
+          router.push('/');
         }
-        router.push('/');
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Registration failed. Please try again.';
@@ -267,7 +259,11 @@ export default function RegisterPage() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => window.location.href = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/auth/google`}
+              onClick={() => {
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+                const inviteParam = inviteToken ? `?invite=${inviteToken}` : '';
+                window.location.href = `${apiUrl}/auth/google${inviteParam}`;
+              }}
               className="w-full"
             >
               <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
@@ -278,7 +274,11 @@ export default function RegisterPage() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => window.location.href = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/auth/github`}
+              onClick={() => {
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+                const inviteParam = inviteToken ? `?invite=${inviteToken}` : '';
+                window.location.href = `${apiUrl}/auth/github${inviteParam}`;
+              }}
               className="w-full"
             >
               <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="github" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512">
