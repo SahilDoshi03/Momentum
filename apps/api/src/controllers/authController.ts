@@ -227,8 +227,21 @@ export const googleCallback = asyncHandler(async (req: Request, res: Response) =
   // Set cookie
   setTokenCookie(res, token);
 
-  // Redirect to frontend
-  res.redirect(`${config.frontendUrl}/auth/callback?token=${token}`);
+  // Extract invite token from state if present
+  let inviteToken: string | undefined;
+  try {
+    const state = req.query.state as string;
+    if (state) {
+      const parsed = JSON.parse(state);
+      inviteToken = parsed.invite;
+    }
+  } catch (error) {
+    // Invalid state, ignore
+  }
+
+  // Redirect to frontend with invite token if present
+  const inviteParam = inviteToken ? `&invite=${inviteToken}` : '';
+  res.redirect(`${config.frontendUrl}/auth/callback?token=${token}${inviteParam}`);
 });
 
 // GitHub OAuth callback
@@ -259,6 +272,19 @@ export const githubCallback = asyncHandler(async (req: Request, res: Response) =
   // Set cookie
   setTokenCookie(res, token);
 
-  // Redirect to frontend
-  res.redirect(`${config.frontendUrl}/auth/callback?token=${token}`);
+  // Extract invite token from state if present
+  let inviteToken: string | undefined;
+  try {
+    const state = req.query.state as string;
+    if (state) {
+      const parsed = JSON.parse(state);
+      inviteToken = parsed.invite;
+    }
+  } catch (error) {
+    // Invalid state, ignore
+  }
+
+  // Redirect to frontend with invite token if present
+  const inviteParam = inviteToken ? `&invite=${inviteToken}` : '';
+  res.redirect(`${config.frontendUrl}/auth/callback?token=${token}${inviteParam}`);
 });

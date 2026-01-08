@@ -112,7 +112,11 @@ export default function LoginPage() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => window.location.href = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/auth/google`}
+              onClick={() => {
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+                const inviteParam = inviteToken ? `?invite=${inviteToken}` : '';
+                window.location.href = `${apiUrl}/auth/google${inviteParam}`;
+              }}
               className="w-full"
             >
               <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
@@ -123,7 +127,11 @@ export default function LoginPage() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => window.location.href = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/auth/github`}
+              onClick={() => {
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+                const inviteParam = inviteToken ? `?invite=${inviteToken}` : '';
+                window.location.href = `${apiUrl}/auth/github${inviteParam}`;
+              }}
               className="w-full"
             >
               <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="github" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512">
