@@ -10,7 +10,7 @@ import {
 import { Card } from '@/components/ui/Card';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { ProfileIcon } from '@/components/ui/ProfileIcon';
-import { CheckCircle } from '@/components/icons';
+import { CheckCircle, Flag } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import dayjs from 'dayjs';
 
@@ -55,6 +55,21 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     toast.success(newStatus ? 'Task marked as completed' : 'Task marked as incomplete');
   };
 
+  const handleTogglePriority = () => {
+    // Cycle: medium -> high -> low -> medium
+    let newPriority: 'low' | 'medium' | 'high' = 'medium';
+    if (task.priority === 'medium' || !task.priority) newPriority = 'high';
+    else if (task.priority === 'high') newPriority = 'low';
+    else newPriority = 'medium';
+
+    onUpdate(task._id, { priority: newPriority });
+
+    let message = 'Task priority set to normal';
+    if (newPriority === 'high') message = 'Task marked as high priority';
+    if (newPriority === 'low') message = 'Task marked as low priority';
+    toast.success(message);
+  };
+
   const handleSaveEdit = () => {
     if (editName.trim() && editName !== task.name) {
       onUpdate(task._id, { name: editName.trim() });
@@ -90,6 +105,8 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         className={cn(
           'p-3 hover:shadow-md transition-all group',
           task.complete && 'opacity-60',
+          task.priority === 'high' && !task.complete && 'border-l-4 border-l-[var(--danger)]',
+          task.priority === 'medium' && !task.complete && 'border-l-4 border-l-[var(--info)]',
           task._id.startsWith('temp-') && 'opacity-70 border-dashed border-2'
         )}
         onClick={onClick}
@@ -181,6 +198,31 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                 <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
                 <path d="M8 6V4c0-1 1-2 2-2h4c0 1 1 2 2 2v2"></path>
               </svg>
+            </button>
+
+            {/* Priority Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleTogglePriority();
+              }}
+              className={cn(
+                'p-1 rounded hover:bg-[var(--bg-primary)] transition-colors',
+                task.priority === 'high' ? 'text-[var(--danger)]' :
+                  task.priority === 'low' ? 'text-[var(--info)]' :
+                    'text-[var(--text-tertiary)] hover:text-[var(--danger)]'
+              )}
+              title={
+                task.priority === 'high' ? 'Set to low priority' :
+                  task.priority === 'low' ? 'Set to normal priority' :
+                    'Set to high priority'
+              }
+            >
+              <Flag
+                width={14}
+                height={14}
+                fill={task.priority === 'high' || task.priority === 'low' ? 'currentColor' : 'none'}
+              />
             </button>
 
             {/* Complete Button */}

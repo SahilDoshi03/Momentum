@@ -120,7 +120,7 @@ export const getMyTasks = asyncHandler(async (req: Request, res: Response) => {
 // Create task
 export const createTask = asyncHandler(async (req: Request, res: Response) => {
   const user = (req as any).user;
-  const { taskGroupId, name, description, dueDate, hasTime } = req.body;
+  const { taskGroupId, name, description, priority, dueDate, hasTime } = req.body;
 
   // Check if user has access to this task group's project
   // Handle both ObjectId and string formats - use ObjectId directly if it's already one
@@ -150,6 +150,7 @@ export const createTask = asyncHandler(async (req: Request, res: Response) => {
     taskGroupId,
     name,
     description,
+    priority: priority || 'medium',
     dueDate: dueDate ? new Date(dueDate) : null,
     hasTime: hasTime || false,
     createdBy: user._id,
@@ -271,7 +272,7 @@ export const updateTask = asyncHandler(async (req: Request, res: Response) => {
   }
 
   // Update allowed fields
-  const allowedFields = ['name', 'description', 'dueDate', 'hasTime', 'complete', 'position', 'taskGroupId'];
+  const allowedFields = ['name', 'description', 'priority', 'dueDate', 'hasTime', 'complete', 'position', 'taskGroupId'];
   allowedFields.forEach(field => {
     if (updates[field] !== undefined) {
       if (field === 'dueDate' && updates[field] !== null) {

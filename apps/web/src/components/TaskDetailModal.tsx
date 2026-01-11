@@ -5,7 +5,7 @@ import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { Button } from '@/components/ui/Button';
 import { Dropdown, DropdownItem, DropdownHeader } from '@/components/ui/Dropdown';
 import { ProfileIcon } from '@/components/ui/ProfileIcon';
-import { CheckCircle, Plus, Trash } from '@/components/icons';
+import { CheckCircle, Plus, Trash, Flag } from '@/components/icons';
 import { Task, Project, apiClient, LabelColor } from '@/lib/api';
 import { toast } from 'react-toastify';
 import dayjs from 'dayjs';
@@ -33,6 +33,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     const [description, setDescription] = useState(task.description || '');
     const [dueDate, setDueDate] = useState(task.dueDate);
     const [complete, setComplete] = useState(task.complete);
+    const [priority, setPriority] = useState<'low' | 'medium' | 'high'>(task.priority || 'medium');
     const [assigned, setAssigned] = useState(task.assigned || []);
     const [labels, setLabels] = useState(task.labels || []);
 
@@ -54,7 +55,9 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
         setName(task.name);
         setDescription(task.description || '');
         setDueDate(task.dueDate);
+        setDueDate(task.dueDate);
         setComplete(task.complete);
+        setPriority(task.priority || 'medium');
         setAssigned(task.assigned || []);
         setLabels(task.labels || []);
     }, [task]);
@@ -102,6 +105,10 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
             }
             if (complete !== task.complete) {
                 updates.complete = complete;
+                hasUpdates = true;
+            }
+            if (priority !== (task.priority || 'medium')) {
+                updates.priority = priority;
                 hasUpdates = true;
             }
 
@@ -370,6 +377,50 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                                 <CheckCircle width={16} height={16} className="mr-2" />
                                 {complete ? 'Completed' : 'Mark Complete'}
                             </Button>
+                        </div>
+
+                        {/* Priority */}
+                        <div className="mb-6">
+                            <h3 className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-3">Priority</h3>
+                            <Dropdown
+                                className="w-full"
+                                trigger={
+                                    <Button
+                                        variant="outline"
+                                        className="w-full justify-start"
+                                    >
+                                        <Flag
+                                            width={16}
+                                            height={16}
+                                            className="mr-2"
+                                            fill={priority === 'high' || priority === 'medium' ? "currentColor" : "none"}
+                                            color={priority === 'high' ? 'var(--danger)' : priority === 'medium' ? 'var(--info)' : 'currentColor'}
+                                        />
+                                        <span className={priority === 'high' ? 'text-[var(--danger)]' : priority === 'medium' ? 'text-[var(--info)]' : ''}>
+                                            {priority === 'high' ? 'High Priority' : priority === 'low' ? 'Low Priority' : 'Normal Priority'}
+                                        </span>
+                                    </Button>
+                                }
+                            >
+                                <DropdownItem onClick={() => setPriority('low')}>
+                                    <div className="flex items-center">
+                                        <Flag width={14} height={14} className="mr-2" />
+                                        Low Priority
+                                    </div>
+                                </DropdownItem>
+                                <DropdownItem onClick={() => setPriority('medium')}>
+                                    <div className="flex items-center text-[var(--info)]">
+                                        <Flag width={14} height={14} className="mr-2" fill="currentColor" />
+                                        Normal Priority
+                                    </div>
+                                </DropdownItem>
+                                <DropdownItem onClick={() => setPriority('high')}>
+                                    <div className="flex items-center text-[var(--danger)]">
+                                        <Flag width={14} height={14} className="mr-2" fill="currentColor" />
+                                        High Priority
+                                    </div>
+                                </DropdownItem>
+                            </Dropdown>
                         </div>
 
                         {/* Assignees */}

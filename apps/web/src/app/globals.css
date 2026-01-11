@@ -12,6 +12,7 @@
   --success: rgb(40, 199, 111);
   --danger: rgb(234, 84, 85);
   --warning: rgb(255, 159, 67);
+  --info: rgb(0, 207, 232);
   --alternate: rgb(65, 69, 97);
 }
 
@@ -27,6 +28,7 @@
   --success: rgb(40, 199, 111);
   --danger: rgb(234, 84, 85);
   --warning: rgb(255, 159, 67);
+  --info: rgb(0, 207, 232);
   --alternate: rgb(65, 69, 97);
 }
 
@@ -41,6 +43,7 @@
   --color-success: var(--success);
   --color-danger: var(--danger);
   --color-warning: var(--warning);
+  --color-info: var(--info);
   --color-alternate: var(--alternate);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -105,6 +108,8 @@ body {
 
 /* Hide scrollbar for IE, Edge and Firefox */
 .scrollbar-hide {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
 }
