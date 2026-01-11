@@ -174,6 +174,15 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
         filteredTasks = filteredTasks.filter(task => !task.dueDate);
       }
 
+      // Priority Filters
+      const priorityFilters = otherFilters.filter(f => f.startsWith('priority-'));
+      if (priorityFilters.length > 0) {
+        filteredTasks = filteredTasks.filter(task => {
+          const priority = task.priority || 'medium';
+          return priorityFilters.includes(`priority-${priority}`);
+        });
+      }
+
       // 4. Sort
       if (sortBy === 'name-asc') {
         filteredTasks.sort((a, b) => a.name.localeCompare(b.name));
@@ -452,6 +461,7 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
         labels: [],
         assigned: [],
         hasTime: false,
+        priority: 'medium',
       };
 
       setTaskGroups(prev => prev.map(list =>
@@ -824,7 +834,7 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
               </Button>
             }
           >
-            <DropdownHeader>Filter By</DropdownHeader>
+            <DropdownHeader>Date</DropdownHeader>
             <DropdownItem
               active={otherFilters.includes('overdue')}
               onClick={() => toggleOtherFilter('overdue')}
@@ -836,6 +846,26 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
               onClick={() => toggleOtherFilter('no-date')}
             >
               No Due Date
+            </DropdownItem>
+
+            <DropdownHeader>Priority</DropdownHeader>
+            <DropdownItem
+              active={otherFilters.includes('priority-high')}
+              onClick={() => toggleOtherFilter('priority-high')}
+            >
+              High Priority
+            </DropdownItem>
+            <DropdownItem
+              active={otherFilters.includes('priority-medium')}
+              onClick={() => toggleOtherFilter('priority-medium')}
+            >
+              Normal Priority
+            </DropdownItem>
+            <DropdownItem
+              active={otherFilters.includes('priority-low')}
+              onClick={() => toggleOtherFilter('priority-low')}
+            >
+              Low Priority
             </DropdownItem>
           </Dropdown>
 

@@ -23,6 +23,11 @@ const taskSchema = new Schema<ITask>({
     required: true,
     default: 0,
   },
+  priority: {
+    type: String,
+    enum: ['low', 'medium', 'high'],
+    default: 'medium'
+  },
   complete: {
     type: Boolean,
     default: false,

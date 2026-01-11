@@ -68,6 +68,7 @@ export interface Task {
   name: string;
   description?: string;
   position: number;
+  priority: 'low' | 'medium' | 'high';
   complete: boolean;
   completedAt?: string;
   dueDate?: string;
