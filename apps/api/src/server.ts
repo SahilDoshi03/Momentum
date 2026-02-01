@@ -1,3 +1,4 @@
+import http from 'http';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -10,13 +11,14 @@ import passport from 'passport';
 import connectDB from './config/database';
 import { config } from './config';
 import { corsMiddleware, generalLimiter, errorHandler, notFound } from './middleware';
+import { socketService } from './services/socket';
+import { initChangeStreams } from './services/changeStreams';
 
 // Import routes
 import authRoutes from './routes/auth';
 import userRoutes from './routes/users';
 import projectRoutes from './routes/projects';
 import taskRoutes from './routes/tasks';
-import labelColorRoutes from './routes/labelColors';
 import teamRoutes from './routes/teams';
 import inviteRoutes from './routes/invites';
 import chatbotRoutes from './routes/chatbot';
@@ -112,7 +114,6 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/tasks', taskRoutes);
-app.use('/api/label-colors', labelColorRoutes);
 app.use('/api/teams', teamRoutes);
 app.use('/api/invites', inviteRoutes);
 app.use('/api/chatbot', chatbotRoutes);
@@ -124,9 +125,16 @@ app.use(notFound);
 app.use(errorHandler);
 
 const PORT = config.port;
+const server = http.createServer(app);
+
+// Initialize Socket.io
+socketService.init(server);
+
+// Initialize MongoDB Change Streams
+initChangeStreams();
 
 if (config.nodeEnv !== 'test') {
-  app.listen(PORT, () => {
+  server.listen(PORT, () => {
     console.log(`Server running in ${config.nodeEnv} mode on port ${PORT}`);
     console.log(`Health check: http://localhost:${PORT}/health`);
     console.log(`API docs: http://localhost:${PORT}/api`);

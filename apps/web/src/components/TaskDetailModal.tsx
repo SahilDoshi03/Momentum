@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { Button } from '@/components/ui/Button';
 import { Dropdown, DropdownItem, DropdownHeader } from '@/components/ui/Dropdown';
 import { ProfileIcon } from '@/components/ui/ProfileIcon';
 import { CheckCircle, Plus, Trash, Flag } from '@/components/icons';
-import { Task, Project, apiClient, LabelColor } from '@/lib/api';
+import { Task, Project, apiClient } from '@/lib/api';
+import { LABEL_COLORS } from '@momentum/common';
 import { toast } from 'react-toastify';
 import dayjs from 'dayjs';
 
@@ -40,8 +40,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     // Label creation state
     const [isCreatingLabel, setIsCreatingLabel] = useState(false);
     const [newLabelName, setNewLabelName] = useState('');
-    const [selectedColorId, setSelectedColorId] = useState<string>('');
-    const [labelColors, setLabelColors] = useState<LabelColor[]>([]);
+    const [selectedColorId, setSelectedColorId] = useState<string>(LABEL_COLORS[0].id);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isSubmittingLabel, setIsSubmittingLabel] = useState(false);
@@ -62,25 +61,6 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
         setLabels(task.labels || []);
     }, [task]);
 
-    // Fetch label colors on mount
-    // Fetch label colors
-    const { data: fetchedLabelColors } = useQuery({
-        queryKey: ['label-colors'],
-        queryFn: async () => {
-            const response = await apiClient.getLabelColors();
-            return response.data || [];
-        },
-        enabled: isOpen && isCreatingLabel
-    });
-
-    useEffect(() => {
-        if (fetchedLabelColors) {
-            setLabelColors(fetchedLabelColors);
-            if (fetchedLabelColors.length > 0 && !selectedColorId) {
-                setSelectedColorId(fetchedLabelColors[0]._id);
-            }
-        }
-    }, [fetchedLabelColors, selectedColorId]);
 
     const handleSave = async () => {
         setIsSaving(true);
@@ -574,12 +554,12 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                                     <div className="mb-4">
                                         <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Color</label>
                                         <div className="flex flex-wrap gap-2">
-                                            {labelColors.map(color => (
+                                            {LABEL_COLORS.map(color => (
                                                 <button
-                                                    key={color._id}
-                                                    className={`w-6 h-6 rounded-full border-2 ${selectedColorId === color._id ? 'border-[var(--text-primary)]' : 'border-transparent'}`}
+                                                    key={color.id}
+                                                    className={`w-6 h-6 rounded-full border-2 ${selectedColorId === color.id ? 'border-[var(--text-primary)]' : 'border-transparent'}`}
                                                     style={{ backgroundColor: color.colorHex }}
-                                                    onClick={() => setSelectedColorId(color._id)}
+                                                    onClick={() => setSelectedColorId(color.id)}
                                                     title={color.name}
                                                 />
                                             ))}

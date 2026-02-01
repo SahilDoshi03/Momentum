@@ -48,7 +48,7 @@ export interface Project {
     _id: string;
     name: string;
     labelColorId: {
-      _id: string;
+      id: string;
       name: string;
       colorHex: string;
     };
@@ -87,7 +87,7 @@ export interface Task {
       _id: string;
       name: string;
       labelColorId: {
-        _id: string;
+        id: string;
         name: string;
         colorHex: string;
       };
@@ -97,7 +97,7 @@ export interface Task {
 }
 
 export interface LabelColor {
-  _id: string;
+  id: string;
   name: string;
   colorHex: string;
   position: number;
@@ -415,11 +415,31 @@ class ApiClient {
   }
 
   // Task endpoints
-  async getMyTasks(status: string = 'ALL', sort: string = 'NONE'): Promise<ApiResponse<{
+  async getMyTasks(
+    status: string = 'ALL',
+    sort: string = 'NONE',
+    search: string = '',
+    projectIds: string[] = [],
+    labelIds: string[] = []
+  ): Promise<ApiResponse<{
     tasks: Task[];
     projects: Array<{ projectID: string; taskID: string }>;
   }>> {
-    return this.request(`/tasks/my-tasks?status=${status}&sort=${sort}`);
+    const params = new URLSearchParams({
+      status,
+      sort,
+      search
+    });
+
+    if (projectIds.length > 0) {
+      params.append('projectIds', projectIds.join(','));
+    }
+
+    if (labelIds.length > 0) {
+      params.append('labelIds', labelIds.join(','));
+    }
+
+    return this.request(`/tasks/my-tasks?${params.toString()}`);
   }
 
   async createTask(taskData: {
@@ -516,10 +536,6 @@ class ApiClient {
     });
   }
 
-  // Label color endpoints
-  async getLabelColors(): Promise<ApiResponse<LabelColor[]>> {
-    return this.request('/label-colors');
-  }
 }
 
 // Create and export a singleton instance

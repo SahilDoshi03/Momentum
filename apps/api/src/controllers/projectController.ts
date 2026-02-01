@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { Project, ProjectMember, TaskGroup, ProjectLabel } from '../models';
 import { AppError, asyncHandler } from '../middleware';
+import { LABEL_COLORS, getLabelColorById } from '@momentum/common';
 
 // Get all projects for user
 export const getProjects = asyncHandler(async (req: Request, res: Response) => {
@@ -70,8 +71,7 @@ export const getProjectById = asyncHandler(async (req: Request, res: Response) =
         {
           path: 'labels',
           populate: {
-            path: 'projectLabelId',
-            populate: { path: 'labelColorId', select: 'name colorHex position' }
+            path: 'projectLabelId'
           }
         },
         { path: 'createdBy', select: 'fullName initials profileIcon' },
@@ -91,6 +91,22 @@ export const getProjectById = asyncHandler(async (req: Request, res: Response) =
           userId: assignment.userId || null
         })).filter((a: any) => a.userId);
       }
+      // Transform labels
+      if (task.labels && Array.isArray(task.labels)) {
+        task.labels = task.labels.map((tl: any) => {
+          if (tl.projectLabelId) {
+            const labelObj = tl.projectLabelId.toObject ? tl.projectLabelId.toObject() : tl.projectLabelId;
+            return {
+              ...tl.toObject ? tl.toObject() : tl,
+              projectLabelId: {
+                ...labelObj,
+                labelColorId: getLabelColorById(labelObj.labelColorId) || { id: labelObj.labelColorId, name: 'Unknown', colorHex: '#cccccc' }
+              }
+            };
+          }
+          return tl;
+        });
+      }
       return task;
     });
     return groupObj;
@@ -101,8 +117,14 @@ export const getProjectById = asyncHandler(async (req: Request, res: Response) =
     .populate('userId', 'fullName email initials profileIcon');
 
   // Fetch project labels
-  const labels = await ProjectLabel.find({ projectId: id })
-    .populate('labelColorId', 'name colorHex position');
+  const dbLabels = await ProjectLabel.find({ projectId: id });
+  const labels = dbLabels.map(label => {
+    const labelObj = label.toObject();
+    return {
+      ...labelObj,
+      labelColorId: getLabelColorById(label.labelColorId) || { id: label.labelColorId, name: 'Unknown', colorHex: '#cccccc' }
+    };
+  });
 
   res.json({
     success: true,
@@ -325,8 +347,14 @@ export const getProjectLabels = asyncHandler(async (req: Request, res: Response)
     throw new AppError('Not authorized to view this project', 403);
   }
 
-  const labels = await ProjectLabel.find({ projectId: id })
-    .populate('labelColorId', 'name colorHex');
+  const dbLabels = await ProjectLabel.find({ projectId: id });
+  const labels = dbLabels.map(label => {
+    const labelObj = label.toObject();
+    return {
+      ...labelObj,
+      labelColorId: getLabelColorById(label.labelColorId) || { _id: label.labelColorId, name: 'Unknown', colorHex: '#cccccc' }
+    };
+  });
 
   res.json({
     success: true,
@@ -358,8 +386,11 @@ export const createProjectLabel = asyncHandler(async (req: Request, res: Respons
 
   await label.save();
 
-  const populatedLabel = await ProjectLabel.findById(label._id)
-    .populate('labelColorId', 'name colorHex');
+  const labelObj = label.toObject();
+  const populatedLabel = {
+    ...labelObj,
+    labelColorId: getLabelColorById(label.labelColorId) || { id: label.labelColorId, name: 'Unknown', colorHex: '#cccccc' }
+  };
 
   res.status(201).json({
     success: true,
@@ -388,16 +419,22 @@ export const updateProjectLabel = asyncHandler(async (req: Request, res: Respons
     { _id: labelId, projectId: id },
     { name, labelColorId },
     { new: true }
-  ).populate('labelColorId', 'name colorHex');
+  );
 
   if (!label) {
     throw new AppError('Label not found', 404);
   }
 
+  const labelObj = label.toObject();
+  const populatedLabel = {
+    ...labelObj,
+    labelColorId: getLabelColorById(label.labelColorId) || { id: label.labelColorId, name: 'Unknown', colorHex: '#cccccc' }
+  };
+
   res.json({
     success: true,
     message: 'Label updated successfully',
-    data: label,
+    data: populatedLabel,
   });
 });
 

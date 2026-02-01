@@ -120,8 +120,8 @@ export interface IProjectLabel extends Omit<Document, '_id'> {
   createdDate: Date;
 }
 
-export interface ILabelColor extends Omit<Document, '_id'> {
-  _id: string;
+export interface ILabelColor {
+  id: string;
   name: string;
   colorHex: string;
   position: number;

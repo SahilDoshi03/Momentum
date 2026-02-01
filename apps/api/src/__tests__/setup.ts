@@ -26,9 +26,10 @@ beforeAll(async () => {
         const dbName = `test-${uuidv4()}`;
         // Ensure URI ends with / before appending db name, or replace existing db name
         // MongoMemoryServer URI usually ends with /
-        const uri = mongoConfig.uri.endsWith('/')
-            ? `${mongoConfig.uri}${dbName}`
-            : `${mongoConfig.uri}/${dbName}`;
+        // Insert dbName before query parameters if they exist
+        const [baseUrl, queryString] = mongoConfig.uri.split('?');
+        const separator = baseUrl.endsWith('/') ? '' : '/';
+        const uri = `${baseUrl}${separator}${dbName}${queryString ? `?${queryString}` : ''}`;
 
         await mongoose.connect(uri);
     }

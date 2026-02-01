@@ -1,15 +1,20 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { TopNavbar } from '@/components/TopNavbar';
 import { ProjectBoard } from '@/components/ProjectBoard';
 import { apiClient } from '@/lib/api';
+import { ProjectBoardSkeleton } from '@/components/ProjectBoardSkeleton';
+import { useSocket } from '@/providers/SocketProvider';
 
 export default function ProjectPage() {
   const params = useParams();
   const projectId = params.projectId as string;
+  const queryClient = useQueryClient();
+  const { socket, isConnected } = useSocket();
+
   const { data: project, isLoading, isError } = useQuery({
     queryKey: ['project', projectId],
     queryFn: async () => {
@@ -23,13 +28,39 @@ export default function ProjectPage() {
     retry: false
   });
 
+  // Socket logic for real-time updates
+  useEffect(() => {
+    if (!socket || !isConnected || !projectId) return;
+
+    // Join the project room
+    socket.emit('join_project', projectId);
+
+    // Listen for updates
+    const handleUpdate = (data: any) => {
+      console.log('Real-time update received:', data);
+
+      // Invalidate the project query to trigger a re-fetch
+      queryClient.invalidateQueries({ queryKey: ['project', projectId] });
+
+      // Also invalidate 'my-tasks' just in case the user is looking at them
+      queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
+    };
+
+    socket.on('task_updated', handleUpdate);
+    socket.on('project_updated', handleUpdate);
+
+    return () => {
+      socket.emit('leave_project', projectId);
+      socket.off('task_updated', handleUpdate);
+      socket.off('project_updated', handleUpdate);
+    };
+  }, [socket, isConnected, projectId, queryClient]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[var(--bg-primary)]">
         <TopNavbar />
-        <div className="flex items-center justify-center h-[calc(100vh-3rem)]">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--primary)]"></div>
-        </div>
+        <ProjectBoardSkeleton />
       </div>
     );
   }

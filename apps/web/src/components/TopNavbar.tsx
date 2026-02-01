@@ -76,6 +76,16 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
             <span className="font-semibold text-[var(--text-secondary)] hidden sm:inline">Momentum</span>
           </Link>
 
+          {/* Persistent Navigation */}
+          <nav className="flex items-center ml-2 sm:ml-4 space-x-1">
+            <Link
+              href="/tasks"
+              className="px-3 py-1 text-sm font-medium text-[var(--text-primary)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] rounded transition-colors"
+            >
+              My Tasks
+            </Link>
+          </nav>
+
           {/* Desktop Breadcrumbs */}
           {displayBreadcrumbs.length > 0 && (
             <div className="flex items-center space-x-2">

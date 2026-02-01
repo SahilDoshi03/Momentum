@@ -7,9 +7,57 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { Input } from '@/components/ui/Input';
-import { Plus, Trash } from '@/components/icons';
+import { Plus, Trash, CheckCircle } from '@/components/icons';
 import { apiClient, Project, Team } from '@/lib/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Skeleton } from '@/components/ui/Skeleton';
+
+const ProjectsListSkeleton = () => {
+  return (
+    <div className="max-w-6xl mx-auto px-4 py-8">
+      {/* Header Skeleton */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <Skeleton width={150} height={32} className="mb-2" />
+          <Skeleton width={250} height={20} />
+        </div>
+        <div className="flex items-center space-x-2">
+          <Skeleton width={100} height={40} />
+          <Skeleton width={120} height={40} />
+        </div>
+      </div>
+
+      {/* Personal Projects Skeleton */}
+      <div className="mb-12">
+        <Skeleton width={150} height={28} className="mb-4" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} height={96} className="rounded-lg" />
+          ))}
+        </div>
+      </div>
+
+      {/* Team Section Skeleton */}
+      {[1, 2].map((i) => (
+        <div key={i} className="mb-12">
+          <div className="flex items-start justify-between mb-4">
+            <Skeleton width={120} height={28} />
+            <div className="flex gap-2">
+              <Skeleton width={80} height={32} />
+              <Skeleton width={80} height={32} />
+              <Skeleton width={80} height={32} />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {[1, 2, 3].map((j) => (
+              <Skeleton key={j} height={96} className="rounded-lg" />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 export const ProjectsList: React.FC = () => {
   const [showNewProject, setShowNewProject] = useState(false);
@@ -23,7 +71,7 @@ export const ProjectsList: React.FC = () => {
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
 
   // Fetch projects
-  const { data: projects = [] } = useQuery({
+  const { data: projects = [], isPending: isProjectsPending } = useQuery({
     queryKey: ['projects'],
     queryFn: async () => {
       const response = await apiClient.getProjects();
@@ -32,13 +80,15 @@ export const ProjectsList: React.FC = () => {
   });
 
   // Fetch teams
-  const { data: teams = [] } = useQuery({
+  const { data: teams = [], isPending: isTeamsPending } = useQuery({
     queryKey: ['teams'],
     queryFn: async () => {
       const response = await apiClient.getTeams();
       return response.data || [];
     }
   });
+
+  const isPending = isProjectsPending || isTeamsPending;
 
   // Derived state
   const personalProjects = projects.filter((p: Project) => !p.teamId);
@@ -154,6 +204,10 @@ export const ProjectsList: React.FC = () => {
 
   const projectColors = ['#e362e3', '#7a6ff0', '#37c5ab', '#aa62e3', '#e8384f'];
 
+  if (isPending) {
+    return <ProjectsListSkeleton />;
+  }
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
       {/* Header */}
@@ -162,13 +216,21 @@ export const ProjectsList: React.FC = () => {
           <h1 className="text-2xl font-bold text-[var(--text-secondary)]">Projects</h1>
           <p className="text-[var(--text-primary)]">Manage your projects and teams</p>
         </div>
-        <Button
-          onClick={() => setShowNewTeam(true)}
-          variant="outline"
-        >
-          <Plus width={16} height={16} className="mr-2" />
-          Add Team
-        </Button>
+        <div className="flex items-center space-x-2">
+          <Link href="/tasks">
+            <Button variant="primary" className="flex items-center">
+              <CheckCircle width={16} height={16} className="mr-2" />
+              My Tasks
+            </Button>
+          </Link>
+          <Button
+            onClick={() => setShowNewTeam(true)}
+            variant="outline"
+          >
+            <Plus width={16} height={16} className="mr-2" />
+            Add Team
+          </Button>
+        </div>
       </div>
 
       {/* Personal Projects */}

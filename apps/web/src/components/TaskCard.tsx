@@ -152,33 +152,35 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           </div>
         )}
 
-        {/* Due Date */}
-        {task.dueDate && (
-          <div className={cn(
-            'text-xs mt-2 px-2 py-1 rounded inline-block',
-            isOverdue ? 'bg-[var(--danger)] text-white' :
-              isDueSoon ? 'bg-[var(--warning)] text-white' :
-                'bg-[var(--bg-primary)] text-[var(--text-primary)]'
-          )}>
-            {dayjs(task.dueDate).format(task.hasTime ? 'MMM D [at] h:mm A' : 'MMM D')}
-          </div>
-        )}
-
         {/* Footer */}
         <div className="flex items-center justify-between mt-3">
-          {/* Assigned Users */}
-          <div className="flex -space-x-1">
-            {task.assigned && task.assigned.slice(0, 3).map((assignment) => (
-              <ProfileIcon
-                key={assignment._id}
-                user={assignment.userId}
-                size="sm"
-                className="border-2 border-[var(--bg-primary)]"
-              />
-            ))}
-            {task.assigned && task.assigned.length > 3 && (
-              <div className="h-6 w-6 rounded-full bg-[var(--bg-primary)] border-2 border-[var(--bg-primary)] flex items-center justify-center text-xs text-[var(--text-primary)]">
-                +{task.assigned.length - 3}
+          <div className="flex items-center gap-2">
+            {/* Assigned Users */}
+            <div className="flex -space-x-1">
+              {task.assigned && task.assigned.slice(0, 3).map((assignment) => (
+                <ProfileIcon
+                  key={assignment._id}
+                  user={assignment.userId}
+                  size="sm"
+                  className="border-2 border-[var(--bg-primary)]"
+                />
+              ))}
+              {task.assigned && task.assigned.length > 3 && (
+                <div className="h-6 w-6 rounded-full bg-[var(--bg-primary)] border-2 border-[var(--bg-primary)] flex items-center justify-center text-xs text-[var(--text-primary)]">
+                  +{task.assigned.length - 3}
+                </div>
+              )}
+            </div>
+
+            {/* Due Date */}
+            {task.dueDate && (
+              <div className={cn(
+                'text-[10px] px-1.5 py-0.5 rounded font-medium',
+                isOverdue ? 'bg-[var(--danger)] text-white' :
+                  isDueSoon ? 'bg-[var(--warning)] text-white' :
+                    'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border)]'
+              )}>
+                {dayjs(task.dueDate).format('MMM D')}
               </div>
             )}
           </div>
