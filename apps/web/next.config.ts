@@ -13,6 +13,11 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'avatars.githubusercontent.com',
       },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '5000',
+      },
     ],
   },
   outputFileTracingRoot: path.join(__dirname, '../../'),

@@ -15,6 +15,7 @@ export const initChangeStreams = () => {
             if (task) {
                 const taskGroup = await TaskGroup.findById(task.taskGroupId);
                 if (taskGroup) {
+                    // Emit to Project Room
                     console.log(`Emitting task_updated to project: ${taskGroup.projectId}`);
                     socketService.emitToProject(taskGroup.projectId.toString(), 'task_updated', {
                         taskId: task._id,
@@ -22,6 +23,21 @@ export const initChangeStreams = () => {
                         listId: task.taskGroupId,
                         operation: change.operationType,
                         data: task
+                    });
+                }
+
+                // Emit to Assigned Users (for My Tasks)
+                if (task.assigned && task.assigned.length > 0) {
+                    task.assigned.forEach((assignment: any) => {
+                        const userId = assignment.userId._id || assignment.userId; // Handle populated vs unpopulated
+                        if (userId) {
+                            console.log(`Emitting task_updated to user: ${userId}`);
+                            socketService.emitToUser(userId.toString(), 'task_updated', {
+                                taskId: task._id,
+                                operation: change.operationType,
+                                data: task
+                            });
+                        }
                     });
                 }
             }

@@ -67,15 +67,27 @@ export const getProjectById = asyncHandler(async (req: Request, res: Response) =
     .populate({
       path: 'tasks',
       populate: [
-        { path: 'assigned.userId', select: 'fullName initials profileIcon' },
+        {
+          path: 'assigned.userId',
+          select: 'fullName initials profileIcon active',
+          match: { active: true }
+        },
         {
           path: 'labels',
           populate: {
             path: 'projectLabelId'
           }
         },
-        { path: 'createdBy', select: 'fullName initials profileIcon' },
-        { path: 'updatedBy', select: 'fullName initials profileIcon' }
+        {
+          path: 'createdBy',
+          select: 'fullName initials profileIcon active',
+          match: { active: true }
+        },
+        {
+          path: 'updatedBy',
+          select: 'fullName initials profileIcon active',
+          match: { active: true }
+        }
       ]
     });
 
@@ -114,7 +126,14 @@ export const getProjectById = asyncHandler(async (req: Request, res: Response) =
 
   // Fetch project members
   const members = await ProjectMember.find({ projectId: id })
-    .populate('userId', 'fullName email initials profileIcon');
+    .populate({
+      path: 'userId',
+      select: 'fullName email initials profileIcon active',
+      match: { active: true }
+    });
+
+  // Filter out members where userId is null (inactive)
+  const activeMembers = members.filter(m => m.userId);
 
   // Fetch project labels
   const dbLabels = await ProjectLabel.find({ projectId: id });
@@ -130,7 +149,7 @@ export const getProjectById = asyncHandler(async (req: Request, res: Response) =
     success: true,
     data: {
       ...project.toObject(),
-      members,
+      members: activeMembers,
       taskGroups: taskGroupsWithTasks,
       labels
     },

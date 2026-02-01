@@ -23,6 +23,7 @@ export interface User {
   active: boolean;
   createdAt: string;
   updatedAt: string;
+  hasPassword?: boolean;
 }
 
 export interface Project {
@@ -216,6 +217,13 @@ class ApiClient {
     });
   }
 
+  async changePassword(currentPassword: string, newPassword: string): Promise<ApiResponse> {
+    return this.request('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+  }
+
   async logout(): Promise<ApiResponse> {
     return this.request('/auth/logout', {
       method: 'POST',
@@ -246,6 +254,31 @@ class ApiClient {
       method: 'PUT',
       body: JSON.stringify(updates),
     });
+  }
+
+  async uploadAvatar(id: string, file: File): Promise<ApiResponse<User>> {
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+
+    // Use fetch directly to avoid setting Content-Type to application/json
+    const url = `${this.baseUrl}/users/${id}/avatar`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to upload avatar');
+    }
+
+    return data;
   }
 
   async deleteUser(id: string): Promise<ApiResponse> {

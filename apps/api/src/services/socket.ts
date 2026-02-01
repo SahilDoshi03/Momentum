@@ -30,6 +30,18 @@ class SocketService {
                 console.log(`Socket ${socket.id} left project room: project:${projectId}`);
             });
 
+            // Join a user room (for My Tasks etc)
+            socket.on('join_user', (userId: string) => {
+                socket.join(`user:${userId}`);
+                console.log(`Socket ${socket.id} joined user room: user:${userId}`);
+            });
+
+            // Leave a user room
+            socket.on('leave_user', (userId: string) => {
+                socket.leave(`user:${userId}`);
+                console.log(`Socket ${socket.id} left user room: user:${userId}`);
+            });
+
             socket.on('disconnect', () => {
                 console.log(`Socket disconnected: ${socket.id}`);
             });

@@ -26,8 +26,9 @@ import { Dropdown, DropdownItem, DropdownHeader } from '@/components/ui/Dropdown
 import { TaskDetailModal } from './TaskDetailModal';
 import { ProjectSettingsModal } from './ProjectSettingsModal';
 import { useRouter } from 'next/navigation';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ProjectBoardSkeleton } from './ProjectBoardSkeleton';
+import { useSocket } from '@/providers/SocketProvider';
 
 interface ProjectBoardProps {
   projectId: string;
@@ -155,6 +156,55 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
       setIsLoading(true);
     }
   }, [isProjectLoading]);
+
+  // Socket Integration
+  const { socket } = useSocket();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!socket || !projectId) return;
+
+    // Join project room
+    socket.emit('join_project', projectId);
+
+    const handleTaskUpdate = (data: any) => {
+      console.log('Socket task_updated received in Board:', data);
+
+      // 1. Update active selected task if valid
+      setSelectedTask(prev => {
+        if (prev && prev._id === data.taskId) {
+          if (data.operation === 'delete') {
+            return null; // Will close modal via boolean check check in render
+          }
+          // For updates, merge data. For simplicity we might want to fetch full task or trust partial data
+          // Backend usually sends the updated document in data.data
+          if (data.data) {
+            return { ...prev, ...data.data };
+          }
+        }
+        return prev;
+      });
+
+      // 2. Invalidate query to refresh board data cleanly
+      // We could do optimistic updates on taskGroups here too for perf, 
+      // but invalidation handles consistency better for complex board states
+      queryClient.invalidateQueries({ queryKey: ['project', projectId] });
+    };
+
+    const handleProjectUpdate = (data: any) => {
+      console.log('Socket project_updated received:', data);
+      queryClient.invalidateQueries({ queryKey: ['project', projectId] });
+    };
+
+    socket.on('task_updated', handleTaskUpdate);
+    socket.on('project_updated', handleProjectUpdate);
+
+    return () => {
+      socket.emit('leave_project', projectId);
+      socket.off('task_updated', handleTaskUpdate);
+      socket.off('project_updated', handleProjectUpdate);
+    };
+  }, [socket, projectId, queryClient]);
 
   // Derived state for filtered and sorted tasks
   const getFilteredTaskGroups = () => {

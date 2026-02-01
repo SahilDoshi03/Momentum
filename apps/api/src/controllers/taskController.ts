@@ -45,14 +45,33 @@ export const getMyTasks = asyncHandler(async (req: Request, res: Response) => {
     })
     .populate({
       path: 'assigned',
-      populate: { path: 'userId', select: 'fullName initials profileIcon' }
+      populate: {
+        path: 'userId',
+        select: 'fullName initials profileIcon active',
+        match: { active: true }
+      }
     })
     .populate({
       path: 'labels',
       populate: { path: 'projectLabelId', populate: { path: 'labelColorId' } }
     })
-    .populate('createdBy', 'fullName initials profileIcon')
-    .populate('updatedBy', 'fullName initials profileIcon') as unknown as ITask[];
+    .populate({
+      path: 'createdBy',
+      select: 'fullName initials profileIcon active',
+      match: { active: true }
+    })
+    .populate({
+      path: 'updatedBy',
+      select: 'fullName initials profileIcon active',
+      match: { active: true }
+    }) as unknown as ITask[];
+
+  // Filter out assignments where user is null (inactive)
+  tasks.forEach(task => {
+    if (task.assigned) {
+      task.assigned = task.assigned.filter(a => a.userId);
+    }
+  });
 
   // Apply status filter (in-memory for complex logic, but could be MongoDB query)
   if (status !== 'ALL') {
@@ -205,14 +224,30 @@ export const createTask = asyncHandler(async (req: Request, res: Response) => {
     .populate('taskGroupId', 'name projectId')
     .populate({
       path: 'assigned',
-      populate: { path: 'userId', select: 'fullName initials profileIcon' }
+      populate: {
+        path: 'userId',
+        select: 'fullName initials profileIcon active',
+        match: { active: true }
+      }
     })
     .populate({
       path: 'labels',
       populate: { path: 'projectLabelId', populate: { path: 'labelColorId' } }
     })
-    .populate('createdBy', 'fullName initials profileIcon')
-    .populate('updatedBy', 'fullName initials profileIcon');
+    .populate({
+      path: 'createdBy',
+      select: 'fullName initials profileIcon active',
+      match: { active: true }
+    })
+    .populate({
+      path: 'updatedBy',
+      select: 'fullName initials profileIcon active',
+      match: { active: true }
+    });
+
+  if (populatedTask && populatedTask.assigned) {
+    populatedTask.assigned = populatedTask.assigned.filter((a: any) => a.userId);
+  }
 
   res.status(201).json({
     success: true,
@@ -235,14 +270,30 @@ export const getTaskById = asyncHandler(async (req: Request, res: Response) => {
     .populate('taskGroupId', 'name projectId')
     .populate({
       path: 'assigned',
-      populate: { path: 'userId', select: 'fullName initials profileIcon' }
+      populate: {
+        path: 'userId',
+        select: 'fullName initials profileIcon active',
+        match: { active: true }
+      }
     })
     .populate({
       path: 'labels',
       populate: { path: 'projectLabelId', populate: { path: 'labelColorId' } }
     })
-    .populate('createdBy', 'fullName initials profileIcon')
-    .populate('updatedBy', 'fullName initials profileIcon');
+    .populate({
+      path: 'createdBy',
+      select: 'fullName initials profileIcon active',
+      match: { active: true }
+    })
+    .populate({
+      path: 'updatedBy',
+      select: 'fullName initials profileIcon active',
+      match: { active: true }
+    });
+
+  if (task && task.assigned) {
+    task.assigned = task.assigned.filter((a: any) => a.userId);
+  }
 
   if (!task) {
     throw new AppError('Task not found', 404);
@@ -325,14 +376,30 @@ export const updateTask = asyncHandler(async (req: Request, res: Response) => {
     .populate('taskGroupId', 'name projectId')
     .populate({
       path: 'assigned',
-      populate: { path: 'userId', select: 'fullName initials profileIcon' }
+      populate: {
+        path: 'userId',
+        select: 'fullName initials profileIcon active',
+        match: { active: true }
+      }
     })
     .populate({
       path: 'labels',
       populate: { path: 'projectLabelId', populate: { path: 'labelColorId' } }
     })
-    .populate('createdBy', 'fullName initials profileIcon')
-    .populate('updatedBy', 'fullName initials profileIcon');
+    .populate({
+      path: 'createdBy',
+      select: 'fullName initials profileIcon active',
+      match: { active: true }
+    })
+    .populate({
+      path: 'updatedBy',
+      select: 'fullName initials profileIcon active',
+      match: { active: true }
+    });
+
+  if (populatedTask && populatedTask.assigned) {
+    populatedTask.assigned = populatedTask.assigned.filter((a: any) => a.userId);
+  }
 
   res.json({
     success: true,
@@ -385,6 +452,20 @@ export const deleteTask = asyncHandler(async (req: Request, res: Response) => {
     listId: taskGroup._id,
     operation: 'delete'
   });
+
+  // Emit to assigned users (for My Tasks)
+  if (task.assigned && task.assigned.length > 0) {
+    task.assigned.forEach((assignment: any) => {
+      const userId = assignment.userId._id || assignment.userId;
+      if (userId) {
+        console.log(`Emitting task_updated (delete) to user: ${userId}`);
+        socketService.emitToUser(userId.toString(), 'task_updated', {
+          taskId: id,
+          operation: 'delete'
+        });
+      }
+    });
+  }
 
   res.json({
     success: true,

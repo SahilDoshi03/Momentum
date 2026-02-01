@@ -43,6 +43,7 @@ if (config.nodeEnv === 'development') {
 
 // Security middleware
 app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
   crossOriginEmbedderPolicy: false,
   contentSecurityPolicy: {
     directives: {
@@ -56,6 +57,10 @@ app.use(helmet({
 
 // CORS
 app.use(corsMiddleware);
+
+// Serve static files
+import path from 'path';
+app.use('/uploads', express.static(path.join(process.cwd(), 'public/uploads')));
 
 // Rate limiting
 // app.use(generalLimiter);

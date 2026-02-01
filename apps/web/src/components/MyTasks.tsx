@@ -11,6 +11,9 @@ import dayjs from 'dayjs';
 import { TaskDetailModal } from './TaskDetailModal';
 import { Dropdown, DropdownItem, DropdownHeader, DropdownDivider } from '@/components/ui/Dropdown';
 import { useQuery } from '@tanstack/react-query';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
+import { useSocket } from '@/providers/SocketProvider';
+import { User } from '@/lib/api';
 
 type TaskStatus = 'all' | 'complete' | 'incomplete';
 type TaskSort = 'none' | 'dueDate' | 'project' | 'name' | 'priority';
@@ -32,6 +35,86 @@ export const MyTasks: React.FC = () => {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
+
+  // Socket & User
+  const { socket } = useSocket();
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  // Load current user
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const userRes = await apiClient.getCurrentUser();
+        if (userRes.success && userRes.data) {
+          setCurrentUser(userRes.data);
+        }
+      } catch (error) {
+        console.error('Failed to load user:', error);
+      }
+    };
+    loadUser();
+  }, []);
+
+  // Socket: Join User Room & Listen for Updates
+  useEffect(() => {
+    if (!socket || !currentUser) return;
+
+    // Join room
+    socket.emit('join_user', currentUser._id);
+
+    // Listen for updates
+    const handleTaskUpdate = (data: any) => {
+      // data = { taskId, operation, data: Task }
+      console.log('Socket task_updated received:', data);
+
+      if (data.operation === 'insert') {
+        // Check if it belongs in my tasks (assigned to me)
+        // The backend emits to assigned users, so if we got it, it likely involves us.
+        // But we should verify. Since the data is the task object, we can just append it if not exists.
+
+        // However, the task object in `data` might need to be fully populated? 
+        // The backend sends the document. We might need to handle partial data or refetch.
+        // For simplicity, we can fetch all tasks again OR simpler: append if new, update if exists.
+
+        setTasks(prev => {
+          const exists = prev.find(t => t._id === data.taskId);
+          if (exists) return prev; // Should be an update?
+          return [data.data, ...prev];
+        });
+        toast.info('New task assigned to you');
+      } else if (data.operation === 'update' || data.operation === 'replace') {
+        setTasks(prev => prev.map(t => t._id === data.taskId ? { ...t, ...data.data } : t));
+
+        // Also update selected task if it's the same one
+        setSelectedTask(prev => {
+          if (prev && prev._id === data.taskId) {
+            return { ...prev, ...data.data };
+          }
+          return prev;
+        });
+      } else if (data.operation === 'delete') {
+        setTasks(prev => prev.filter(t => t._id !== data.taskId));
+
+        // If selected task is deleted, close the modal
+        setSelectedTask(prev => {
+          if (prev && prev._id === data.taskId) {
+            setIsModalOpen(false);
+            return null;
+          }
+          return prev;
+        });
+      }
+    };
+
+    socket.on('task_updated', handleTaskUpdate);
+
+    return () => {
+      socket.emit('leave_user', currentUser._id);
+      socket.off('task_updated', handleTaskUpdate);
+    };
+  }, [socket, currentUser]);
 
   // Load filters from localStorage
   useEffect(() => {
@@ -235,15 +318,26 @@ export const MyTasks: React.FC = () => {
     setIsModalOpen(false);
   };
 
-  const handleUpdatePriority = async (taskId: string, priority: Priority) => {
+  const handleTogglePriority = async (task: Task) => {
+    // Cycle: medium -> high -> low -> medium
+    let newPriority: Priority = 'medium';
+    if (task.priority === 'medium' || !task.priority) newPriority = 'high';
+    else if (task.priority === 'high') newPriority = 'low';
+    else newPriority = 'medium';
+
     try {
       // Optimistic update
       setTasks(currentTasks =>
-        currentTasks.map(t => t._id === taskId ? { ...t, priority } : t)
+        currentTasks.map(t => t._id === task._id ? { ...t, priority: newPriority } : t)
       );
 
-      const response = await apiClient.updateTask(taskId, { priority });
-      if (!response.success) {
+      const response = await apiClient.updateTask(task._id, { priority: newPriority });
+      if (response.success) {
+        let message = 'Task priority set to normal';
+        if (newPriority === 'high') message = 'Task marked as high priority';
+        if (newPriority === 'low') message = 'Task marked as low priority';
+        toast.success(message);
+      } else {
         toast.error('Failed to update priority');
         // Rollback would require fetching or keeping old state
       }
@@ -253,14 +347,19 @@ export const MyTasks: React.FC = () => {
     }
   };
 
-  const handleDirectDelete = async (e: React.MouseEvent, taskId: string) => {
+  const handleDeleteClick = (e: React.MouseEvent, taskId: string) => {
     e.stopPropagation();
-    if (!window.confirm('Are you sure you want to delete this task?')) return;
+    setTaskToDelete(taskId);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!taskToDelete) return;
 
     try {
-      const response = await apiClient.deleteTask(taskId);
+      const response = await apiClient.deleteTask(taskToDelete);
       if (response.success) {
-        setTasks(prev => prev.filter(t => t._id !== taskId));
+        setTasks(prev => prev.filter(t => t._id !== taskToDelete));
         toast.success('Task deleted');
       } else {
         toast.error('Failed to delete task');
@@ -268,6 +367,9 @@ export const MyTasks: React.FC = () => {
     } catch (error) {
       console.error('Failed to delete task:', error);
       toast.error('Failed to delete task');
+    } finally {
+      setShowDeleteConfirm(false);
+      setTaskToDelete(null);
     }
   };
 
@@ -614,49 +716,35 @@ export const MyTasks: React.FC = () => {
 
               {/* Priority Selector */}
               <div className="col-span-1 flex justify-center">
-                <Dropdown
-                  trigger={
-                    <button
-                      onClick={(e) => e.stopPropagation()}
-                      className="p-1 rounded hover:bg-[var(--bg-secondary)] transition-colors"
-                    >
-                      <Flag
-                        width={16}
-                        height={16}
-                        className={cn(
-                          task.priority === 'high' ? 'text-red-500' :
-                            task.priority === 'medium' ? 'text-yellow-500' : 'text-blue-500'
-                        )}
-                      />
-                    </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleTogglePriority(task);
+                  }}
+                  className={cn(
+                    'p-1 rounded hover:bg-[var(--bg-secondary)] transition-colors',
+                    task.priority === 'high' ? 'text-[var(--danger)]' :
+                      task.priority === 'low' ? 'text-[var(--info)]' :
+                        'text-[var(--text-tertiary)] hover:text-[var(--danger)]'
+                  )}
+                  title={
+                    task.priority === 'high' ? 'Set to low priority' :
+                      task.priority === 'low' ? 'Set to normal priority' :
+                        'Set to high priority'
                   }
                 >
-                  <DropdownHeader>Set Priority</DropdownHeader>
-                  {(['high', 'medium', 'low'] as Priority[]).map(p => (
-                    <DropdownItem
-                      key={p}
-                      active={task.priority === p}
-                      onClick={() => handleUpdatePriority(task._id, p)}
-                      className="flex items-center capitalize"
-                    >
-                      <Flag
-                        width={14}
-                        height={14}
-                        className={cn(
-                          "mr-2",
-                          p === 'high' ? 'text-red-500' : p === 'medium' ? 'text-yellow-500' : 'text-blue-500'
-                        )}
-                      />
-                      {p}
-                    </DropdownItem>
-                  ))}
-                </Dropdown>
+                  <Flag
+                    width={16}
+                    height={16}
+                    fill={task.priority === 'high' || task.priority === 'low' ? 'currentColor' : 'none'}
+                  />
+                </button>
               </div>
 
               {/* Actions */}
               <div className="col-span-1 flex justify-end">
                 <button
-                  onClick={(e) => handleDirectDelete(e, task._id)}
+                  onClick={(e) => handleDeleteClick(e, task._id)}
                   className="p-1.5 text-[var(--text-tertiary)] hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-md transition-all"
                   title="Delete task"
                 >
@@ -686,6 +774,17 @@ export const MyTasks: React.FC = () => {
           onDeleteTask={handleDeleteTask}
         />
       )}
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={confirmDelete}
+        title="Delete Task"
+        message="Are you sure you want to delete this task? This action cannot be undone."
+        confirmText="Delete Task"
+        variant="danger"
+      />
     </div>
   );
 };

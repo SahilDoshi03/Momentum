@@ -7,6 +7,7 @@ interface ProfileIconProps {
     fullName: string;
     initials: string;
     avatar?: string | null;
+    profileIcon?: string | { url?: string } | null;
   };
   size?: 'xs' | 'sm' | 'md' | 'lg';
   className?: string;
@@ -24,11 +25,15 @@ export const ProfileIcon: React.FC<ProfileIconProps> = ({
     lg: 'h-12 w-12 text-lg',
   };
 
-  if (user.avatar) {
+  const profileIconUrl = typeof user.profileIcon === 'string'
+    ? user.profileIcon
+    : user.profileIcon?.url;
+
+  if (user.avatar || profileIconUrl) {
     return (
       <div className={cn('relative rounded-full overflow-hidden', sizeClasses[size], className)}>
         <Image
-          src={user.avatar}
+          src={user.avatar || profileIconUrl || ''}
           alt={user.fullName}
           fill
           className="object-cover"

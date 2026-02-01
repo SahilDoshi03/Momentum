@@ -20,6 +20,7 @@ export interface IUser extends Omit<Document, '_id'> {
   active: boolean;
   createdAt: Date;
   updatedAt: Date;
+  hasPassword?: boolean;
   generateInitials(): string;
   comparePassword(candidatePassword: string): Promise<boolean>;
 }

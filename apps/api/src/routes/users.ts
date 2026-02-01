@@ -31,6 +31,11 @@ router.get('/:id', getUserById);
 // Update user profile
 router.put('/:id', validateUserUpdate, updateUser);
 
+// Upload avatar
+import { upload } from '../middleware';
+import { uploadAvatar } from '../controllers/userController';
+router.post('/:id/avatar', upload.single('avatar'), uploadAvatar);
+
 // Delete user (admin or self)
 router.delete('/:id', deleteUser);
 

@@ -20,6 +20,10 @@ router.post('/validate', validateToken);
 // Get current user
 router.get('/me', authenticateToken, getMe);
 
+// Change password
+import { changePassword } from '../controllers/authController';
+router.post('/change-password', authenticateToken, changePassword);
+
 // Google OAuth routes
 router.get('/google', authLimiter, (req, res, next) => {
   const inviteToken = req.query.invite as string;
