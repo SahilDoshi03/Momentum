@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { Button } from '@/components/ui/Button';
 import { Dropdown, DropdownItem, DropdownHeader } from '@/components/ui/Dropdown';
 import { ProfileIcon } from '@/components/ui/ProfileIcon';
-import { CheckCircle, Plus, Trash } from '@/components/icons';
-import { Task, Project, apiClient, LabelColor } from '@/lib/api';
+import { CheckCircle, Plus, Trash, Flag } from '@/components/icons';
+import { Task, Project, apiClient } from '@/lib/api';
+import { LABEL_COLORS } from '@momentum/common';
 import { toast } from 'react-toastify';
 import dayjs from 'dayjs';
 
@@ -33,14 +33,14 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     const [description, setDescription] = useState(task.description || '');
     const [dueDate, setDueDate] = useState(task.dueDate);
     const [complete, setComplete] = useState(task.complete);
+    const [priority, setPriority] = useState<'low' | 'medium' | 'high'>(task.priority || 'medium');
     const [assigned, setAssigned] = useState(task.assigned || []);
     const [labels, setLabels] = useState(task.labels || []);
 
     // Label creation state
     const [isCreatingLabel, setIsCreatingLabel] = useState(false);
     const [newLabelName, setNewLabelName] = useState('');
-    const [selectedColorId, setSelectedColorId] = useState<string>('');
-    const [labelColors, setLabelColors] = useState<LabelColor[]>([]);
+    const [selectedColorId, setSelectedColorId] = useState<string>(LABEL_COLORS[0].id);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isSubmittingLabel, setIsSubmittingLabel] = useState(false);
@@ -54,30 +54,13 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
         setName(task.name);
         setDescription(task.description || '');
         setDueDate(task.dueDate);
+        setDueDate(task.dueDate);
         setComplete(task.complete);
+        setPriority(task.priority || 'medium');
         setAssigned(task.assigned || []);
         setLabels(task.labels || []);
     }, [task]);
 
-    // Fetch label colors on mount
-    // Fetch label colors
-    const { data: fetchedLabelColors } = useQuery({
-        queryKey: ['label-colors'],
-        queryFn: async () => {
-            const response = await apiClient.getLabelColors();
-            return response.data || [];
-        },
-        enabled: isOpen && isCreatingLabel
-    });
-
-    useEffect(() => {
-        if (fetchedLabelColors) {
-            setLabelColors(fetchedLabelColors);
-            if (fetchedLabelColors.length > 0 && !selectedColorId) {
-                setSelectedColorId(fetchedLabelColors[0]._id);
-            }
-        }
-    }, [fetchedLabelColors, selectedColorId]);
 
     const handleSave = async () => {
         setIsSaving(true);
@@ -102,6 +85,10 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
             }
             if (complete !== task.complete) {
                 updates.complete = complete;
+                hasUpdates = true;
+            }
+            if (priority !== (task.priority || 'medium')) {
+                updates.priority = priority;
                 hasUpdates = true;
             }
 
@@ -372,6 +359,50 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                             </Button>
                         </div>
 
+                        {/* Priority */}
+                        <div className="mb-6">
+                            <h3 className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-3">Priority</h3>
+                            <Dropdown
+                                className="w-full"
+                                trigger={
+                                    <Button
+                                        variant="outline"
+                                        className="w-full justify-start"
+                                    >
+                                        <Flag
+                                            width={16}
+                                            height={16}
+                                            className="mr-2"
+                                            fill={priority === 'high' || priority === 'medium' ? "currentColor" : "none"}
+                                            color={priority === 'high' ? 'var(--danger)' : priority === 'medium' ? 'var(--info)' : 'currentColor'}
+                                        />
+                                        <span className={priority === 'high' ? 'text-[var(--danger)]' : priority === 'medium' ? 'text-[var(--info)]' : ''}>
+                                            {priority === 'high' ? 'High Priority' : priority === 'low' ? 'Low Priority' : 'Normal Priority'}
+                                        </span>
+                                    </Button>
+                                }
+                            >
+                                <DropdownItem onClick={() => setPriority('low')}>
+                                    <div className="flex items-center">
+                                        <Flag width={14} height={14} className="mr-2" />
+                                        Low Priority
+                                    </div>
+                                </DropdownItem>
+                                <DropdownItem onClick={() => setPriority('medium')}>
+                                    <div className="flex items-center text-[var(--info)]">
+                                        <Flag width={14} height={14} className="mr-2" fill="currentColor" />
+                                        Normal Priority
+                                    </div>
+                                </DropdownItem>
+                                <DropdownItem onClick={() => setPriority('high')}>
+                                    <div className="flex items-center text-[var(--danger)]">
+                                        <Flag width={14} height={14} className="mr-2" fill="currentColor" />
+                                        High Priority
+                                    </div>
+                                </DropdownItem>
+                            </Dropdown>
+                        </div>
+
                         {/* Assignees */}
                         <div className="mb-6">
                             <h3 className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-3">Assignees</h3>
@@ -523,12 +554,12 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                                     <div className="mb-4">
                                         <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Color</label>
                                         <div className="flex flex-wrap gap-2">
-                                            {labelColors.map(color => (
+                                            {LABEL_COLORS.map(color => (
                                                 <button
-                                                    key={color._id}
-                                                    className={`w-6 h-6 rounded-full border-2 ${selectedColorId === color._id ? 'border-[var(--text-primary)]' : 'border-transparent'}`}
+                                                    key={color.id}
+                                                    className={`w-6 h-6 rounded-full border-2 ${selectedColorId === color.id ? 'border-[var(--text-primary)]' : 'border-transparent'}`}
                                                     style={{ backgroundColor: color.colorHex }}
-                                                    onClick={() => setSelectedColorId(color._id)}
+                                                    onClick={() => setSelectedColorId(color.id)}
                                                     title={color.name}
                                                 />
                                             ))}

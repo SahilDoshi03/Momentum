@@ -219,7 +219,7 @@ export const validateCreateProjectLabel = [
     .isLength({ min: 1, max: 50 })
     .withMessage('Label name must be between 1 and 50 characters'),
   body('labelColorId')
-    .isMongoId()
+    .isString()
     .withMessage('Invalid label color ID'),
   handleValidationErrors,
 ];
@@ -228,12 +228,24 @@ export const validateCreateProjectLabel = [
 export const validateMyTasksQuery = [
   query('status')
     .optional()
-    .isIn(['ALL', 'INCOMPLETE', 'COMPLETE_ALL', 'COMPLETE_TODAY', 'COMPLETE_YESTERDAY', 'COMPLETE_ONE_WEEK', 'COMPLETE_TWO_WEEK', 'COMPLETE_THREE_WEEK'])
+    .isIn(['ALL', 'INCOMPLETE', 'COMPLETE', 'COMPLETE_ALL', 'COMPLETE_TODAY', 'COMPLETE_YESTERDAY', 'COMPLETE_ONE_WEEK', 'COMPLETE_TWO_WEEK', 'COMPLETE_THREE_WEEK'])
     .withMessage('Invalid status filter'),
   query('sort')
     .optional()
-    .isIn(['NONE', 'PROJECT', 'DUE_DATE'])
+    .isIn(['NONE', 'PROJECT', 'DUE_DATE', 'NAME'])
     .withMessage('Invalid sort option'),
+  query('search')
+    .optional()
+    .isString()
+    .withMessage('Search must be a string'),
+  query('projectIds')
+    .optional()
+    .isString()
+    .withMessage('Project IDs must be a string'),
+  query('labelIds')
+    .optional()
+    .isString()
+    .withMessage('Label IDs must be a string'),
   handleValidationErrors,
 ];
 

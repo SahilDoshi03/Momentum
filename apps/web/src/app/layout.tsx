@@ -7,6 +7,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import QueryProvider from "@/providers/QueryProvider";
+import { SocketProvider } from "@/providers/SocketProvider";
 import ChatBot from "@/components/ChatBot";
 
 const geistSans = Geist({
@@ -49,29 +50,31 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <QueryProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="dark"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <ProtectedRoute>
-              {children}
-            </ProtectedRoute>
-            <ToastContainer
-              position="bottom-right"
-              autoClose={5000}
-              hideProgressBar={false}
-              newestOnTop={false}
-              closeOnClick
-              rtl={false}
-              pauseOnFocusLoss
-              draggable
-              pauseOnHover
-              theme="dark"
-            />
-            <ChatBot />
-          </ThemeProvider>
+          <SocketProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="dark"
+              enableSystem
+              disableTransitionOnChange
+            >
+              <ProtectedRoute>
+                {children}
+              </ProtectedRoute>
+              <ToastContainer
+                position="bottom-right"
+                autoClose={5000}
+                hideProgressBar={false}
+                newestOnTop={false}
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="dark"
+              />
+              <ChatBot />
+            </ThemeProvider>
+          </SocketProvider>
         </QueryProvider>
       </body>
     </html>

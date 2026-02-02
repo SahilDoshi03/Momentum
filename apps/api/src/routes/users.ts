@@ -10,6 +10,8 @@ import {
   searchUsers
 } from '../controllers/userController';
 import { authenticateToken, requireAdmin, validateUserUpdate } from '../middleware';
+import { upload } from '../middleware';
+import { uploadAvatar } from '../controllers/userController';
 
 const router = express.Router();
 
@@ -30,6 +32,9 @@ router.get('/:id', getUserById);
 
 // Update user profile
 router.put('/:id', validateUserUpdate, updateUser);
+
+// Upload avatar
+router.post('/:id/avatar', upload.single('avatar'), uploadAvatar);
 
 // Delete user (admin or self)
 router.delete('/:id', deleteUser);

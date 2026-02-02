@@ -23,6 +23,7 @@ export interface User {
   active: boolean;
   createdAt: string;
   updatedAt: string;
+  hasPassword?: boolean;
 }
 
 export interface Project {
@@ -48,7 +49,7 @@ export interface Project {
     _id: string;
     name: string;
     labelColorId: {
-      _id: string;
+      id: string;
       name: string;
       colorHex: string;
     };
@@ -68,6 +69,7 @@ export interface Task {
   name: string;
   description?: string;
   position: number;
+  priority: 'low' | 'medium' | 'high';
   complete: boolean;
   completedAt?: string;
   dueDate?: string;
@@ -86,7 +88,7 @@ export interface Task {
       _id: string;
       name: string;
       labelColorId: {
-        _id: string;
+        id: string;
         name: string;
         colorHex: string;
       };
@@ -96,7 +98,7 @@ export interface Task {
 }
 
 export interface LabelColor {
-  _id: string;
+  id: string;
   name: string;
   colorHex: string;
   position: number;
@@ -215,6 +217,13 @@ class ApiClient {
     });
   }
 
+  async changePassword(currentPassword: string, newPassword: string): Promise<ApiResponse> {
+    return this.request('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+  }
+
   async logout(): Promise<ApiResponse> {
     return this.request('/auth/logout', {
       method: 'POST',
@@ -245,6 +254,31 @@ class ApiClient {
       method: 'PUT',
       body: JSON.stringify(updates),
     });
+  }
+
+  async uploadAvatar(id: string, file: File): Promise<ApiResponse<User>> {
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+
+    // Use fetch directly to avoid setting Content-Type to application/json
+    const url = `${this.baseUrl}/users/${id}/avatar`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to upload avatar');
+    }
+
+    return data;
   }
 
   async deleteUser(id: string): Promise<ApiResponse> {
@@ -414,11 +448,31 @@ class ApiClient {
   }
 
   // Task endpoints
-  async getMyTasks(status: string = 'ALL', sort: string = 'NONE'): Promise<ApiResponse<{
+  async getMyTasks(
+    status: string = 'ALL',
+    sort: string = 'NONE',
+    search: string = '',
+    projectIds: string[] = [],
+    labelIds: string[] = []
+  ): Promise<ApiResponse<{
     tasks: Task[];
     projects: Array<{ projectID: string; taskID: string }>;
   }>> {
-    return this.request(`/tasks/my-tasks?status=${status}&sort=${sort}`);
+    const params = new URLSearchParams({
+      status,
+      sort,
+      search
+    });
+
+    if (projectIds.length > 0) {
+      params.append('projectIds', projectIds.join(','));
+    }
+
+    if (labelIds.length > 0) {
+      params.append('labelIds', labelIds.join(','));
+    }
+
+    return this.request(`/tasks/my-tasks?${params.toString()}`);
   }
 
   async createTask(taskData: {
@@ -515,10 +569,6 @@ class ApiClient {
     });
   }
 
-  // Label color endpoints
-  async getLabelColors(): Promise<ApiResponse<LabelColor[]>> {
-    return this.request('/label-colors');
-  }
 }
 
 // Create and export a singleton instance

@@ -276,11 +276,18 @@ export const getTeamMembers = asyncHandler(async (req: Request, res: Response) =
   }
 
   const members = await TeamMember.find({ teamId: id })
-    .populate('userId', 'fullName email initials profileIcon');
+    .populate({
+      path: 'userId',
+      select: 'fullName email initials profileIcon active',
+      match: { active: true }
+    });
+
+  // Filter out members where userId is null (inactive)
+  const activeMembers = members.filter(m => m.userId);
 
   res.json({
     success: true,
-    data: members,
+    data: activeMembers,
   });
 });
 

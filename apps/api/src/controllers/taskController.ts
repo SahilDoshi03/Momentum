@@ -3,27 +3,77 @@ import mongoose from 'mongoose';
 import { Task, TaskGroup, TaskLabel, ProjectMember, ProjectLabel } from '../models';
 import { ITask } from '../types';
 import { AppError, asyncHandler } from '../middleware';
+import { socketService } from '../services/socket';
 
 // Get my tasks
 export const getMyTasks = asyncHandler(async (req: Request, res: Response) => {
   const user = (req as any).user;
-  const { status = 'ALL', sort = 'NONE' } = req.query;
+  const { status = 'ALL', sort = 'NONE', search = '', projectIds = '', labelIds = '' } = req.query;
+
+  // Build query
+  const query: any = { 'assigned.userId': user._id };
+
+  // Apply search filter if provided
+  if (search) {
+    query.name = { $regex: search, $options: 'i' };
+  }
+
+  // Apply project filter if provided
+  if (projectIds) {
+    const pIds = (projectIds as string).split(',');
+    // We need to filter by taskGroupId.projectId
+    // Since we're using find() on tasks, we'll need to fetch matching taskGroups first
+    // or use a more complex aggregation. For simplicity with the existing structure,
+    // let's fetch the taskGroups that belong to these projects.
+    const matchingGroups = await TaskGroup.find({ projectId: { $in: pIds } }).select('_id');
+    const groupIds = matchingGroups.map(g => g._id);
+    query.taskGroupId = { $in: groupIds };
+  }
+
+  // Apply label filter if provided
+  if (labelIds) {
+    const lIds = (labelIds as string).split(',');
+    query['labels.projectLabelId'] = { $in: lIds };
+  }
 
   // Get all tasks assigned to user
-  let tasks = await Task.find({ 'assigned.userId': user._id })
-    .populate('taskGroupId', 'name projectId')
+  let tasks = await Task.find(query)
+    .populate({
+      path: 'taskGroupId',
+      select: 'name projectId',
+      populate: { path: 'projectId', select: 'name' }
+    })
     .populate({
       path: 'assigned',
-      populate: { path: 'userId', select: 'fullName initials profileIcon' }
+      populate: {
+        path: 'userId',
+        select: 'fullName initials profileIcon active',
+        match: { active: true }
+      }
     })
     .populate({
       path: 'labels',
       populate: { path: 'projectLabelId', populate: { path: 'labelColorId' } }
     })
-    .populate('createdBy', 'fullName initials profileIcon')
-    .populate('updatedBy', 'fullName initials profileIcon') as unknown as ITask[];
+    .populate({
+      path: 'createdBy',
+      select: 'fullName initials profileIcon active',
+      match: { active: true }
+    })
+    .populate({
+      path: 'updatedBy',
+      select: 'fullName initials profileIcon active',
+      match: { active: true }
+    }) as unknown as ITask[];
 
-  // Apply status filter
+  // Filter out assignments where user is null (inactive)
+  tasks.forEach(task => {
+    if (task.assigned) {
+      task.assigned = task.assigned.filter(a => a.userId);
+    }
+  });
+
+  // Apply status filter (in-memory for complex logic, but could be MongoDB query)
   if (status !== 'ALL') {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -36,6 +86,7 @@ export const getMyTasks = asyncHandler(async (req: Request, res: Response) => {
       case 'INCOMPLETE':
         tasks = tasks.filter(task => !task.complete);
         break;
+      case 'COMPLETE':
       case 'COMPLETE_ALL':
         tasks = tasks.filter(task => task.complete);
         break;
@@ -81,13 +132,14 @@ export const getMyTasks = asyncHandler(async (req: Request, res: Response) => {
   // Apply sorting
   switch (sort) {
     case 'PROJECT':
-      // Note: projectId is a string, so we can't sort by project name without fetching projects
-      // For now, sort by projectId string value
       tasks.sort((a, b) => {
-        const projectIdA = (a.taskGroupId as any)?.projectId || '';
-        const projectIdB = (b.taskGroupId as any)?.projectId || '';
-        return projectIdA.localeCompare(projectIdB);
+        const projectA = (a.taskGroupId as any)?.projectId?.name || '';
+        const projectB = (b.taskGroupId as any)?.projectId?.name || '';
+        return projectA.localeCompare(projectB);
       });
+      break;
+    case 'NAME':
+      tasks.sort((a, b) => a.name.localeCompare(b.name));
       break;
     case 'DUE_DATE':
       tasks.sort((a, b) => {
@@ -104,7 +156,7 @@ export const getMyTasks = asyncHandler(async (req: Request, res: Response) => {
 
   // Create project mapping
   const projectMapping = tasks.map(task => ({
-    projectID: (task.taskGroupId as any)?.projectId || task.taskGroupId,
+    projectID: (task.taskGroupId as any)?.projectId?._id || (task.taskGroupId as any)?.projectId || task.taskGroupId,
     taskID: task._id,
   }));
 
@@ -120,7 +172,7 @@ export const getMyTasks = asyncHandler(async (req: Request, res: Response) => {
 // Create task
 export const createTask = asyncHandler(async (req: Request, res: Response) => {
   const user = (req as any).user;
-  const { taskGroupId, name, description, dueDate, hasTime } = req.body;
+  const { taskGroupId, name, description, priority, dueDate, hasTime } = req.body;
 
   // Check if user has access to this task group's project
   // Handle both ObjectId and string formats - use ObjectId directly if it's already one
@@ -150,6 +202,7 @@ export const createTask = asyncHandler(async (req: Request, res: Response) => {
     taskGroupId,
     name,
     description,
+    priority: priority || 'medium',
     dueDate: dueDate ? new Date(dueDate) : null,
     hasTime: hasTime || false,
     createdBy: user._id,
@@ -171,14 +224,30 @@ export const createTask = asyncHandler(async (req: Request, res: Response) => {
     .populate('taskGroupId', 'name projectId')
     .populate({
       path: 'assigned',
-      populate: { path: 'userId', select: 'fullName initials profileIcon' }
+      populate: {
+        path: 'userId',
+        select: 'fullName initials profileIcon active',
+        match: { active: true }
+      }
     })
     .populate({
       path: 'labels',
       populate: { path: 'projectLabelId', populate: { path: 'labelColorId' } }
     })
-    .populate('createdBy', 'fullName initials profileIcon')
-    .populate('updatedBy', 'fullName initials profileIcon');
+    .populate({
+      path: 'createdBy',
+      select: 'fullName initials profileIcon active',
+      match: { active: true }
+    })
+    .populate({
+      path: 'updatedBy',
+      select: 'fullName initials profileIcon active',
+      match: { active: true }
+    });
+
+  if (populatedTask && populatedTask.assigned) {
+    populatedTask.assigned = populatedTask.assigned.filter((a: any) => a.userId);
+  }
 
   res.status(201).json({
     success: true,
@@ -201,14 +270,30 @@ export const getTaskById = asyncHandler(async (req: Request, res: Response) => {
     .populate('taskGroupId', 'name projectId')
     .populate({
       path: 'assigned',
-      populate: { path: 'userId', select: 'fullName initials profileIcon' }
+      populate: {
+        path: 'userId',
+        select: 'fullName initials profileIcon active',
+        match: { active: true }
+      }
     })
     .populate({
       path: 'labels',
       populate: { path: 'projectLabelId', populate: { path: 'labelColorId' } }
     })
-    .populate('createdBy', 'fullName initials profileIcon')
-    .populate('updatedBy', 'fullName initials profileIcon');
+    .populate({
+      path: 'createdBy',
+      select: 'fullName initials profileIcon active',
+      match: { active: true }
+    })
+    .populate({
+      path: 'updatedBy',
+      select: 'fullName initials profileIcon active',
+      match: { active: true }
+    });
+
+  if (task && task.assigned) {
+    task.assigned = task.assigned.filter((a: any) => a.userId);
+  }
 
   if (!task) {
     throw new AppError('Task not found', 404);
@@ -271,7 +356,7 @@ export const updateTask = asyncHandler(async (req: Request, res: Response) => {
   }
 
   // Update allowed fields
-  const allowedFields = ['name', 'description', 'dueDate', 'hasTime', 'complete', 'position', 'taskGroupId'];
+  const allowedFields = ['name', 'description', 'priority', 'dueDate', 'hasTime', 'complete', 'position', 'taskGroupId'];
   allowedFields.forEach(field => {
     if (updates[field] !== undefined) {
       if (field === 'dueDate' && updates[field] !== null) {
@@ -291,14 +376,30 @@ export const updateTask = asyncHandler(async (req: Request, res: Response) => {
     .populate('taskGroupId', 'name projectId')
     .populate({
       path: 'assigned',
-      populate: { path: 'userId', select: 'fullName initials profileIcon' }
+      populate: {
+        path: 'userId',
+        select: 'fullName initials profileIcon active',
+        match: { active: true }
+      }
     })
     .populate({
       path: 'labels',
       populate: { path: 'projectLabelId', populate: { path: 'labelColorId' } }
     })
-    .populate('createdBy', 'fullName initials profileIcon')
-    .populate('updatedBy', 'fullName initials profileIcon');
+    .populate({
+      path: 'createdBy',
+      select: 'fullName initials profileIcon active',
+      match: { active: true }
+    })
+    .populate({
+      path: 'updatedBy',
+      select: 'fullName initials profileIcon active',
+      match: { active: true }
+    });
+
+  if (populatedTask && populatedTask.assigned) {
+    populatedTask.assigned = populatedTask.assigned.filter((a: any) => a.userId);
+  }
 
   res.json({
     success: true,
@@ -342,6 +443,29 @@ export const deleteTask = asyncHandler(async (req: Request, res: Response) => {
   // Delete related data
   await TaskLabel.deleteMany({ taskId: id });
   await Task.findByIdAndDelete(id);
+
+  // Emit socket event
+  console.log(`Emitting task_updated (delete) to project: ${taskGroup.projectId}`);
+  socketService.emitToProject(taskGroup.projectId.toString(), 'task_updated', {
+    taskId: id,
+    projectId: taskGroup.projectId,
+    listId: taskGroup._id,
+    operation: 'delete'
+  });
+
+  // Emit to assigned users (for My Tasks)
+  if (task.assigned && task.assigned.length > 0) {
+    task.assigned.forEach((assignment: any) => {
+      const userId = assignment.userId._id || assignment.userId;
+      if (userId) {
+        console.log(`Emitting task_updated (delete) to user: ${userId}`);
+        socketService.emitToUser(userId.toString(), 'task_updated', {
+          taskId: id,
+          operation: 'delete'
+        });
+      }
+    });
+  }
 
   res.json({
     success: true,
@@ -659,6 +783,15 @@ export const deleteTaskGroup = asyncHandler(async (req: Request, res: Response) 
 
   // Delete the group
   await TaskGroup.findByIdAndDelete(id);
+
+  // Emit socket event
+  console.log(`Emitting task_updated (group delete) to project: ${taskGroup.projectId}`);
+  socketService.emitToProject(taskGroup.projectId.toString(), 'task_updated', {
+    type: 'group',
+    projectId: taskGroup.projectId,
+    operation: 'delete',
+    groupId: id
+  });
 
   res.json({
     success: true,

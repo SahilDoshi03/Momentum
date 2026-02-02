@@ -14,6 +14,8 @@
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.1",
+    "@momentum/common": "*",
+    "@types/multer": "^2.0.0",
     "ai": "^6.0.3",
     "bcryptjs": "^2.4.3",
     "connect-mongo": "^6.0.0",
@@ -30,10 +32,12 @@
     "mongodb": "^7.0.0",
     "mongoose": "^8.0.3",
     "morgan": "^1.10.0",
+    "multer": "^2.0.2",
     "passport": "^0.7.0",
     "passport-github2": "^0.1.12",
     "passport-google-oauth20": "^2.0.0",
     "passport-jwt": "^4.0.1",
+    "socket.io": "^4.8.3",
     "uuid": "^9.0.1",
     "zod": "^4.2.1"
   },

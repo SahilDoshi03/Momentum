@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ProfileIcon } from '@/components/ui/ProfileIcon';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
+import { ChangePasswordModal } from '@/components/ui/ChangePasswordModal';
 import { getCurrentUser, AuthUser, logout } from '@/lib/auth';
 import { Sun, Moon } from '@/components/icons';
 import { apiClient } from '@/lib/api';
@@ -25,6 +26,36 @@ export const Profile: React.FC = () => {
   });
 
   const queryClient = useQueryClient();
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const uploadAvatarMutation = useMutation({
+    mutationFn: (file: File) => {
+      // Ensure we have a user ID before attempting upload
+      if (!currentUser?.id) {
+        throw new Error('User not found');
+      }
+      return apiClient.uploadAvatar(currentUser.id, file);
+    },
+    onSuccess: (response) => {
+      if (response.success && response.data) {
+        const apiUser = response.data;
+        const authUser: AuthUser = {
+          ...apiUser,
+          id: apiUser._id,
+          avatar: apiUser.profileIcon?.url || null,
+        };
+
+        // Update cache
+        queryClient.setQueryData(['currentUser'], authUser);
+        localStorage.setItem('currentUser', JSON.stringify(apiUser));
+        toast.success('Avatar updated successfully');
+      }
+    },
+    onError: (err) => {
+      console.error('Avatar upload failed', err);
+      toast.error('Failed to upload avatar');
+    }
+  });
 
   const updateUserMutation = useMutation({
     mutationFn: (data: Partial<AuthUser>) =>
@@ -69,6 +100,7 @@ export const Profile: React.FC = () => {
     }
   });
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
 
   const handleDeleteAccount = async () => {
     if (!currentUser?.id) return;
@@ -152,13 +184,25 @@ export const Profile: React.FC = () => {
   };
 
   const handleAvatarChange = () => {
-    console.log('Avatar change requested');
-    // In a real app, this would open a file picker
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate size/type if needed
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('File size must be less than 5MB');
+        return;
+      }
+      uploadAvatarMutation.mutate(file);
+    }
+    // Reset value
+    event.target.value = '';
   };
 
   const handlePasswordChange = () => {
-    console.log('Password change requested');
-    // In a real app, this would open a password change modal
+    setIsChangePasswordModalOpen(true);
   };
 
   return (
@@ -180,12 +224,19 @@ export const Profile: React.FC = () => {
               <div className="flex items-center space-x-4 mb-6">
                 <ProfileIcon user={currentUser} size="lg" />
                 <div>
-                  <Button onClick={handleAvatarChange} variant="outline" size="sm">
-                    Change Avatar
+                  <Button onClick={handleAvatarChange} variant="outline" size="sm" disabled={uploadAvatarMutation.isPending}>
+                    {uploadAvatarMutation.isPending ? 'Uploading...' : 'Change Avatar'}
                   </Button>
                   <p className="text-sm text-[var(--text-primary)] mt-1">
                     Click to upload a new profile picture
                   </p>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                  />
                 </div>
               </div>
 
@@ -245,22 +296,24 @@ export const Profile: React.FC = () => {
           </div>
 
           {/* Security */}
-          <div className="bg-[var(--bg-secondary)] rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-[var(--text-secondary)] mb-4">
-              Security
-            </h2>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-medium text-[var(--text-primary)]">Password</h3>
-                  <p className="text-sm text-[var(--text-primary)]">Last changed 3 months ago</p>
+          {currentUser.hasPassword && (
+            <div className="bg-[var(--bg-secondary)] rounded-lg p-6">
+              <h2 className="text-xl font-semibold text-[var(--text-secondary)] mb-4">
+                Security
+              </h2>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-medium text-[var(--text-primary)]">Password</h3>
+                    <p className="text-sm text-[var(--text-primary)]">Last changed 3 months ago</p>
+                  </div>
+                  <Button variant="outline" onClick={handlePasswordChange}>
+                    Change Password
+                  </Button>
                 </div>
-                <Button variant="outline" onClick={handlePasswordChange}>
-                  Change Password
-                </Button>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Preferences */}
@@ -331,19 +384,31 @@ export const Profile: React.FC = () => {
             <h2 className="text-xl font-semibold text-[var(--text-secondary)] mb-4">
               Account
             </h2>
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-[var(--text-primary)]">Member since</span>
-                <span className="text-[var(--text-secondary)]">January 2024</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[var(--text-primary)]">Last active</span>
-                <span className="text-[var(--text-secondary)]">2 hours ago</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[var(--text-primary)]">Projects</span>
-                <span className="text-[var(--text-secondary)]">3</span>
-              </div>
+
+            <div className="space-y-3">
+              <Button
+                variant="danger"
+                className="w-full"
+                onClick={async () => {
+                  try {
+                    await logout();
+                    router.push('/login');
+                  } catch (error) {
+                    console.error('Logout failed', error);
+                    toast.error('Failed to logout');
+                  }
+                }}
+              >
+                Sign Out
+              </Button>
+
+              <Button
+                variant="outline"
+                className="w-full border-red-500 text-red-500 hover:bg-red-600 hover:text-white hover:border-red-600"
+                onClick={() => setIsDeleteModalOpen(true)}
+              >
+                Delete Account
+              </Button>
             </div>
 
             <div className="mt-6 pt-6 border-t border-[var(--border)] space-y-3">
@@ -374,6 +439,11 @@ export const Profile: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <ChangePasswordModal
+        isOpen={isChangePasswordModalOpen}
+        onClose={() => setIsChangePasswordModalOpen(false)}
+      />
 
       <ConfirmationModal
         isOpen={isDeleteModalOpen}

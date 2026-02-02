@@ -135,6 +135,57 @@ export const deleteUser = asyncHandler(async (req: Request, res: Response) => {
 });
 
 // Get user's teams
+// Upload avatar
+export const uploadAvatar = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const currentUser = (req as any).user;
+
+  // Check if file provided
+  if (!req.file) {
+    throw new AppError('No file uploaded', 400);
+  }
+
+  // Allow admin or self
+  if (currentUser._id.toString() !== id && currentUser.role !== 'admin') {
+    throw new AppError('Not authorized to update this user', 403);
+  }
+
+  const user = await User.findById(id);
+  if (!user) {
+    throw new AppError('User not found', 404);
+  }
+
+  // Construct URL (relative path)
+  // Assuming the frontend prepends the API URL or we serve it absolutely
+  // If we serve static from /uploads, the URL is /uploads/filename
+  // But usually we need the full URL if serving from a different domain/port?
+  // Let's store relative path or full path. 
+  // Ideally, if the API is at localhost:5000, the image is at localhost:5000/uploads/filename
+  // Let's store the relative URL "/uploads/..." and let frontend handle base URL or interceptor?
+  // Or better, store the full URL if we knew the host. 
+  // For simplicity and local dev, relative path is safer if proxy handles it.
+
+  // Actually, config.frontendUrl might not match backend. 
+  // Let's construct based on req protocol/host?
+  const protocol = req.protocol;
+  const host = req.get('host');
+  const fullUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
+
+  user.profileIcon = {
+    url: fullUrl,
+    initials: user.initials,
+    bgColor: user.profileIcon?.bgColor || '#6366f1'
+  };
+
+  await user.save();
+
+  res.json({
+    success: true,
+    message: 'Avatar uploaded successfully',
+    data: user.toJSON(),
+  });
+});
+
 export const getUserTeams = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const currentUser = (req as any).user;

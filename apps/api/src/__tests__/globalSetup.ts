@@ -11,6 +11,9 @@ export default async function globalSetup() {
 
     // Create MongoDB Memory Server instance
     const mongod = await MongoMemoryServer.create({
+        instance: {
+            replSet: 'rs0',
+        },
         binary: {
             version: '7.0.0', // Match your production MongoDB version
         },

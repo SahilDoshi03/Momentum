@@ -79,7 +79,7 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
   setTokenCookie(res, token);
 
   const response: AuthResponse = {
-    user: user.toJSON() as unknown as IUser,
+    user: { ...user.toJSON(), hasPassword: true } as unknown as IUser,
     token,
   };
 
@@ -124,7 +124,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
   setTokenCookie(res, token);
 
   const response: AuthResponse = {
-    user: user.toJSON() as unknown as IUser,
+    user: { ...user.toJSON(), hasPassword: true } as unknown as IUser,
     token,
   };
 
@@ -167,7 +167,7 @@ export const validateToken = asyncHandler(async (req: Request, res: Response) =>
 
   try {
     const decoded = jwt.verify(token, config.jwtSecret) as JWTPayload;
-    const user = await User.findById(decoded.userId).select('-password');
+    const user = await User.findById(decoded.userId).select('+password');
 
     if (!user || !user.active) {
       res.json({
@@ -177,9 +177,12 @@ export const validateToken = asyncHandler(async (req: Request, res: Response) =>
       return;
     }
 
+    const userJson = user.toJSON() as unknown as IUser;
+    userJson.hasPassword = !!user.password;
+
     res.json({
       success: true,
-      data: { valid: true, user: user.toJSON() as unknown as IUser },
+      data: { valid: true, user: userJson },
     });
   } catch (error) {
     res.json({
@@ -193,9 +196,52 @@ export const validateToken = asyncHandler(async (req: Request, res: Response) =>
 export const getMe = asyncHandler(async (req: Request, res: Response) => {
   const user = (req as any).user;
 
+  // Check if user has password set (fetch explicitly to be sure)
+  const userWithPassword = await User.findById(user._id).select('password');
+
+  const userJson = user.toJSON() as unknown as IUser;
+  userJson.hasPassword = !!userWithPassword?.password;
+
   res.json({
     success: true,
-    data: user.toJSON() as unknown as IUser,
+    data: userJson,
+  });
+});
+
+// Change password
+export const changePassword = asyncHandler(async (req: Request, res: Response) => {
+  const { currentPassword, newPassword } = req.body;
+  const user = await User.findById((req as any).user._id).select('+password');
+
+  if (!user) {
+    throw new AppError('User not found', 404);
+  }
+
+  // If user has no password (e.g. social login only), they can't change it this way
+  if (!user.password) {
+    // Logic for users who signed up with social login can be added here
+    // For now, assume password change is for email/password users or those who have set one
+    throw new AppError('This account is managed via social login', 400);
+  }
+
+  // Verify current password
+  const isMatch = await user.comparePassword(currentPassword);
+  if (!isMatch) {
+    throw new AppError('Invalid current password', 401);
+  }
+
+  // Validate new password
+  if (!validatePassword(newPassword)) {
+    throw new AppError(VALIDATION_CONFIG.password.errorMessage, 400);
+  }
+
+  // Update password
+  user.password = newPassword;
+  await user.save();
+
+  res.json({
+    success: true,
+    message: 'Password updated successfully',
   });
 });
 

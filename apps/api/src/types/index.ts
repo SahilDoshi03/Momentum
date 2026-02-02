@@ -20,6 +20,7 @@ export interface IUser extends Omit<Document, '_id'> {
   active: boolean;
   createdAt: Date;
   updatedAt: Date;
+  hasPassword?: boolean;
   generateInitials(): string;
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
@@ -77,6 +78,7 @@ export interface ITask extends Omit<Document, '_id'> {
   description?: string;
   position: number;
   complete: boolean;
+  priority: 'low' | 'medium' | 'high';
   completedAt?: Date;
   dueDate?: Date;
   hasTime: {
@@ -119,8 +121,8 @@ export interface IProjectLabel extends Omit<Document, '_id'> {
   createdDate: Date;
 }
 
-export interface ILabelColor extends Omit<Document, '_id'> {
-  _id: string;
+export interface ILabelColor {
+  id: string;
   name: string;
   colorHex: string;
   position: number;
@@ -207,6 +209,7 @@ export interface CreateTaskRequest {
   taskGroupId: string;
   name: string;
   description?: string;
+  priority?: 'low' | 'medium' | 'high';
   dueDate?: Date;
   hasTime?: boolean;
 }
@@ -214,6 +217,7 @@ export interface CreateTaskRequest {
 export interface UpdateTaskRequest {
   name?: string;
   description?: string;
+  priority?: 'low' | 'medium' | 'high';
   dueDate?: Date;
   hasTime?: boolean;
   complete?: boolean;

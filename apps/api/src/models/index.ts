@@ -9,7 +9,6 @@ export { TaskGroup } from './TaskGroup';
 export { Task } from './Task';
 export { TaskLabel } from './TaskLabel';
 export { ProjectLabel } from './ProjectLabel';
-export { LabelColor } from './LabelColor';
 export { TaskChecklist } from './TaskChecklist';
 export { TaskChecklistItem } from './TaskChecklistItem';
 export { TaskComment } from './TaskComment';

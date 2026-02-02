@@ -16,7 +16,6 @@ const projectLabelSchema = new Schema<IProjectLabel>({
   labelColorId: {
     type: String,
     required: true,
-    ref: 'LabelColor',
   },
   createdDate: {
     type: Date,

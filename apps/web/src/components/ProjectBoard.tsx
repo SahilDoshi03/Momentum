@@ -26,7 +26,9 @@ import { Dropdown, DropdownItem, DropdownHeader } from '@/components/ui/Dropdown
 import { TaskDetailModal } from './TaskDetailModal';
 import { ProjectSettingsModal } from './ProjectSettingsModal';
 import { useRouter } from 'next/navigation';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ProjectBoardSkeleton } from './ProjectBoardSkeleton';
+import { useSocket } from '@/providers/SocketProvider';
 
 interface ProjectBoardProps {
   projectId: string;
@@ -108,37 +110,101 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
     useSensor(KeyboardSensor)
   );
 
-  // Load project data and current user
+  // Load current user
   useEffect(() => {
-    const loadData = async () => {
+    const loadUser = async () => {
       try {
-        setIsLoading(true);
-        const [projectRes, userRes] = await Promise.all([
-          apiClient.getProjectById(projectId),
-          apiClient.getCurrentUser()
-        ]);
-
-        if (projectRes.success && projectRes.data) {
-          setProject(projectRes.data);
-          setTaskGroups((projectRes.data.taskGroups || []).map((group) => ({
-            ...group,
-            tasks: group.tasks || []
-          })));
-        }
-
+        const userRes = await apiClient.getCurrentUser();
         if (userRes.success && userRes.data) {
           setCurrentUser(userRes.data);
         }
       } catch (error) {
-        console.error('Failed to load data:', error);
-        toast.error('Failed to load project data');
-      } finally {
-        setIsLoading(false);
+        console.error('Failed to load user:', error);
       }
     };
+    loadUser();
+  }, []);
 
-    loadData();
-  }, [projectId]);
+  // Use React Query for project data to be reactive to socket invalidation
+  const { data: projectData, isLoading: isProjectLoading } = useQuery({
+    queryKey: ['project', projectId],
+    queryFn: async () => {
+      const response = await apiClient.getProjectById(projectId);
+      if (!response.success || !response.data) {
+        throw new Error('Failed to fetch project');
+      }
+      return response.data;
+    },
+    enabled: !!projectId,
+  });
+
+  // Sync query data to local state for DND
+  useEffect(() => {
+    if (projectData) {
+      setProject(projectData);
+      setTaskGroups((projectData.taskGroups || []).map((group) => ({
+        ...group,
+        tasks: group.tasks || []
+      })));
+      setIsLoading(false);
+    }
+  }, [projectData]);
+
+  // Handle loading state from query
+  useEffect(() => {
+    if (isProjectLoading) {
+      setIsLoading(true);
+    }
+  }, [isProjectLoading]);
+
+  // Socket Integration
+  const { socket } = useSocket();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!socket || !projectId) return;
+
+    // Join project room
+    socket.emit('join_project', projectId);
+
+    const handleTaskUpdate = (data: any) => {
+      console.log('Socket task_updated received in Board:', data);
+
+      // 1. Update active selected task if valid
+      setSelectedTask(prev => {
+        if (prev && prev._id === data.taskId) {
+          if (data.operation === 'delete') {
+            return null; // Will close modal via boolean check check in render
+          }
+          // For updates, merge data. For simplicity we might want to fetch full task or trust partial data
+          // Backend usually sends the updated document in data.data
+          if (data.data) {
+            return { ...prev, ...data.data };
+          }
+        }
+        return prev;
+      });
+
+      // 2. Invalidate query to refresh board data cleanly
+      // We could do optimistic updates on taskGroups here too for perf, 
+      // but invalidation handles consistency better for complex board states
+      queryClient.invalidateQueries({ queryKey: ['project', projectId] });
+    };
+
+    const handleProjectUpdate = (data: any) => {
+      console.log('Socket project_updated received:', data);
+      queryClient.invalidateQueries({ queryKey: ['project', projectId] });
+    };
+
+    socket.on('task_updated', handleTaskUpdate);
+    socket.on('project_updated', handleProjectUpdate);
+
+    return () => {
+      socket.emit('leave_project', projectId);
+      socket.off('task_updated', handleTaskUpdate);
+      socket.off('project_updated', handleProjectUpdate);
+    };
+  }, [socket, projectId, queryClient]);
 
   // Derived state for filtered and sorted tasks
   const getFilteredTaskGroups = () => {
@@ -172,6 +238,15 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
       }
       if (otherFilters.includes('no-date')) {
         filteredTasks = filteredTasks.filter(task => !task.dueDate);
+      }
+
+      // Priority Filters
+      const priorityFilters = otherFilters.filter(f => f.startsWith('priority-'));
+      if (priorityFilters.length > 0) {
+        filteredTasks = filteredTasks.filter(task => {
+          const priority = task.priority || 'medium';
+          return priorityFilters.includes(`priority-${priority}`);
+        });
       }
 
       // 4. Sort
@@ -452,6 +527,7 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
         labels: [],
         assigned: [],
         hasTime: false,
+        priority: 'medium',
       };
 
       setTaskGroups(prev => prev.map(list =>
@@ -710,14 +786,7 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex-1 p-6 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--primary)] mx-auto"></div>
-          <p className="mt-2 text-[var(--text-primary)]">Loading project...</p>
-        </div>
-      </div>
-    );
+    return <ProjectBoardSkeleton />;
   }
 
   if (!project) {
@@ -824,7 +893,7 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
               </Button>
             }
           >
-            <DropdownHeader>Filter By</DropdownHeader>
+            <DropdownHeader>Date</DropdownHeader>
             <DropdownItem
               active={otherFilters.includes('overdue')}
               onClick={() => toggleOtherFilter('overdue')}
@@ -836,6 +905,26 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
               onClick={() => toggleOtherFilter('no-date')}
             >
               No Due Date
+            </DropdownItem>
+
+            <DropdownHeader>Priority</DropdownHeader>
+            <DropdownItem
+              active={otherFilters.includes('priority-high')}
+              onClick={() => toggleOtherFilter('priority-high')}
+            >
+              High Priority
+            </DropdownItem>
+            <DropdownItem
+              active={otherFilters.includes('priority-medium')}
+              onClick={() => toggleOtherFilter('priority-medium')}
+            >
+              Normal Priority
+            </DropdownItem>
+            <DropdownItem
+              active={otherFilters.includes('priority-low')}
+              onClick={() => toggleOtherFilter('priority-low')}
+            >
+              Low Priority
             </DropdownItem>
           </Dropdown>
 

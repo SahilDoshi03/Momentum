@@ -11,8 +11,8 @@ import {
   Task,
   TaskLabel,
   ProjectLabel,
-  LabelColor
 } from '../models';
+import { LABEL_COLORS } from '@momentum/common';
 
 const seedData = async (): Promise<void> => {
   try {
@@ -31,24 +31,7 @@ const seedData = async (): Promise<void> => {
     await Task.deleteMany({});
     // await TaskAssigned.deleteMany({});
     await ProjectLabel.deleteMany({});
-    await LabelColor.deleteMany({});
-
-    console.log('Cleared existing data');
-
-    // Create label colors
-    const labelColors = [
-      { name: 'Purple', colorHex: '#e362e3', position: 0 },
-      { name: 'Blue', colorHex: '#7a6ff0', position: 1 },
-      { name: 'Teal', colorHex: '#37c5ab', position: 2 },
-      { name: 'Pink', colorHex: '#aa62e3', position: 3 },
-      { name: 'Red', colorHex: '#e8384f', position: 4 },
-      { name: 'Orange', colorHex: '#ff8c00', position: 5 },
-      { name: 'Green', colorHex: '#28a745', position: 6 },
-      { name: 'Yellow', colorHex: '#ffc107', position: 7 },
-    ];
-
-    const createdLabelColors = await LabelColor.insertMany(labelColors);
-    console.log('Created label colors');
+    console.log('Skipping label color creation (using constants)');
 
     // Create organization
     const organization = new Organization({
@@ -222,25 +205,25 @@ const seedData = async (): Promise<void> => {
       {
         projectId: createdProjects[0]._id,
         name: 'Design',
-        labelColorId: createdLabelColors[0]._id,
+        labelColorId: 'purple',
         createdDate: new Date(),
       },
       {
         projectId: createdProjects[0]._id,
         name: 'Research',
-        labelColorId: createdLabelColors[1]._id,
+        labelColorId: 'blue',
         createdDate: new Date(),
       },
       {
         projectId: createdProjects[1]._id,
         name: 'Development',
-        labelColorId: createdLabelColors[2]._id,
+        labelColorId: 'teal',
         createdDate: new Date(),
       },
       {
         projectId: createdProjects[1]._id,
         name: 'Bug',
-        labelColorId: createdLabelColors[4]._id,
+        labelColorId: 'red',
         createdDate: new Date(),
       },
     ];
@@ -404,7 +387,7 @@ const seedData = async (): Promise<void> => {
     console.log('✅ Database seeded successfully!');
     console.log('\n📊 Summary:');
     console.log(`- ${createdUsers.length} users created`);
-    console.log(`- ${createdLabelColors.length} label colors created`);
+    console.log(`- ${LABEL_COLORS.length} label colors identified`);
     console.log(`- 1 organization created`);
     console.log(`- 1 team created`);
     console.log(`- ${createdProjects.length} projects created`);
